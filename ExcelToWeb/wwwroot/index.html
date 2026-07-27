@@ -1,0 +1,37 @@
+﻿<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel 在线编辑工具</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Excel 在线编辑工具</h1>
+            <span class="badge">v1.0</span>
+        </div>
+
+        <div class="toolbar">
+            <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none;">
+            <button class="btn-primary" onclick="document.getElementById('fileInput').click()">📤 上传 Excel</button>
+            <button class="btn-success" onclick="saveData()">💾 保存</button>
+            <button class="btn-purple" onclick="exportExcel()">📊 导出 Excel</button>
+            <button class="btn-outline" onclick="refreshData()">🔄 刷新</button>
+            <button class="btn-danger" onclick="clearAll()">🗑️ 清空</button>
+            <span style="margin-left:auto; font-size:13px; color:#6b7b93;" id="statusText">就绪</span>
+        </div>
+
+        <div id="tableContainer">
+            <div class="empty-state">
+                <div class="empty-icon">📂</div>
+                <p>请点击 "上传 Excel" 开始</p>
+                <p style="font-size:13px; color:#9aabbf;">支持 .xlsx 和 .xls 格式</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
