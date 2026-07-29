@@ -1,8 +1,7 @@
-using OfficeOpenXml;
 using Microsoft.EntityFrameworkCore;
 using ExcelToWeb.Data;
+using OfficeOpenXml;
 
-// 设置 EPPlus 许可证（非商业用途）
 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 var builder = WebApplication.CreateBuilder(args);

@@ -16,10 +16,21 @@
         <div class="toolbar">
             <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none;">
             <button class="btn-primary" onclick="document.getElementById('fileInput').click()">📤 上传 Excel</button>
+            <button class="btn-primary" onclick="addRow()">➕ 新增行</button>
+            <button class="btn-danger" onclick="deleteSelectedRows()">🗑️ 删除选中</button>
             <button class="btn-success" onclick="saveData()">💾 保存</button>
             <button class="btn-purple" onclick="exportExcel()">📊 导出 Excel</button>
             <button class="btn-outline" onclick="refreshData()">🔄 刷新</button>
             <button class="btn-danger" onclick="clearAll()">🗑️ 清空</button>
+            <button class="btn-outline" onclick="openRuleModal()">⚙️ 规则设置</button>
+            <button class="btn-outline" onclick="location.href='/dashboard.html'">📊 看板</button>
+
+            <div class="filter-group">
+                <input type="date" id="filterDate">
+                <button class="btn-primary btn-sm" onclick="applyDateFilter()">🔍 筛选</button>
+                <button class="btn-outline btn-sm" onclick="clearDateFilter()">📋 全部</button>
+            </div>
+
             <span style="margin-left:auto; font-size:13px; color:#6b7b93;" id="statusText">就绪</span>
         </div>
 
@@ -32,6 +43,35 @@
         </div>
     </div>
 
+    <!-- ===== 规则设置弹窗 ===== -->
+    <div id="ruleModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); z-index:999; align-items:center; justify-content:center; backdrop-filter:blur(2px);">
+        <div style="background:#ffffff; border-radius:16px; padding:32px; max-width:600px; width:90%; max-height:80vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <h3 style="margin-bottom:8px; color:#0b1e33; font-size:20px;">⚙️ 条件格式规则设置</h3>
+            <p style="font-size:13px; color:#6b7b93; margin-bottom:16px;">设置数值列的颜色规则，输入范围后点击保存。留空最大值表示“以上”。</p>
+
+            <div style="margin-bottom:12px;">
+                <label style="font-size:13px; font-weight:500; color:#4a5a72;">应用列：</label>
+                <select id="ruleColumnSelect" style="padding:6px 12px; border:1px solid #dce3ed; border-radius:6px; font-size:13px; background:white;">
+                    <option value="数量">数量</option>
+                    <option value="单价(元)">单价(元)</option>
+                </select>
+            </div>
+
+            <div id="ruleList">
+                <!-- 规则列表由 JS 动态生成 -->
+            </div>
+
+            <button class="btn-primary" onclick="addRuleRow()" style="margin-top:12px; padding:6px 18px; font-size:13px;">➕ 添加规则</button>
+
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end; border-top:1px solid #f0f4fa; padding-top:16px;">
+                <button class="btn-outline" onclick="closeRuleModal()" style="padding:8px 20px;">取消</button>
+                <button class="btn-success" onclick="saveRules()" style="padding:8px 20px;">💾 保存规则</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 先加载 ECharts，再加载 app.js -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

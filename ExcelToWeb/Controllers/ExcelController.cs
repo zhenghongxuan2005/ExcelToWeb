@@ -65,24 +65,16 @@ public class ExcelController : ControllerBase
                     if (!string.IsNullOrEmpty(v))
                     {
                         hasData = true;
-                        // 检测是否为日期列
-                        if (IsDateColumn(headers[c - 1]))
+                        // 日期列自动转换
+                        if (IsDateColumn(headers[c - 1]) && double.TryParse(v, out double dateValue) && dateValue > 0)
                         {
-                            // 尝试将 Excel 日期序列号转换为日期
-                            if (double.TryParse(v, out double dateValue) && dateValue > 0)
+                            try
                             {
-                                try
-                                {
-                                    row[headers[c - 1]] = DateTime.FromOADate(dateValue).ToString("yyyy-MM-dd");
-                                }
-                                catch
-                                {
-                                    row[headers[c - 1]] = v;
-                                }
+                                row[headers[c - 1]] = DateTime.FromOADate(dateValue).ToString("yyyy-MM-dd");
                             }
-                            else
+                            catch
                             {
-                                row[headers[c - 1]] = v;
+                                row[headers[c - 1]] = CleanString(v);
                             }
                         }
                         else
@@ -136,15 +128,13 @@ public class ExcelController : ControllerBase
         {
             var errorMsg = ex.Message;
             if (ex.InnerException != null)
-            {
                 errorMsg += " | 内部错误: " + ex.InnerException.Message;
-            }
             return BadRequest(new { success = false, message = errorMsg });
         }
     }
 
     [HttpGet("query")]
-    public async Task<IActionResult> Query(int tableId)
+    public async Task<IActionResult> Query(int tableId, string? date = null)
     {
         try
         {
@@ -160,6 +150,24 @@ public class ExcelController : ControllerBase
 
             var dataRows = rows.Select(r => JsonSerializer.Deserialize<Dictionary<string, object>>(r.DataJson) ?? new Dictionary<string, object>()).ToList();
 
+            // 按日期筛选
+            if (!string.IsNullOrEmpty(date))
+            {
+                dataRows = dataRows.Where(r =>
+                {
+                    var dateKeys = new[] { "日期", "成交日期", "创建时间", "更新时间", "Date", "date" };
+                    foreach (var key in dateKeys)
+                    {
+                        if (r.ContainsKey(key))
+                        {
+                            var val = r[key]?.ToString() ?? "";
+                            return val.StartsWith(date);
+                        }
+                    }
+                    return false;
+                }).ToList();
+            }
+
             return Ok(new
             {
                 tableId = table.Id,
@@ -172,9 +180,7 @@ public class ExcelController : ControllerBase
         {
             var errorMsg = ex.Message;
             if (ex.InnerException != null)
-            {
                 errorMsg += " | 内部错误: " + ex.InnerException.Message;
-            }
             return BadRequest(new { success = false, message = errorMsg });
         }
     }
@@ -209,9 +215,7 @@ public class ExcelController : ControllerBase
         {
             var errorMsg = ex.Message;
             if (ex.InnerException != null)
-            {
                 errorMsg += " | 内部错误: " + ex.InnerException.Message;
-            }
             return BadRequest(new { success = false, message = errorMsg });
         }
     }
@@ -263,13 +267,71 @@ public class ExcelController : ControllerBase
         {
             var errorMsg = ex.Message;
             if (ex.InnerException != null)
-            {
                 errorMsg += " | 内部错误: " + ex.InnerException.Message;
-            }
             return BadRequest(new { success = false, message = errorMsg });
         }
     }
 
+    // ================================================================
+    // 获取所有表格列表
+    // ================================================================
+    [HttpGet("tables")]
+    public async Task<IActionResult> GetTables()
+    {
+        var tables = await _db.DynamicTables
+            .OrderByDescending(t => t.UpdatedAt)
+            .Select(t => new { t.Id, t.TableName, t.Headers, t.CreatedAt, t.UpdatedAt })
+            .ToListAsync();
+        return Ok(tables);
+    }
+
+    // ================================================================
+    // 获取所有颜色规则
+    // ================================================================
+    [HttpGet("rules")]
+    public async Task<IActionResult> GetRules(string? columnName = null)
+    {
+        var query = _db.ColorRules.AsQueryable();
+        if (!string.IsNullOrEmpty(columnName))
+        {
+            query = query.Where(r => r.ColumnName == columnName);
+        }
+        var rules = await query.OrderBy(r => r.MinValue).ToListAsync();
+        return Ok(rules);
+    }
+
+    // ================================================================
+    // 保存颜色规则（新增或更新）
+    // ================================================================
+    [HttpPost("rules")]
+    public async Task<IActionResult> SaveRules([FromBody] List<ColorRule> rules)
+    {
+        try
+        {
+            // 删除该列的旧规则
+            if (rules.Count > 0)
+            {
+                var columnName = rules[0].ColumnName;
+                var oldRules = await _db.ColorRules.Where(r => r.ColumnName == columnName).ToListAsync();
+                _db.ColorRules.RemoveRange(oldRules);
+            }
+
+            // 添加新规则
+            foreach (var rule in rules)
+            {
+                rule.CreatedAt = DateTime.Now;
+                rule.UpdatedAt = DateTime.Now;
+                await _db.ColorRules.AddAsync(rule);
+            }
+            await _db.SaveChangesAsync();
+
+            return Ok(new { success = true, message = $"成功保存 {rules.Count} 条规则" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { success = false, message = $"保存失败：{ex.Message}" });
+        }
+    }
     private string CleanString(string input)
     {
         if (string.IsNullOrEmpty(input)) return input;
