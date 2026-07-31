@@ -16,6 +16,12 @@
         <div class="toolbar">
             <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none;">
             <button class="btn-primary" onclick="document.getElementById('fileInput').click()">📤 上传 Excel</button>
+
+            <select id="tableSelector" onchange="switchTable()" style="padding:6px 12px; border:1px solid #dce3ed; border-radius:6px; font-size:13px; background:white; min-width:150px;">
+                <option value="">-- 请选择表格 --</option>
+            </select>
+            <button class="btn-danger" onclick="deleteCurrentTable()" style="padding:6px 14px;">🗑️ 删除当前</button>
+
             <button class="btn-primary" onclick="addRow()">➕ 新增行</button>
             <button class="btn-danger" onclick="deleteSelectedRows()">🗑️ 删除选中</button>
             <button class="btn-success" onclick="saveData()">💾 保存</button>
@@ -24,6 +30,7 @@
             <button class="btn-danger" onclick="clearAll()">🗑️ 清空</button>
             <button class="btn-outline" onclick="openRuleModal()">⚙️ 规则设置</button>
             <button class="btn-outline" onclick="location.href='/dashboard.html'">📊 看板</button>
+            <button class="btn-outline" onclick="exportCsv()">📄 导出 CSV</button>
 
             <div class="filter-group">
                 <input type="date" id="filterDate">
@@ -73,5 +80,35 @@
     <!-- 先加载 ECharts，再加载 app.js -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
     <script src="js/app.js"></script>
+
+    <!-- ===== 筛选面板 ===== -->
+    <div id="filterModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.3); z-index:998; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:12px; padding:24px; max-width:400px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+            <h4 style="margin-bottom:12px;">🔍 筛选: <span id="filterColumnName"></span></h4>
+
+            <div style="margin-bottom:12px;">
+                <label style="font-size:13px; color:#4a5a72;">条件</label>
+                <select id="filterCondition" style="width:100%; padding:8px; border:1px solid #dce3ed; border-radius:6px; font-size:13px; margin-top:4px;">
+                    <option value="contains">包含</option>
+                    <option value="notContains">不包含</option>
+                    <option value="equals">等于</option>
+                    <option value="startsWith">开头是</option>
+                    <option value="endsWith">结尾是</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <label style="font-size:13px; color:#4a5a72;">关键词</label>
+                <input type="text" id="filterKeyword" style="width:100%; padding:8px 12px; border:1px solid #dce3ed; border-radius:6px; font-size:13px; margin-top:4px;" placeholder="输入筛选关键词...">
+            </div>
+
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn-outline" onclick="clearFilter()" style="padding:8px 20px;">清除</button>
+                <button class="btn-outline" onclick="closeFilter()" style="padding:8px 20px;">取消</button>
+                <button class="btn-primary" onclick="applyFilter()" style="padding:8px 20px;">应用</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

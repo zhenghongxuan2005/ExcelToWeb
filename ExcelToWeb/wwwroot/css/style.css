@@ -345,3 +345,29 @@ tr:hover td {
     .suggest-item:active {
         background: #dce6f5;
     }
+
+/* ===== 固定表头 ===== */
+#tableContainer {
+    max-height: 500px;
+    overflow-y: auto;
+    position: relative;
+}
+
+    #tableContainer table thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+        #tableContainer table thead th {
+            background: #f8faff;
+            position: sticky;
+            top: 0;
+            z-index: 11;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        }
+
+            /* 修复复选框在固定表头中的样式 */
+            #tableContainer table thead th input[type="checkbox"] {
+                margin: 0;
+            }

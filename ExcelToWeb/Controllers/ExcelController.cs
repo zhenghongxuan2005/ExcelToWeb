@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ExcelToWeb.Data;
+﻿using ExcelToWeb.Data;
 using ExcelToWeb.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OfficeOpenXml;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -270,6 +271,85 @@ public class ExcelController : ControllerBase
                 errorMsg += " | 内部错误: " + ex.InnerException.Message;
             return BadRequest(new { success = false, message = errorMsg });
         }
+    }
+
+    // ================================================================
+    // 导出 CSV
+    // ================================================================
+    [HttpGet("export-csv")]
+    public async Task<IActionResult> ExportCsv(int tableId)
+    {
+        try
+        {
+            var table = await _db.DynamicTables
+                .FirstOrDefaultAsync(t => t.Id == tableId);
+
+            if (table == null)
+                return BadRequest(new { success = false, message = "表格不存在" });
+
+            var rows = await _db.DynamicRows
+                .Where(r => r.TableId == tableId)
+                .ToListAsync();
+
+            // 构建 CSV 内容
+            using var memoryStream = new MemoryStream();
+            using var writer = new StreamWriter(memoryStream, Encoding.UTF8);
+
+            // 写入表头
+            for (int c = 0; c < table.Headers.Count; c++)
+            {
+                writer.Write(EscapeCsvValue(table.Headers[c]));
+                if (c < table.Headers.Count - 1)
+                    writer.Write(",");
+            }
+            writer.WriteLine();
+
+            // 写入数据
+            foreach (var row in rows)
+            {
+                var rowData = JsonSerializer.Deserialize<Dictionary<string, object>>(row.DataJson) ?? new Dictionary<string, object>();
+                for (int c = 0; c < table.Headers.Count; c++)
+                {
+                    var key = table.Headers[c];
+                    var value = rowData.ContainsKey(key) ? rowData[key]?.ToString() ?? "" : "";
+                    writer.Write(EscapeCsvValue(value));
+                    if (c < table.Headers.Count - 1)
+                        writer.Write(",");
+                }
+                writer.WriteLine();
+            }
+
+            await writer.FlushAsync();
+            var bytes = memoryStream.ToArray();
+
+            return File(
+                bytes,
+                "text/csv; charset=utf-8",
+                $"{table.TableName}_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
+            );
+        }
+        catch (Exception ex)
+        {
+            var errorMsg = ex.Message;
+            if (ex.InnerException != null)
+                errorMsg += " | 内部错误: " + ex.InnerException.Message;
+            return BadRequest(new { success = false, message = errorMsg });
+        }
+    }
+
+    // CSV 值转义
+    private string EscapeCsvValue(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return "";
+
+        // 如果包含逗号、双引号或换行符，需要用双引号包裹
+        if (value.Contains(",") || value.Contains("\"") || value.Contains("\n") || value.Contains("\r"))
+        {
+            // 双引号转义为两个双引号
+            return "\"" + value.Replace("\"", "\"\"") + "\"";
+        }
+        return value;
     }
 
     // ================================================================
