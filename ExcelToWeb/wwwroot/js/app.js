@@ -536,42 +536,105 @@ function saveData() {
         showToast('请先上传一个 Excel 文件', 'error');
         return;
     }
-    pushHistory(); // 记录操作前状态
+
+    // 1. 同步输入框数据
     var inputs = document.querySelectorAll('.cell-input');
     for (var i = 0; i < inputs.length; i++) {
         var idx = parseInt(inputs[i].dataset.index);
         var key = inputs[i].dataset.key;
-        if (!isNaN(idx) && currentRows[idx]) currentRows[idx][key] = inputs[i].value;
-    }
-    var selects = document.querySelectorAll('.cell-select');
-    if (selects) {
-        for (var j = 0; j < selects.length; j++) {
-            var idx = parseInt(selects[j].dataset.index);
-            var key = selects[j].dataset.key;
-            if (!isNaN(idx) && currentRows[idx]) currentRows[idx][key] = selects[j].value;
+        if (!isNaN(idx) && currentRows[idx]) {
+            currentRows[idx][key] = inputs[i].value;
         }
     }
-    var payload = { tableId: currentTableId, rows: currentRows };
-    setStatus('保存中...');
-    fetch('/api/excel/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    })
+
+    // 2. 获取校验规则
+    fetch('/api/excel/validation-rules?tableId=' + currentTableId)
         .then(function (res) { return res.json(); })
-        .then(function (result) {
-            if (result.success) {
-                showToast('✅ ' + result.message, 'success');
-                setStatus('已保存');
+        .then(function (rules) {
+            // 2.1 执行校验
+            var errors = [];
+            var validRows = [];
+
+            if (rules && rules.length > 0) {
+                for (var r = 0; r < currentRows.length; r++) {
+                    var row = currentRows[r];
+                    var rowErrors = [];
+                    var rowValid = true;
+
+                    for (var i = 0; i < rules.length; i++) {
+                        var rule = rules[i];
+                        var colName = rule.columnName;
+                        var value = row[colName] !== undefined ? String(row[colName]) : '';
+
+                        if (rule.required && !value) {
+                            rowErrors.push(colName + ' 不能为空');
+                            rowValid = false;
+                            continue;
+                        }
+
+                        if (!value) continue;
+
+                        if (rule.dataType === 'number') {
+                            var num = parseFloat(value);
+                            if (isNaN(num)) {
+                                rowErrors.push(colName + ' 必须是数字');
+                                rowValid = false;
+                                continue;
+                            }
+                            if (rule.minValue !== null && num < rule.minValue) {
+                                rowErrors.push(colName + ' 不能小于 ' + rule.minValue);
+                                rowValid = false;
+                            }
+                            if (rule.maxValue !== null && num > rule.maxValue) {
+                                rowErrors.push(colName + ' 不能大于 ' + rule.maxValue);
+                                rowValid = false;
+                            }
+                        }
+                    }
+
+                    if (rowValid) {
+                        validRows.push(row);
+                    } else {
+                        errors.push('第 ' + (r + 1) + ' 行：' + rowErrors.join('；'));
+                    }
+                }
             } else {
-                showToast('❌ ' + result.message, 'error');
-                setStatus('保存失败');
+                validRows = currentRows;
             }
+
+            // 2.2 如果有错误，提示并阻止保存
+            if (errors.length > 0) {
+                showToast('⚠️ 校验失败：\n' + errors.join('\n'), 'error');
+                return;
+            }
+
+            // 2.3 保存有效数据
+            var payload = { tableId: currentTableId, rows: validRows };
+            setStatus('保存中...');
+            fetch('/api/excel/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(function (res) { return res.json(); })
+                .then(function (result) {
+                    if (result.success) {
+                        showToast('✅ ' + result.message, 'success');
+                        setStatus('已保存');
+                        refreshData();
+                    } else {
+                        showToast('❌ ' + result.message, 'error');
+                        setStatus('保存失败');
+                    }
+                })
+                .catch(function (err) {
+                    showToast('❌ 保存失败：' + err.message, 'error');
+                    setStatus('保存失败');
+                    console.error(err);
+                });
         })
         .catch(function (err) {
-            showToast('❌ 保存失败：' + err.message, 'error');
-            setStatus('保存失败');
-            console.error(err);
+            showToast('❌ 加载校验规则失败：' + err.message, 'error');
         });
 }
 
@@ -915,9 +978,6 @@ function loadTableList() {
 }
 
 // ================================================================
-// 渲染表格下拉框
-// ================================================================
-// ================================================================
 // 渲染表格下拉框（带时间戳，按时间排序）
 // ================================================================
 function renderTableSelector() {
@@ -1147,3 +1207,341 @@ document.addEventListener('keydown', function (e) {
         redo();
     }
 });
+
+// ================================================================
+// 批量编辑功能
+// ================================================================
+
+// 打开批量编辑弹窗
+function batchEdit() {
+    // 1. 检查是否有选中行
+    var checkboxes = document.querySelectorAll('.row-checkbox:checked');
+    if (checkboxes.length === 0) {
+        showToast('请先勾选要修改的行', 'info');
+        return;
+    }
+
+    // 2. 填充列下拉框
+    var select = document.getElementById('batchColumnSelect');
+    select.innerHTML = ''; // 清空旧选项
+    for (var i = 0; i < currentHeaders.length; i++) {
+        var option = document.createElement('option');
+        option.value = currentHeaders[i];
+        option.textContent = currentHeaders[i];
+        select.appendChild(option);
+    }
+
+    // 3. 清空输入框
+    document.getElementById('batchValueInput').value = '';
+
+    // 4. 显示弹窗
+    document.getElementById('batchModal').style.display = 'flex';
+}
+
+// 关闭批量编辑弹窗
+function closeBatchModal() {
+    document.getElementById('batchModal').style.display = 'none';
+}
+
+// 确认批量编辑
+function confirmBatchEdit() {
+    // 1. 获取选中的列和新值
+    var column = document.getElementById('batchColumnSelect').value;
+    var newValue = document.getElementById('batchValueInput').value.trim();
+
+    // 2. 校验新值是否为空
+    if (newValue === '') {
+        showToast('请输入新值', 'info');
+        return;
+    }
+
+    // 3. 获取所有被选中的行
+    var checkboxes = document.querySelectorAll('.row-checkbox:checked');
+    if (checkboxes.length === 0) {
+        showToast('没有选中任何行', 'info');
+        closeBatchModal();
+        return;
+    }
+
+    // 4. 记录修改前的状态
+    pushHistory();
+
+    // 5. 执行批量修改
+    var indices = [];
+    for (var i = 0; i < checkboxes.length; i++) {
+        var index = parseInt(checkboxes[i].dataset.index);
+        indices.push(index);
+        // 修改该行指定列的数据
+        currentRows[index][column] = newValue;
+    }
+
+    // 6. 取消所有选中状态
+    var allCheckboxes = document.querySelectorAll('.row-checkbox');
+    for (var j = 0; j < allCheckboxes.length; j++) {
+        allCheckboxes[j].checked = false;
+    }
+    var selectAll = document.getElementById('selectAll');
+    if (selectAll) selectAll.checked = false;
+
+    // 7. 关闭弹窗
+    closeBatchModal();
+
+    // 8. 重新渲染表格，显示更新后的数据
+    renderTable();
+
+// 9. 提示操作成功
+    showToast('✅ 已成功修改 ' + indices.length + ' 行的 "' + column + '" 列', 'success');
+}
+
+// ================================================================
+// 下载模板
+// ================================================================
+function downloadTemplate() {
+    console.log('downloadTemplate 被调用了');
+    if (!currentTableId) {
+        showToast('请先上传一个 Excel 文件或选择一个表格', 'error');
+        return;
+    }
+
+    setStatus('下载模板中...');
+    window.location.href = '/api/excel/template?tableId=' + currentTableId;
+}
+
+// ================================================================
+// 数据校验规则设置
+// ================================================================
+var currentValidationRules = [];
+
+function openValidationModal() {
+    if (!currentTableId) {
+        showToast('请先上传一个 Excel 文件', 'error');
+        return;
+    }
+
+    fetch('/api/excel/validation-rules?tableId=' + currentTableId)
+        .then(function (res) { return res.json(); })
+        .then(function (rules) {
+            currentValidationRules = rules || [];
+            // 如果没有规则，为每一列创建默认规则
+            if (currentValidationRules.length === 0) {
+                for (var i = 0; i < currentHeaders.length; i++) {
+                    currentValidationRules.push({
+                        tableId: currentTableId,
+                        columnName: currentHeaders[i],
+                        required: false,
+                        dataType: 'text',
+                        minValue: null,
+                        maxValue: null,
+                        maxLength: null,
+                        allowedValues: ''
+                    });
+                }
+            }
+            renderValidationRuleList();
+            document.getElementById('validationModal').style.display = 'flex';
+        })
+        .catch(function (err) {
+            showToast('❌ 加载校验规则失败：' + err.message, 'error');
+        });
+}
+
+function closeValidationModal() {
+    document.getElementById('validationModal').style.display = 'none';
+}
+
+function renderValidationRuleList() {
+    var container = document.getElementById('validationRuleList');
+    if (!container) return;
+
+    var html = '<table style="width:100%; font-size:13px; border-collapse:collapse;">';
+    html += '<thead><tr style="background:#f8faff;">';
+    html += '<th style="padding:8px 12px; text-align:left;">列名</th>';
+    html += '<th style="padding:8px 12px; text-align:center; width:60px;">必填</th>';
+    html += '<th style="padding:8px 12px; text-align:left; width:100px;">类型</th>';
+    html += '<th style="padding:8px 12px; text-align:left;">限制</th>';
+    html += '</tr></thead><tbody>';
+
+    for (var i = 0; i < currentValidationRules.length; i++) {
+        var rule = currentValidationRules[i];
+        html += '<tr>';
+        html += '<td style="padding:6px 8px;"><strong>' + rule.columnName + '</strong></td>';
+        html += '<td style="padding:6px 8px; text-align:center;">';
+        html += '<input type="checkbox" class="rule-required" data-index="' + i + '" ' + (rule.required ? 'checked' : '') + ' />';
+        html += '</td>';
+        html += '<td style="padding:6px 8px;">';
+        html += '<select class="rule-datatype" data-index="' + i + '" style="width:100%; padding:4px 6px; border:1px solid #dce3ed; border-radius:4px; font-size:13px;">';
+        html += '<option value="text"' + (rule.dataType === 'text' ? ' selected' : '') + '>文本</option>';
+        html += '<option value="number"' + (rule.dataType === 'number' ? ' selected' : '') + '>数字</option>';
+        html += '<option value="date"' + (rule.dataType === 'date' ? ' selected' : '') + '>日期</option>';
+        html += '<option value="email"' + (rule.dataType === 'email' ? ' selected' : '') + '>邮箱</option>';
+        html += '</select>';
+        html += '</td>';
+        html += '<td style="padding:6px 8px;">';
+        html += '<div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">';
+        html += '<input type="number" class="rule-min" placeholder="最小值" value="' + (rule.minValue || '') + '" data-index="' + i + '" style="width:70px; padding:4px 6px; border:1px solid #dce3ed; border-radius:4px; font-size:12px;" />';
+        html += '<span style="color:#6b7b93;">~</span>';
+        html += '<input type="number" class="rule-max" placeholder="最大值" value="' + (rule.maxValue || '') + '" data-index="' + i + '" style="width:70px; padding:4px 6px; border:1px solid #dce3ed; border-radius:4px; font-size:12px;" />';
+        html += '<input type="text" class="rule-allowed" placeholder="允许值(逗号分隔)" value="' + (rule.allowedValues || '') + '" data-index="' + i + '" style="flex:1; min-width:120px; padding:4px 6px; border:1px solid #dce3ed; border-radius:4px; font-size:12px;" />';
+        html += '</div>';
+        html += '</td>';
+        html += '</tr>';
+    }
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+
+    // 绑定事件
+    var requiredInputs = container.querySelectorAll('.rule-required');
+    for (var j = 0; j < requiredInputs.length; j++) {
+        requiredInputs[j].addEventListener('change', function (e) {
+            var idx = parseInt(this.dataset.index);
+            currentValidationRules[idx].required = this.checked;
+        });
+    }
+
+    var datatypeSelects = container.querySelectorAll('.rule-datatype');
+    for (var k = 0; k < datatypeSelects.length; k++) {
+        datatypeSelects[k].addEventListener('change', function (e) {
+            var idx = parseInt(this.dataset.index);
+            currentValidationRules[idx].dataType = this.value;
+        });
+    }
+
+    var minInputs = container.querySelectorAll('.rule-min');
+    for (var l = 0; l < minInputs.length; l++) {
+        minInputs[l].addEventListener('change', function (e) {
+            var idx = parseInt(this.dataset.index);
+            currentValidationRules[idx].minValue = parseFloat(this.value) || null;
+        });
+    }
+
+    var maxInputs = container.querySelectorAll('.rule-max');
+    for (var m = 0; m < maxInputs.length; m++) {
+        maxInputs[m].addEventListener('change', function (e) {
+            var idx = parseInt(this.dataset.index);
+            currentValidationRules[idx].maxValue = parseFloat(this.value) || null;
+        });
+    }
+
+    var allowedInputs = container.querySelectorAll('.rule-allowed');
+    for (var n = 0; n < allowedInputs.length; n++) {
+        allowedInputs[n].addEventListener('change', function (e) {
+            var idx = parseInt(this.dataset.index);
+            currentValidationRules[idx].allowedValues = this.value;
+        });
+    }
+}
+
+function addValidationRule() {
+    currentValidationRules.push({
+        tableId: currentTableId,
+        columnName: '新列_' + (currentValidationRules.length + 1),
+        required: false,
+        dataType: 'text',
+        minValue: null,
+        maxValue: null,
+        maxLength: null,
+        allowedValues: ''
+    });
+    renderValidationRuleList();
+}
+
+function saveValidationRules() {
+    // 收集数据
+    var requiredInputs = document.querySelectorAll('.rule-required');
+    var datatypeSelects = document.querySelectorAll('.rule-datatype');
+    var minInputs = document.querySelectorAll('.rule-min');
+    var maxInputs = document.querySelectorAll('.rule-max');
+    var allowedInputs = document.querySelectorAll('.rule-allowed');
+
+    for (var i = 0; i < requiredInputs.length; i++) {
+        currentValidationRules[i].required = requiredInputs[i].checked;
+        currentValidationRules[i].dataType = datatypeSelects[i].value;
+        currentValidationRules[i].minValue = parseFloat(minInputs[i].value) || null;
+        currentValidationRules[i].maxValue = parseFloat(maxInputs[i].value) || null;
+        currentValidationRules[i].allowedValues = allowedInputs[i].value;
+        currentValidationRules[i].tableId = currentTableId;
+    }
+
+    fetch('/api/excel/validation-rules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentValidationRules)
+    })
+        .then(function (res) { return res.json(); })
+        .then(function (result) {
+            if (result.success) {
+                showToast('✅ ' + result.message, 'success');
+                closeValidationModal();
+            } else {
+                showToast('❌ ' + result.message, 'error');
+            }
+        })
+        .catch(function (err) {
+            showToast('❌ 保存失败：' + err.message, 'error');
+        });
+}
+
+// ================================================================
+// 带校验的上传
+// ================================================================
+function uploadWithValidation() {
+    var fileInput = document.getElementById('fileInputValidate');
+    var file = fileInput.files[0];
+    if (!file) {
+        showToast('请选择文件', 'info');
+        return;
+    }
+
+    var ext = file.name.split('.').pop().toLowerCase();
+    if (ext !== 'xlsx' && ext !== 'xls') {
+        showToast('请上传 .xlsx 或 .xls 格式的文件', 'error');
+        fileInput.value = '';
+        return;
+    }
+
+    if (!currentTableId) {
+        showToast('请先上传一个 Excel 文件或选择一个表格', 'error');
+        fileInput.value = '';
+        return;
+    }
+
+    var formData = new FormData();
+    formData.append('file', file);
+    formData.append('tableId', currentTableId);
+
+    setStatus('校验并上传中...');
+
+    // 关键：必须指定 method: 'POST'
+    fetch('/api/excel/upload-with-validation', {
+        method: 'POST',
+        body: formData
+    })
+        .then(function (res) {
+            return res.json();
+        })
+        .then(function (result) {
+            if (result.success && result.validationResult) {
+                var vr = result.validationResult;
+                var msg = '校验完成：总行数 ' + vr.totalRows + '，成功 ' + vr.successRows + ' 行，错误 ' + vr.errorRows + ' 行';
+                if (vr.errorRows > 0) {
+                    msg += '\n\n错误详情：\n' + vr.errors.join('\n');
+                    showToast('⚠️ ' + msg, 'error');
+                } else {
+                    showToast('✅ ' + msg, 'success');
+                    currentRows = vr.validRows;
+                    renderTable();
+                    setStatus('已加载: ' + currentTableId + ' (' + currentRows.length + '行)');
+                }
+            } else {
+                showToast('❌ ' + (result.message || '上传失败'), 'error');
+            }
+            fileInput.value = '';
+        })
+        .catch(function (err) {
+            showToast('❌ 上传失败：' + err.message, 'error');
+            setStatus('上传失败');
+            fileInput.value = '';
+            console.error('上传错误:', err);
+        });
+}

@@ -9,6 +9,7 @@ namespace ExcelToWeb.Data
         public DbSet<DynamicTable> DynamicTables { get; set; }
         public DbSet<DynamicRow> DynamicRows { get; set; }
         public DbSet<ColorRule> ColorRules { get; set; }
+        public DbSet<ValidationRule> ValidationRules { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

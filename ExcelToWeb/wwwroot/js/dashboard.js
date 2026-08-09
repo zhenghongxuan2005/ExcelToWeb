@@ -202,6 +202,9 @@ function renderDashboard() {
     html += '<label style="font-size:13px; color:#4a5a72; font-weight:500;">指标：<select id="metricSelect" onchange="updateChart()" style="padding:6px 12px; border:1px solid #dce3ed; border-radius:6px; font-size:13px; background:white;">' + metricOptions + '</select></label>';
     html += '<label style="font-size:13px; color:#4a5a72; font-weight:500;">图表：<select id="chartTypeSelect" onchange="updateChart()" style="padding:6px 12px; border:1px solid #dce3ed; border-radius:6px; font-size:13px; background:white;">';
     html += '<option value="bar">📊 柱状图</option>';
+    html += '<option value="line">📈 折线图</option>';
+    html += '<option value="area">📈 面积图</option>';
+    html += '<option value="horizontal">📊 水平条形图</option>';
     html += '<option value="pie">🍩 饼图</option>';
     html += '</select></label>';
     html += '</div>';
@@ -239,6 +242,7 @@ function updateChart() {
     var dims = Object.keys(groups);
     var values = dims.map(function (d) { return groups[d].total; });
 
+    // 更新汇总表格
     var tbody = document.getElementById('summaryBody');
     if (tbody) {
         var tableHtml = '';
@@ -250,6 +254,7 @@ function updateChart() {
         tbody.innerHTML = tableHtml;
     }
 
+    // 更新图表
     if (chartInstance) {
         var option = {
             tooltip: {
@@ -268,50 +273,153 @@ function updateChart() {
             }
         };
 
-        if (chartType === 'bar') {
-            option.series = [{
-                type: 'bar',
-                data: values,
-                barWidth: '40%',
-                itemStyle: {
-                    color: '#1a5cff',
-                    borderRadius: [4, 4, 0, 0]
-                }
-            }];
-            option.xAxis = {
-                type: 'category',
-                data: dims,
-                axisLabel: { rotate: dims.length > 6 ? 30 : 0 }
-            };
-            option.yAxis = {
-                type: 'value',
-                name: metric
-            };
-        } else if (chartType === 'pie') {
-            option.series = [{
-                type: 'pie',
-                radius: ['40%', '70%'],
-                data: dims.map(function (d, idx) {
-                    return { name: d, value: values[idx] };
-                }),
-                label: {
-                    formatter: '{b}\n{c}',
-                    fontSize: 11
-                }
-            }];
-            option.xAxis = undefined;
-            option.yAxis = undefined;
+        // 图表类型配置
+        var colors = ['#1a5cff', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+        switch (chartType) {
+            case 'bar':
+                // 柱状图
+                option.series = [{
+                    type: 'bar',
+                    data: values,
+                    barWidth: '40%',
+                    itemStyle: {
+                        color: '#1a5cff',
+                        borderRadius: [4, 4, 0, 0]
+                    }
+                }];
+                option.xAxis = {
+                    type: 'category',
+                    data: dims,
+                    axisLabel: { rotate: dims.length > 6 ? 30 : 0 }
+                };
+                option.yAxis = {
+                    type: 'value',
+                    name: metric
+                };
+                break;
+
+            case 'line':
+                // 折线图
+                option.series = [{
+                    type: 'line',
+                    data: values,
+                    smooth: true,
+                    lineStyle: {
+                        color: '#1a5cff',
+                        width: 3
+                    },
+                    itemStyle: {
+                        color: '#1a5cff'
+                    },
+                    areaStyle: {
+                        color: 'rgba(26, 92, 255, 0.05)'
+                    }
+                }];
+                option.xAxis = {
+                    type: 'category',
+                    data: dims,
+                    axisLabel: { rotate: dims.length > 6 ? 30 : 0 }
+                };
+                option.yAxis = {
+                    type: 'value',
+                    name: metric
+                };
+                break;
+
+            case 'area':
+                // 面积图
+                option.series = [{
+                    type: 'line',
+                    data: values,
+                    smooth: true,
+                    lineStyle: {
+                        color: '#1a5cff',
+                        width: 3
+                    },
+                    itemStyle: {
+                        color: '#1a5cff'
+                    },
+                    areaStyle: {
+                        color: 'rgba(26, 92, 255, 0.25)'
+                    }
+                }];
+                option.xAxis = {
+                    type: 'category',
+                    data: dims,
+                    axisLabel: { rotate: dims.length > 6 ? 30 : 0 }
+                };
+                option.yAxis = {
+                    type: 'value',
+                    name: metric
+                };
+                break;
+
+            case 'horizontal':
+                // 水平条形图
+                option.series = [{
+                    type: 'bar',
+                    data: values,
+                    barWidth: '40%',
+                    itemStyle: {
+                        color: '#1a5cff',
+                        borderRadius: [0, 4, 4, 0]
+                    }
+                }];
+                option.xAxis = {
+                    type: 'value',
+                    name: metric
+                };
+                option.yAxis = {
+                    type: 'category',
+                    data: dims,
+                    axisLabel: { rotate: 0 }
+                };
+                break;
+
+            case 'pie':
+                // 饼图
+                option.series = [{
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    data: dims.map(function (d, idx) {
+                        return { name: d, value: values[idx] };
+                    }),
+                    label: {
+                        formatter: '{b}\n{c}',
+                        fontSize: 11
+                    },
+                    color: colors
+                }];
+                option.xAxis = undefined;
+                option.yAxis = undefined;
+                break;
+
+            default:
+                // 默认柱状图
+                option.series = [{
+                    type: 'bar',
+                    data: values,
+                    barWidth: '40%',
+                    itemStyle: {
+                        color: '#1a5cff',
+                        borderRadius: [4, 4, 0, 0]
+                    }
+                }];
+                option.xAxis = {
+                    type: 'category',
+                    data: dims,
+                    axisLabel: { rotate: dims.length > 6 ? 30 : 0 }
+                };
+                option.yAxis = {
+                    type: 'value',
+                    name: metric
+                };
         }
 
         chartInstance.setOption(option);
         chartInstance.resize();
     }
 }
-
-window.addEventListener('resize', function () {
-    if (chartInstance) {
-        chartInstance.resize();
-    }
-});
 
 fetchDashboardData();
