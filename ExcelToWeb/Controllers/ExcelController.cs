@@ -1,433 +1,192 @@
-﻿using ExcelToWeb.Data;
+using ExcelToWeb.DTOs;
 using ExcelToWeb.Models;
+using ExcelToWeb.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using OfficeOpenXml;
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace ExcelToWeb.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ExcelController : ControllerBase
 {
-    private readonly AppDbContext _db;
+    private readonly IExcelService _service;
+    private readonly ITokenService _tokenService;
+    private readonly ILogger<ExcelController> _logger;
 
-    public ExcelController(AppDbContext db)
+    public ExcelController(IExcelService service, ITokenService tokenService, ILogger<ExcelController> logger)
     {
-        _db = db;
+        _service = service;
+        _tokenService = tokenService;
+        _logger = logger;
     }
+
+    private int GetUserId() => _tokenService.GetUserId(User) ?? 0;
+
+    // ================================================================
+    // 表格核心接口
+    // ================================================================
 
     [HttpPost("upload")]
     public async Task<IActionResult> Upload(IFormFile file)
     {
-        try
-        {
-            if (file == null || file.Length == 0)
-                return BadRequest(new { success = false, message = "请选择文件" });
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
-            var ext = Path.GetExtension(file.FileName).ToLower();
-            if (ext != ".xlsx" && ext != ".xls")
-                return BadRequest(new { success = false, message = "请上传 .xlsx 或 .xls 格式的文件" });
-
-            using var stream = new MemoryStream();
-            await file.CopyToAsync(stream);
-            using var package = new ExcelPackage(stream);
-
-            var worksheet = package.Workbook.Worksheets[0];
-            if (worksheet == null || worksheet.Dimension == null)
-                return BadRequest(new { success = false, message = "无法读取 Excel 文件" });
-
-            var rowCount = worksheet.Dimension.Rows;
-            var colCount = worksheet.Dimension.Columns;
-
-            if (rowCount < 2)
-                return BadRequest(new { success = false, message = "Excel 文件没有数据行" });
-
-            var headers = new List<string>();
-            for (int c = 1; c <= colCount; c++)
-            {
-                var h = worksheet.Cells[1, c]?.Text?.Trim();
-                headers.Add(string.IsNullOrEmpty(h) ? $"列{c}" : CleanString(h));
-            }
-
-            var rows = new List<Dictionary<string, object>>();
-            for (int r = 2; r <= rowCount; r++)
-            {
-                var row = new Dictionary<string, object>();
-                var hasData = false;
-                for (int c = 1; c <= colCount; c++)
-                {
-                    var cell = worksheet.Cells[r, c];
-                    var v = cell?.Text?.Trim() ?? "";
-
-                    if (!string.IsNullOrEmpty(v))
-                    {
-                        hasData = true;
-                        // 日期列自动转换
-                        if (IsDateColumn(headers[c - 1]) && double.TryParse(v, out double dateValue) && dateValue > 0)
-                        {
-                            try
-                            {
-                                row[headers[c - 1]] = DateTime.FromOADate(dateValue).ToString("yyyy-MM-dd");
-                            }
-                            catch
-                            {
-                                row[headers[c - 1]] = CleanString(v);
-                            }
-                        }
-                        else
-                        {
-                            row[headers[c - 1]] = CleanString(v);
-                        }
-                    }
-                    else
-                    {
-                        row[headers[c - 1]] = "";
-                    }
-                }
-                if (hasData) rows.Add(row);
-            }
-
-            if (rows.Count == 0)
-                return BadRequest(new { success = false, message = "没有找到有效数据" });
-
-            var table = new DynamicTable
-            {
-                TableName = Path.GetFileNameWithoutExtension(file.FileName),
-                Headers = headers,
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now
-            };
-            await _db.DynamicTables.AddAsync(table);
-            await _db.SaveChangesAsync();
-
-            foreach (var row in rows)
-            {
-                _db.DynamicRows.Add(new DynamicRow
-                {
-                    TableId = table.Id,
-                    DataJson = JsonSerializer.Serialize(row),
-                    CreatedAt = DateTime.Now
-                });
-            }
-            await _db.SaveChangesAsync();
-
-            return Ok(new
-            {
-                success = true,
-                message = $"成功导入 {rows.Count} 条数据",
-                tableId = table.Id,
-                tableName = table.TableName,
-                headers = headers,
-                rows = rows
-            });
-        }
-        catch (Exception ex)
-        {
-            var errorMsg = ex.Message;
-            if (ex.InnerException != null)
-                errorMsg += " | 内部错误: " + ex.InnerException.Message;
-            return BadRequest(new { success = false, message = errorMsg });
-        }
+        var result = await _service.UploadExcelAsync(file, userId);
+        if (!result.Success) return BadRequest(result);
+        return Ok(result);
     }
 
     [HttpGet("query")]
     public async Task<IActionResult> Query(int tableId, string? date = null)
     {
-        try
-        {
-            var table = await _db.DynamicTables
-                .FirstOrDefaultAsync(t => t.Id == tableId);
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
-            if (table == null)
-                return NotFound(new { success = false, message = "表格不存在" });
-
-            var rows = await _db.DynamicRows
-                .Where(r => r.TableId == tableId)
-                .ToListAsync();
-
-            var dataRows = rows.Select(r => JsonSerializer.Deserialize<Dictionary<string, object>>(r.DataJson) ?? new Dictionary<string, object>()).ToList();
-
-            // 按日期筛选
-            if (!string.IsNullOrEmpty(date))
-            {
-                dataRows = dataRows.Where(r =>
-                {
-                    var dateKeys = new[] { "日期", "成交日期", "创建时间", "更新时间", "Date", "date" };
-                    foreach (var key in dateKeys)
-                    {
-                        if (r.ContainsKey(key))
-                        {
-                            var val = r[key]?.ToString() ?? "";
-                            return val.StartsWith(date);
-                        }
-                    }
-                    return false;
-                }).ToList();
-            }
-
-            return Ok(new
-            {
-                tableId = table.Id,
-                tableName = table.TableName,
-                headers = table.Headers,
-                rows = dataRows
-            });
-        }
-        catch (Exception ex)
-        {
-            var errorMsg = ex.Message;
-            if (ex.InnerException != null)
-                errorMsg += " | 内部错误: " + ex.InnerException.Message;
-            return BadRequest(new { success = false, message = errorMsg });
-        }
+        var result = await _service.GetTableDataAsync(tableId, userId, date);
+        if (!result.Success) return NotFound(result);
+        return Ok(result);
     }
 
     [HttpPost("save")]
     public async Task<IActionResult> Save([FromBody] SaveRequest request)
     {
-        try
-        {
-            var table = await _db.DynamicTables
-                .FirstOrDefaultAsync(t => t.Id == request.TableId);
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
-            if (table == null)
-                return BadRequest(new { success = false, message = "表格不存在" });
+        var result = await _service.SaveTableDataAsync(request.TableId, userId, request.Rows);
+        if (!result.Success) return BadRequest(result);
+        return Ok(result);
+    }
 
-            var oldRows = await _db.DynamicRows.Where(r => r.TableId == request.TableId).ToListAsync();
-            _db.DynamicRows.RemoveRange(oldRows);
+    [HttpDelete("delete")]
+    public async Task<IActionResult> Delete(int tableId)
+    {
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
-            var newRows = request.Rows.Select(r => new DynamicRow
-            {
-                TableId = request.TableId,
-                DataJson = JsonSerializer.Serialize(r),
-                CreatedAt = DateTime.Now
-            });
-            await _db.DynamicRows.AddRangeAsync(newRows);
-            table.UpdatedAt = DateTime.Now;
-            await _db.SaveChangesAsync();
-
-            return Ok(new { success = true, message = $"成功保存 {request.Rows.Count} 条数据" });
-        }
-        catch (Exception ex)
-        {
-            var errorMsg = ex.Message;
-            if (ex.InnerException != null)
-                errorMsg += " | 内部错误: " + ex.InnerException.Message;
-            return BadRequest(new { success = false, message = errorMsg });
-        }
+        var result = await _service.DeleteTableAsync(tableId, userId);
+        if (!result.Success) return BadRequest(result);
+        return Ok(result);
     }
 
     [HttpGet("export")]
     public async Task<IActionResult> Export(int tableId)
     {
-        try
-        {
-            var table = await _db.DynamicTables
-                .FirstOrDefaultAsync(t => t.Id == tableId);
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
-            if (table == null)
-                return BadRequest(new { success = false, message = "表格不存在" });
+        var bytes = await _service.ExportExcelAsync(tableId, userId);
+        if (bytes == null) return BadRequest(ApiResponse.Fail("表格不存在"));
 
-            var rows = await _db.DynamicRows
-                .Where(r => r.TableId == tableId)
-                .ToListAsync();
-
-            using var package = new ExcelPackage();
-            var worksheet = package.Workbook.Worksheets.Add(table.TableName ?? "数据");
-
-            for (int c = 0; c < table.Headers.Count; c++)
-            {
-                worksheet.Cells[1, c + 1].Value = table.Headers[c];
-            }
-
-            for (int r = 0; r < rows.Count; r++)
-            {
-                var rowData = JsonSerializer.Deserialize<Dictionary<string, object>>(rows[r].DataJson) ?? new Dictionary<string, object>();
-                for (int c = 0; c < table.Headers.Count; c++)
-                {
-                    var key = table.Headers[c];
-                    var value = rowData.ContainsKey(key) ? rowData[key] : "";
-                    worksheet.Cells[r + 2, c + 1].Value = value?.ToString();
-                }
-            }
-
-            worksheet.Cells.AutoFitColumns();
-            var bytes = package.GetAsByteArray();
-
-            return File(
-                bytes,
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                $"{table.TableName}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx"
-            );
-        }
-        catch (Exception ex)
-        {
-            var errorMsg = ex.Message;
-            if (ex.InnerException != null)
-                errorMsg += " | 内部错误: " + ex.InnerException.Message;
-            return BadRequest(new { success = false, message = errorMsg });
-        }
+        return File(bytes,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            $"数据_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
     }
 
-    // ================================================================
-    // 导出 CSV
-    // ================================================================
     [HttpGet("export-csv")]
     public async Task<IActionResult> ExportCsv(int tableId)
     {
-        try
-        {
-            var table = await _db.DynamicTables
-                .FirstOrDefaultAsync(t => t.Id == tableId);
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
-            if (table == null)
-                return BadRequest(new { success = false, message = "表格不存在" });
+        var bytes = await _service.ExportCsvAsync(tableId, userId);
+        if (bytes == null) return BadRequest(ApiResponse.Fail("表格不存在"));
 
-            var rows = await _db.DynamicRows
-                .Where(r => r.TableId == tableId)
-                .ToListAsync();
-
-            // 构建 CSV 内容
-            using var memoryStream = new MemoryStream();
-            using var writer = new StreamWriter(memoryStream, Encoding.UTF8);
-
-            // 写入表头
-            for (int c = 0; c < table.Headers.Count; c++)
-            {
-                writer.Write(EscapeCsvValue(table.Headers[c]));
-                if (c < table.Headers.Count - 1)
-                    writer.Write(",");
-            }
-            writer.WriteLine();
-
-            // 写入数据
-            foreach (var row in rows)
-            {
-                var rowData = JsonSerializer.Deserialize<Dictionary<string, object>>(row.DataJson) ?? new Dictionary<string, object>();
-                for (int c = 0; c < table.Headers.Count; c++)
-                {
-                    var key = table.Headers[c];
-                    var value = rowData.ContainsKey(key) ? rowData[key]?.ToString() ?? "" : "";
-                    writer.Write(EscapeCsvValue(value));
-                    if (c < table.Headers.Count - 1)
-                        writer.Write(",");
-                }
-                writer.WriteLine();
-            }
-
-            await writer.FlushAsync();
-            var bytes = memoryStream.ToArray();
-
-            return File(
-                bytes,
-                "text/csv; charset=utf-8",
-                $"{table.TableName}_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
-            );
-        }
-        catch (Exception ex)
-        {
-            var errorMsg = ex.Message;
-            if (ex.InnerException != null)
-                errorMsg += " | 内部错误: " + ex.InnerException.Message;
-            return BadRequest(new { success = false, message = errorMsg });
-        }
+        return File(bytes, "text/csv; charset=utf-8", $"数据_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
     }
 
-    // CSV 值转义
-    private string EscapeCsvValue(string value)
+    [HttpGet("template")]
+    public async Task<IActionResult> DownloadTemplate(int tableId)
     {
-        if (string.IsNullOrEmpty(value))
-            return "";
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
-        // 如果包含逗号、双引号或换行符，需要用双引号包裹
-        if (value.Contains(",") || value.Contains("\"") || value.Contains("\n") || value.Contains("\r"))
-        {
-            // 双引号转义为两个双引号
-            return "\"" + value.Replace("\"", "\"\"") + "\"";
-        }
-        return value;
+        var bytes = await _service.DownloadTemplateAsync(tableId, userId);
+        if (bytes == null) return BadRequest(ApiResponse.Fail("表格不存在"));
+
+        return File(bytes,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            $"模板_{DateTime.Now:yyyyMMdd}.xlsx");
     }
 
-    // ================================================================
-    // 获取所有表格列表
-    // ================================================================
     [HttpGet("tables")]
     public async Task<IActionResult> GetTables()
     {
-        var tables = await _db.DynamicTables
-            .OrderByDescending(t => t.UpdatedAt)
-            .Select(t => new { t.Id, t.TableName, t.Headers, t.CreatedAt, t.UpdatedAt })
-            .ToListAsync();
-        return Ok(tables);
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
+
+        var tables = await _service.GetTablesAsync(userId);
+        return Ok(ApiResponse<List<TableInfoDto>>.Ok(tables));
     }
 
     // ================================================================
-    // 获取所有颜色规则
+    // 颜色规则
     // ================================================================
+
     [HttpGet("rules")]
     public async Task<IActionResult> GetRules(string? columnName = null)
     {
-        var query = _db.ColorRules.AsQueryable();
-        if (!string.IsNullOrEmpty(columnName))
-        {
-            query = query.Where(r => r.ColumnName == columnName);
-        }
-        var rules = await query.OrderBy(r => r.MinValue).ToListAsync();
-        return Ok(rules);
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
+
+        var rules = await _service.GetColorRulesAsync(userId, columnName);
+        return Ok(ApiResponse<List<ColorRule>>.Ok(rules));
     }
 
-    // ================================================================
-    // 保存颜色规则（新增或更新）
-    // ================================================================
     [HttpPost("rules")]
     public async Task<IActionResult> SaveRules([FromBody] List<ColorRule> rules)
     {
-        try
-        {
-            // 删除该列的旧规则
-            if (rules.Count > 0)
-            {
-                var columnName = rules[0].ColumnName;
-                var oldRules = await _db.ColorRules.Where(r => r.ColumnName == columnName).ToListAsync();
-                _db.ColorRules.RemoveRange(oldRules);
-            }
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
-            // 添加新规则
-            foreach (var rule in rules)
-            {
-                rule.CreatedAt = DateTime.Now;
-                rule.UpdatedAt = DateTime.Now;
-                await _db.ColorRules.AddAsync(rule);
-            }
-            await _db.SaveChangesAsync();
-
-            return Ok(new { success = true, message = $"成功保存 {rules.Count} 条规则" });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { success = false, message = $"保存失败：{ex.Message}" });
-        }
+        var result = await _service.SaveColorRulesAsync(userId, rules);
+        if (!result.Success) return BadRequest(result);
+        return Ok(result);
     }
-    private string CleanString(string input)
+
+    // ================================================================
+    // 校验规则
+    // ================================================================
+
+    [HttpGet("validation-rules")]
+    public async Task<IActionResult> GetValidationRules(int tableId)
     {
-        if (string.IsNullOrEmpty(input)) return input;
-        return Regex.Replace(input, @"[\x00-\x08\x0B\x0C\x0E-\x1F]", "");
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
+
+        var rules = await _service.GetValidationRulesAsync(tableId, userId);
+        return Ok(ApiResponse<List<ValidationRule>>.Ok(rules));
     }
 
-    private bool IsDateColumn(string header)
+    [HttpPost("validation-rules")]
+    public async Task<IActionResult> SaveValidationRules([FromBody] List<ValidationRule> rules)
     {
-        if (string.IsNullOrEmpty(header)) return false;
-        var keywords = new[] { "日期", "时间", "成交日期", "创建时间", "更新时间", "日", "date", "time", "Date", "Time" };
-        return keywords.Any(k => header.Contains(k, StringComparison.OrdinalIgnoreCase));
-    }
-}
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
-public class SaveRequest
-{
-    public int TableId { get; set; }
-    public List<Dictionary<string, object>> Rows { get; set; } = new();
+        if (rules.Count == 0)
+            return BadRequest(ApiResponse.Fail("规则不能为空"));
+
+        var result = await _service.SaveValidationRulesAsync(rules[0].TableId, userId, rules);
+        if (!result.Success) return BadRequest(result);
+        return Ok(result);
+    }
+
+    // ================================================================
+    // 带校验的上传
+    // ================================================================
+
+    [HttpPost("upload-with-validation")]
+    public async Task<IActionResult> UploadWithValidation(IFormFile file, int tableId)
+    {
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
+
+        var result = await _service.UploadWithValidationAsync(file, tableId, userId);
+        if (!result.Success) return BadRequest(result);
+        return Ok(result);
+    }
 }

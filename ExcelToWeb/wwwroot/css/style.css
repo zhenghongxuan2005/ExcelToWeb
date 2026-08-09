@@ -1,4 +1,5 @@
-﻿* {
+﻿/* ===== 全局重置 ===== */
+* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -9,54 +10,65 @@ body {
     background: #f0f4f8;
     padding: 24px;
     min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
 }
 
 .container {
     max-width: 1300px;
-    width: 100%;
+    margin: 0 auto;
     background: #ffffff;
     border-radius: 16px;
-    padding: 28px 32px 36px 32px;
+    padding: 28px 32px 36px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
 }
 
+/* ===== 头部 ===== */
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
 }
 
     .header h1 {
         font-size: 22px;
         font-weight: 700;
         color: #0b1e33;
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
 
-.badge {
-    background: #eef3fc;
-    color: #1a5cff;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 4px 14px;
-    border-radius: 20px;
+        .header h1 .badge {
+            background: #eef3fc;
+            color: #1a5cff;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 14px;
+            border-radius: 20px;
+        }
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
+/* ===== 工具栏 ===== */
 .toolbar {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 24px;
-    padding-bottom: 18px;
-    border-bottom: 1px solid #f0f4fa;
+    gap: 8px 12px;
     align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f0f4fa;
 }
 
-    .toolbar button {
-        padding: 8px 20px;
+    .toolbar button,
+    .toolbar .btn {
+        padding: 8px 18px;
         border: none;
         border-radius: 30px;
         font-size: 13px;
@@ -66,54 +78,72 @@ body {
         display: inline-flex;
         align-items: center;
         gap: 6px;
+        background: #f0f4fa;
+        color: #2b3d56;
     }
 
-.btn-primary {
-    background: #1a5cff;
-    color: #fff;
-}
+        .toolbar button:hover {
+            background: #e3eaf3;
+            transform: translateY(-1px);
+        }
 
-    .btn-primary:hover {
-        background: #0f4ad6;
+    .toolbar .btn-primary {
+        background: #1a5cff;
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(26, 92, 255, 0.2);
     }
 
-.btn-success {
-    background: #0f973d;
-    color: #fff;
-}
+        .toolbar .btn-primary:hover {
+            background: #0f4ad6;
+            box-shadow: 0 4px 14px rgba(26, 92, 255, 0.28);
+            transform: translateY(-1px);
+        }
 
-    .btn-success:hover {
-        background: #0c7f33;
+    .toolbar .btn-success {
+        background: #0f973d;
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(15, 151, 61, 0.2);
     }
 
-.btn-purple {
-    background: #6b4bbf;
-    color: #fff;
-}
+        .toolbar .btn-success:hover {
+            background: #0c7f33;
+            box-shadow: 0 4px 14px rgba(15, 151, 61, 0.28);
+            transform: translateY(-1px);
+        }
 
-    .btn-purple:hover {
-        background: #563b9e;
+    .toolbar .btn-purple {
+        background: #6b4bbf;
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(107, 75, 191, 0.2);
     }
 
-.btn-outline {
-    background: transparent;
-    border: 1px solid #dce3ed;
-    color: #4a5a72;
-}
+        .toolbar .btn-purple:hover {
+            background: #563b9e;
+            box-shadow: 0 4px 14px rgba(107, 75, 191, 0.28);
+            transform: translateY(-1px);
+        }
 
-    .btn-outline:hover {
-        background: #f8faff;
+    .toolbar .btn-danger {
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
     }
 
-.btn-danger {
-    background: #fef2f2;
-    color: #b91c1c;
-    border: 1px solid #fecaca;
-}
+        .toolbar .btn-danger:hover {
+            background: #fee2e2;
+            border-color: #f87171;
+        }
 
-    .btn-danger:hover {
-        background: #fee2e2;
+    .toolbar .btn-outline {
+        background: transparent;
+        border: 1px solid #dce3ed;
+        color: #4a5a72;
     }
+
+        .toolbar .btn-outline:hover {
+            background: #f8faff;
+            border-color: #b0c4dd;
+        }
 
 .filter-group {
     display: flex;
@@ -131,7 +161,6 @@ body {
         background: white;
         color: #1e2f44;
         outline: none;
-        font-family: inherit;
         width: 150px;
     }
 
@@ -146,11 +175,7 @@ body {
         border-radius: 30px;
     }
 
-#statusText {
-    font-size: 13px;
-    color: #6b7b93;
-}
-
+/* ===== 表格 ===== */
 #tableContainer {
     overflow-x: auto;
 }
@@ -175,6 +200,7 @@ th {
     white-space: nowrap;
     cursor: pointer;
     user-select: none;
+    position: relative;
 }
 
     th:hover {
@@ -242,17 +268,42 @@ tr:hover td {
         box-shadow: 0 0 0 3px rgba(26, 92, 255, 0.08);
     }
 
-.empty-state {
-    text-align: center;
-    padding: 60px 0;
-    color: #9aabbf;
+/* ===== 可编辑单元格（建议列表容器） ===== */
+.editable-cell {
+    position: relative;
 }
 
-.empty-icon {
-    font-size: 48px;
-    margin-bottom: 12px;
+.suggest-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    display: none;
 }
 
+.suggest-item {
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #1e2f44;
+}
+
+    .suggest-item:hover {
+        background: #eef3fc;
+    }
+
+    .suggest-item:active {
+        background: #dce6f5;
+    }
+
+/* ===== 统计栏 ===== */
 .stats-bar {
     display: flex;
     gap: 24px;
@@ -269,6 +320,19 @@ tr:hover td {
         color: #0b1e33;
     }
 
+/* ===== 空状态 ===== */
+.empty-state {
+    text-align: center;
+    padding: 60px 0;
+    color: #9aabbf;
+}
+
+.empty-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+/* ===== Toast 提示 ===== */
 .toast {
     position: fixed;
     top: 24px;
@@ -310,64 +374,31 @@ tr:hover td {
     }
 }
 
-/* 可编辑单元格 */
-.editable-cell {
-    position: relative;
-}
-
-/* 建议列表 */
-.suggest-list {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: #fff;
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
-    max-height: 150px;
-    overflow-y: auto;
-    z-index: 100;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    display: none;
-}
-
-.suggest-item {
-    padding: 6px 12px;
-    cursor: pointer;
-    font-size: 13px;
-    color: #1e2f44;
-}
-
-    .suggest-item:hover {
-        background: #eef3fc;
+/* ===== 响应式 ===== */
+@media (max-width: 700px) {
+    body {
+        padding: 12px;
     }
 
-    .suggest-item:active {
-        background: #dce6f5;
+    .container {
+        padding: 16px;
     }
 
-/* ===== 固定表头 ===== */
-#tableContainer {
-    max-height: 500px;
-    overflow-y: auto;
-    position: relative;
-}
-
-    #tableContainer table thead {
-        position: sticky;
-        top: 0;
-        z-index: 10;
+    .toolbar {
+        flex-direction: column;
+        align-items: stretch;
     }
 
-        #tableContainer table thead th {
-            background: #f8faff;
-            position: sticky;
-            top: 0;
-            z-index: 11;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        .toolbar button {
+            justify-content: center;
         }
 
-            /* 修复复选框在固定表头中的样式 */
-            #tableContainer table thead th input[type="checkbox"] {
-                margin: 0;
-            }
+    .filter-group {
+        margin-left: 0;
+        width: 100%;
+    }
+
+        .filter-group input[type="date"] {
+            width: 100%;
+        }
+}

@@ -1,6 +1,0 @@
-@ExcelToWeb_HostAddress = http://localhost:5185
-
-GET {{ExcelToWeb_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

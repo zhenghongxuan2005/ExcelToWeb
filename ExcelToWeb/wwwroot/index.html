@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
@@ -8,11 +8,16 @@
 </head>
 <body>
     <div class="container">
+        <!-- ===== 头部 ===== -->
         <div class="header">
-            <h1>📊 Excel 在线编辑工具</h1>
-            <span class="badge">v1.0</span>
+            <h1>📊 Excel 在线编辑工具 <span class="badge">v1.0</span></h1>
+            <div class="header-actions">
+                <span id="userInfo" style="font-size:14px; font-weight:500; color:#0b1e33;"></span>
+                <button class="btn-outline" onclick="handleLogout()" style="padding:4px 14px; font-size:12px;">退出</button>
+            </div>
         </div>
 
+        <!-- ===== 工具栏 ===== -->
         <div class="toolbar">
             <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none;">
             <button class="btn-primary" onclick="document.getElementById('fileInput').click()">📤 上传 Excel</button>
@@ -24,13 +29,18 @@
 
             <button class="btn-primary" onclick="addRow()">➕ 新增行</button>
             <button class="btn-danger" onclick="deleteSelectedRows()">🗑️ 删除选中</button>
+            <button class="btn-primary" onclick="batchEdit()">📝 批量编辑</button>
+
             <button class="btn-success" onclick="saveData()">💾 保存</button>
             <button class="btn-purple" onclick="exportExcel()">📊 导出 Excel</button>
+            <button class="btn-outline" onclick="exportCsv()">📄 导出 CSV</button>
+
             <button class="btn-outline" onclick="refreshData()">🔄 刷新</button>
             <button class="btn-danger" onclick="clearAll()">🗑️ 清空</button>
             <button class="btn-outline" onclick="openRuleModal()">⚙️ 规则设置</button>
+            <button class="btn-outline" onclick="openValidationModal()">✅ 校验规则</button>
             <button class="btn-outline" onclick="location.href='/dashboard.html'">📊 看板</button>
-            <button class="btn-outline" onclick="exportCsv()">📄 导出 CSV</button>
+            <button class="btn-outline" onclick="downloadTemplate()">📥 下载模板</button>
 
             <div class="filter-group">
                 <input type="date" id="filterDate">
@@ -38,9 +48,10 @@
                 <button class="btn-outline btn-sm" onclick="clearDateFilter()">📋 全部</button>
             </div>
 
-            <span style="margin-left:auto; font-size:13px; color:#6b7b93;" id="statusText">就绪</span>
+            <span style="font-size:13px; color:#6b7b93; margin-left:auto;" id="statusText">就绪</span>
         </div>
 
+        <!-- ===== 表格容器 ===== -->
         <div id="tableContainer">
             <div class="empty-state">
                 <div class="empty-icon">📂</div>
@@ -52,7 +63,7 @@
 
     <!-- ===== 规则设置弹窗 ===== -->
     <div id="ruleModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); z-index:999; align-items:center; justify-content:center; backdrop-filter:blur(2px);">
-        <div style="background:#ffffff; border-radius:16px; padding:32px; max-width:600px; width:90%; max-height:80vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+        <div style="background:#fff; border-radius:16px; padding:32px; max-width:600px; width:90%; max-height:80vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
             <h3 style="margin-bottom:8px; color:#0b1e33; font-size:20px;">⚙️ 条件格式规则设置</h3>
             <p style="font-size:13px; color:#6b7b93; margin-bottom:16px;">设置数值列的颜色规则，输入范围后点击保存。留空最大值表示“以上”。</p>
 
@@ -76,10 +87,6 @@
             </div>
         </div>
     </div>
-
-    <!-- 先加载 ECharts，再加载 app.js -->
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-    <script src="js/app.js"></script>
 
     <!-- ===== 筛选面板 ===== -->
     <div id="filterModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.3); z-index:998; align-items:center; justify-content:center;">
@@ -110,5 +117,58 @@
         </div>
     </div>
 
+    <!-- ===== 批量编辑弹窗 ===== -->
+    <div id="batchModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); z-index:999; align-items:center; justify-content:center; backdrop-filter:blur(2px);">
+        <div style="background:#fff; border-radius:16px; padding:32px; max-width:450px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <h3 style="margin-bottom:8px; color:#0b1e33; font-size:20px;">📝 批量编辑</h3>
+            <p style="font-size:13px; color:#6b7b93; margin-bottom:16px;">将选中行的某一列统一修改为新值</p>
+
+            <div style="margin-bottom:12px;">
+                <label style="font-size:13px; font-weight:500; color:#4a5a72;">选择列</label>
+                <select id="batchColumnSelect" style="width:100%; padding:8px 12px; border:1px solid #dce3ed; border-radius:6px; font-size:13px; background:white; margin-top:4px;"></select>
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <label style="font-size:13px; font-weight:500; color:#4a5a72;">新值</label>
+                <input type="text" id="batchValueInput" style="width:100%; padding:8px 12px; border:1px solid #dce3ed; border-radius:6px; font-size:13px; margin-top:4px;" placeholder="输入要修改的值">
+            </div>
+
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn-outline" onclick="closeBatchModal()" style="padding:8px 20px;">取消</button>
+                <button class="btn-primary" onclick="confirmBatchEdit()" style="padding:8px 20px;">确认修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 校验规则设置弹窗 ===== -->
+    <div id="validationModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.4); z-index:999; align-items:center; justify-content:center; backdrop-filter:blur(2px);">
+        <div style="background:#fff; border-radius:16px; padding:32px; max-width:700px; width:95%; max-height:80vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <h3 style="margin-bottom:8px; color:#0b1e33; font-size:20px;">✅ 数据校验规则设置</h3>
+            <p style="font-size:13px; color:#6b7b93; margin-bottom:16px;">为每列设置校验规则，点击"保存"时自动检查数据合法性</p>
+
+            <div id="validationRuleList">
+                <!-- 规则列表由 JS 动态生成 -->
+            </div>
+
+            <div style="margin-top:16px;">
+                <button class="btn-primary" onclick="addValidationRule()" style="padding:6px 18px; font-size:13px;">➕ 添加规则</button>
+            </div>
+
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end; border-top:1px solid #f0f4fa; padding-top:16px;">
+                <button class="btn-outline" onclick="closeValidationModal()" style="padding:8px 20px;">取消</button>
+                <button class="btn-success" onclick="saveValidationRules()" style="padding:8px 20px;">💾 保存规则</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 加载 JS 模块（按依赖顺序） ===== -->
+    <script src="js/api.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/edit.js"></script>
+    <script src="js/filter.js"></script>
+    <script src="js/rules.js"></script>
+    <script src="js/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 </body>
 </html>

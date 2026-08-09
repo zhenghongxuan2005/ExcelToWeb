@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - Excel 在线编辑工具</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f0f4f8;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .login-container {
+            background: #fff;
+            border-radius: 20px;
+            padding: 48px 40px;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        }
+        .login-container h1 { font-size: 28px; font-weight: 700; color: #0b1e33; margin-bottom: 8px; }
+        .login-container p.sub { color: #6b7b93; font-size: 14px; margin-bottom: 32px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 500; color: #4a5a72; margin-bottom: 6px; }
+        .form-group input {
+            width: 100%; padding: 10px 14px; border: 1px solid #dce3ed; border-radius: 8px;
+            font-size: 14px; transition: border-color 0.2s; outline: none; font-family: inherit;
+        }
+        .form-group input:focus { border-color: #1a5cff; box-shadow: 0 0 0 3px rgba(26,92,255,0.08); }
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        .btn-primary { background: #1a5cff; color: #fff; }
+        .btn-primary:hover { background: #0f4ad6; }
+        .btn-outline { background: transparent; color: #1a5cff; border: 1px solid #dce3ed; margin-top: 12px; }
+        .btn-outline:hover { background: #f8faff; }
+        .error-msg { color: #dc2626; font-size: 13px; margin-top: 4px; min-height: 20px; }
+        .switch-link { text-align: center; margin-top: 16px; font-size: 14px; color: #6b7b93; }
+        .switch-link a { color: #1a5cff; text-decoration: none; font-weight: 500; }
+        .switch-link a:hover { text-decoration: underline; }
+        .toast {
+            position: fixed; top: 24px; right: 24px; padding: 14px 28px; border-radius: 12px;
+            font-weight: 600; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            z-index: 999; animation: slideIn 0.3s ease; max-width: 400px;
+        }
+        .toast-success { background: #0f973d; color: #fff; }
+        .toast-error { background: #dc2626; color: #fff; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1 id="pageTitle">👋 欢迎回来</h1>
+        <p class="sub" id="pageSub">登录后继续管理你的数据</p>
+
+        <div id="loginForm">
+            <div class="form-group">
+                <label>用户名</label>
+                <input type="text" id="loginUsername" placeholder="请输入用户名" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" id="loginPassword" placeholder="请输入密码" autocomplete="current-password">
+                <div class="error-msg" id="loginError"></div>
+            </div>
+            <button class="btn btn-primary" onclick="handleLogin()">登 录</button>
+            <div class="switch-link">还没有账号？<a href="#" onclick="showRegister()">立即注册</a></div>
+        </div>
+
+        <div id="registerForm" class="hidden">
+            <div class="form-group">
+                <label>用户名（3-20位，仅字母和数字）</label>
+                <input type="text" id="registerUsername" placeholder="请输入用户名">
+            </div>
+            <div class="form-group">
+                <label>密码（至少6位）</label>
+                <input type="password" id="registerPassword" placeholder="请输入密码">
+            </div>
+            <div class="form-group">
+                <label>确认密码</label>
+                <input type="password" id="registerConfirmPassword" placeholder="请再次输入密码">
+                <div class="error-msg" id="registerError"></div>
+            </div>
+            <button class="btn btn-primary" onclick="handleRegister()">注 册</button>
+            <div class="switch-link">已有账号？<a href="#" onclick="showLogin()">去登录</a></div>
+        </div>
+    </div>
+
+    <script>
+        function showRegister() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+            document.getElementById('pageTitle').textContent = '📝 创建账号';
+            document.getElementById('pageSub').textContent = '注册后即可开始使用';
+            document.getElementById('loginError').textContent = '';
+            document.getElementById('registerError').textContent = '';
+        }
+
+        function showLogin() {
+            document.getElementById('registerForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('pageTitle').textContent = '👋 欢迎回来';
+            document.getElementById('pageSub').textContent = '登录后继续管理你的数据';
+            document.getElementById('loginError').textContent = '';
+            document.getElementById('registerError').textContent = '';
+        }
+
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = 'toast toast-' + (type || 'success');
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        async function handleLogin() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const errorEl = document.getElementById('loginError');
+
+            if (!username || !password) {
+                errorEl.textContent = '请填写完整信息';
+                return;
+            }
+            errorEl.textContent = '';
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const result = await res.json();
+                if (result.success && result.data) {
+                    localStorage.setItem('token', result.data.token);
+                    localStorage.setItem('username', result.data.username);
+                    showToast('✅ 登录成功，跳转中...', 'success');
+                    setTimeout(() => { window.location.href = '/'; }, 800);
+                } else {
+                    errorEl.textContent = result.message || '登录失败';
+                }
+            } catch (err) {
+                errorEl.textContent = '网络错误，请稍后重试';
+                console.error(err);
+            }
+        }
+
+        async function handleRegister() {
+            const username = document.getElementById('registerUsername').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('registerConfirmPassword').value;
+            const errorEl = document.getElementById('registerError');
+
+            if (!username || !password || !confirmPassword) {
+                errorEl.textContent = '请填写完整信息';
+                return;
+            }
+            if (password !== confirmPassword) {
+                errorEl.textContent = '两次密码输入不一致';
+                return;
+            }
+            errorEl.textContent = '';
+
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, confirmPassword })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast('✅ 注册成功，请登录', 'success');
+                    showLogin();
+                    document.getElementById('loginUsername').value = username;
+                } else {
+                    errorEl.textContent = result.message || '注册失败';
+                }
+            } catch (err) {
+                errorEl.textContent = '网络错误，请稍后重试';
+                console.error(err);
+            }
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                if (!document.getElementById('loginForm').classList.contains('hidden')) {
+                    handleLogin();
+                } else {
+                    handleRegister();
+                }
+            }
+        });
+
+        // 已登录则跳转
+        if (localStorage.getItem('token')) {
+            fetch('/api/auth/me', {
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) window.location.href = '/';
+                else {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('username');
+                }
+            })
+            .catch(() => {
+                localStorage.removeItem('token');
+                localStorage.removeItem('username');
+            });
+        }
+    </script>
+</body>
+</html>
