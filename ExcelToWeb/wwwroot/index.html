@@ -19,14 +19,17 @@
 
         <!-- ===== 工具栏 ===== -->
         <div class="toolbar">
+            <!-- 上传 Excel -->
             <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none;">
             <button class="btn-primary" onclick="document.getElementById('fileInput').click()">📤 上传 Excel</button>
 
+            <!-- 表格切换 -->
             <select id="tableSelector" onchange="switchTable()" style="padding:6px 12px; border:1px solid #dce3ed; border-radius:6px; font-size:13px; background:white; min-width:150px;">
                 <option value="">-- 请选择表格 --</option>
             </select>
             <button class="btn-danger" onclick="deleteCurrentTable()" style="padding:6px 14px;">🗑️ 删除当前</button>
 
+            <!-- 编辑操作 -->
             <button class="btn-primary" onclick="addRow()">➕ 新增行</button>
             <button class="btn-danger" onclick="deleteSelectedRows()">🗑️ 删除选中</button>
             <button class="btn-primary" onclick="batchEdit()">📝 批量编辑</button>
@@ -42,6 +45,7 @@
             <button class="btn-outline" onclick="location.href='/dashboard.html'">📊 看板</button>
             <button class="btn-outline" onclick="downloadTemplate()">📥 下载模板</button>
 
+            <!-- 筛选 -->
             <div class="filter-group">
                 <input type="date" id="filterDate">
                 <button class="btn-primary btn-sm" onclick="applyDateFilter()">🔍 筛选</button>
