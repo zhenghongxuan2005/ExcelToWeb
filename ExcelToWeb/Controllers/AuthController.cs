@@ -4,6 +4,8 @@ using ExcelToWeb.DTOs;
 using ExcelToWeb.Helpers;
 using ExcelToWeb.Models;
 using ExcelToWeb.Services;
+using Microsoft.AspNetCore.Authentication.Negotiate;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -87,6 +89,44 @@ public class AuthController : ControllerBase
             Username = user.Username,
             Token = token
         }, "登录成功"));
+    }
+
+    /// <summary>Windows 集成身份验证登录（浏览器自动协商 NTLM/Kerberos，无需输入账号密码）</summary>
+    [HttpGet("windows")]
+    [Authorize(AuthenticationSchemes = NegotiateDefaults.AuthenticationScheme)]
+    public async Task<IActionResult> WindowsLogin()
+    {
+        // 形如 "DOMAIN\zhangsan" 或 "PC01\zhangsan"
+        var windowsName = User.Identity?.Name;
+        if (string.IsNullOrEmpty(windowsName))
+            return Unauthorized(ApiResponse.Fail("无法获取 Windows 身份"));
+
+        // 首次访问自动建档（PasswordHash 置空，禁止走密码登录）
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Username == windowsName);
+        if (user == null)
+        {
+            user = new User
+            {
+                Username = windowsName,
+                PasswordHash = string.Empty,
+                CreatedAt = DateTime.Now
+            };
+            await _db.Users.AddAsync(user);
+            _logger.LogInformation("Windows 用户自动建档: {Username}", windowsName);
+        }
+
+        user.LastLoginAt = DateTime.Now;
+        await _db.SaveChangesAsync();
+
+        var token = _tokenService.GenerateToken(user.Id, user.Username);
+
+        _logger.LogInformation("Windows 用户登录: {Username}", windowsName);
+        return Ok(ApiResponse<AuthResponse>.Ok(new AuthResponse
+        {
+            Id = user.Id,
+            Username = windowsName.Split('\\').Last(),
+            Token = token
+        }, "Windows 登录成功"));
     }
 
     /// <summary>获取当前用户信息</summary>

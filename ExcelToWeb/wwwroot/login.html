@@ -68,6 +68,7 @@
                 <div class="error-msg" id="loginError"></div>
             </div>
             <button class="btn btn-primary" onclick="handleLogin()">登 录</button>
+            <button class="btn btn-outline" onclick="tryWindowsLogin(true)">使用 Windows 账号登录</button>
             <div class="switch-link">还没有账号？<a href="#" onclick="showRegister()">立即注册</a></div>
         </div>
 
@@ -195,24 +196,54 @@
             }
         });
 
-        // 已登录则跳转
-        if (localStorage.getItem('token')) {
-            fetch('/api/auth/me', {
-                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
-            })
-            .then(res => res.json())
-            .then(result => {
-                if (result.success) window.location.href = '/';
-                else {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('username');
+        // 尝试 Windows 集成身份验证（浏览器自动协商，无需输入账号密码）
+        async function tryWindowsLogin(manual) {
+            const statusEl = document.getElementById('windowsStatus');
+            statusEl.classList.remove('hidden');
+            document.getElementById('loginForm').classList.add('hidden');
+
+            let success = false;
+            try {
+                const res = await fetch('/api/auth/windows', { credentials: 'include' });
+                if (res.ok) {
+                    const result = await res.json();
+                    if (result.success && result.data) {
+                        localStorage.setItem('token', result.data.token);
+                        localStorage.setItem('username', result.data.username);
+                        window.location.href = '/';
+                        success = true;
+                        return;
+                    }
                 }
-            })
-            .catch(() => {
+            } catch (err) {
+                console.error('Windows 登录失败:', err);
+            }
+
+            // 失败则回退到账号密码表单
+            statusEl.classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+            if (manual && !success) showToast('Windows 登录不可用或已被拒绝，请使用账号密码登录', 'error');
+        }
+
+        // 页面加载：已有有效 token 直接进主页；否则尝试 Windows 静默登录，失败回退到表单
+        (async function initLoginPage() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const res = await fetch('/api/auth/me', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    const result = await res.json();
+                    if (result.success) {
+                        window.location.href = '/';
+                        return;
+                    }
+                } catch (err) { /* 忽略，继续走登录流程 */ }
                 localStorage.removeItem('token');
                 localStorage.removeItem('username');
-            });
-        }
+            }
+            await tryWindowsLogin(false);
+        })();
     </script>
 </body>
 </html>

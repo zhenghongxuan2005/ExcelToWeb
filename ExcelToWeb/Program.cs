@@ -37,7 +37,9 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
         ClockSkew = TimeSpan.Zero
     };
-});
+})
+// Windows 集成身份验证（NTLM/Kerberos），仅 /api/auth/windows 端点使用
+.AddNegotiate();
 
 // ===== 服务注册 =====
 builder.Services.AddScoped<IExcelService, ExcelService>();

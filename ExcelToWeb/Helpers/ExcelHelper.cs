@@ -7,10 +7,11 @@ namespace ExcelToWeb.Helpers;
 /// </summary>
 public static class ExcelHelper
 {
-    private static readonly HashSet<string> DateKeywords = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "日期", "时间", "成交日期", "创建时间", "更新时间", "日", "date", "time"
-    };
+    private static readonly Regex ControlCharsRegex =
+        new(@"[\x00-\x08\x0B\x0C\x0E-\x1F]", RegexOptions.Compiled);
+
+    private static readonly string[] DateKeywords =
+        { "日期", "时间", "date", "time" };
 
     /// <summary>
     /// 清除字符串中的控制字符
@@ -18,7 +19,7 @@ public static class ExcelHelper
     public static string CleanString(string? input)
     {
         if (string.IsNullOrEmpty(input)) return input ?? string.Empty;
-        return Regex.Replace(input, @"[\x00-\x08\x0B\x0C\x0E-\x1F]", "");
+        return ControlCharsRegex.Replace(input, "");
     }
 
     /// <summary>
@@ -37,17 +38,17 @@ public static class ExcelHelper
     {
         if (string.IsNullOrEmpty(columnName)) return string.Empty;
 
-        if (columnName.Contains("姓名") || columnName.Contains("名称") || columnName.Contains("名字"))
+        if (columnName.Contains("姓名", StringComparison.Ordinal) || columnName.Contains("名称", StringComparison.Ordinal) || columnName.Contains("名字", StringComparison.Ordinal))
             return "示例名称";
-        if (columnName.Contains("日期") || columnName.Contains("时间"))
+        if (columnName.Contains("日期", StringComparison.Ordinal) || columnName.Contains("时间", StringComparison.Ordinal))
             return "2026-08-09";
-        if (columnName.Contains("金额") || columnName.Contains("价格") || columnName.Contains("单价") || columnName.Contains("总价"))
+        if (columnName.Contains("金额", StringComparison.Ordinal) || columnName.Contains("价格", StringComparison.Ordinal) || columnName.Contains("单价", StringComparison.Ordinal) || columnName.Contains("总价", StringComparison.Ordinal))
             return "100.00";
-        if (columnName.Contains("数量") || columnName.Contains("个数"))
+        if (columnName.Contains("数量", StringComparison.Ordinal) || columnName.Contains("个数", StringComparison.Ordinal))
             return "10";
-        if (columnName.Contains("是否") || columnName.Contains("完成") || columnName.Contains("状态"))
+        if (columnName.Contains("是否", StringComparison.Ordinal) || columnName.Contains("完成", StringComparison.Ordinal) || columnName.Contains("状态", StringComparison.Ordinal))
             return "是";
-        if (columnName.Contains("编号") || columnName.Contains("序号") || columnName.Contains("ID", StringComparison.Ordinal))
+        if (columnName.Contains("编号", StringComparison.Ordinal) || columnName.Contains("序号", StringComparison.Ordinal) || columnName.Contains("ID", StringComparison.Ordinal))
             return "001";
         return "示例数据";
     }
@@ -60,7 +61,7 @@ public static class ExcelHelper
         if (string.IsNullOrEmpty(value)) return string.Empty;
         if (value.Contains(',') || value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
         {
-            return "\"" + value.Replace("\"", "\"\"") + "\"";
+            return $"\"{value.Replace("\"", "\"\"")}\"";
         }
         return value;
     }
