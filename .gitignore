@@ -361,3 +361,14 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# WorkBuddy 工作区（智能体记忆、本地会话数据，不应入库）
+.workbuddy/
+
+# 本地覆盖配置（可放个人连接串 / 密钥，不要提交）
+appsettings.*.local.json
+
+# 解决方案文件：仓库只保留 .slnx（VS 2026 / .NET 10 原生支持），
+# 本机若有 VS 自动生成的 .sln 副本则不入库，避免同一解决方案两份定义。
+*.sln
+!*.slnx
