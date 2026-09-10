@@ -1,0 +1,149 @@
+/* ================================================================
+   ExcelToWeb 样式模块：layout.css —— 应用外壳：侧边栏 + 主内容
+   （由 style.css 拆分而来；style.css 以 @import 汇总，加载顺序即层叠顺序）
+   ================================================================ */
+
+/* ================================================================
+   布局：侧边栏 + 主内容
+   ================================================================ */
+.app-shell {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 228px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-light);
+    padding: 20px 14px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    transition: background 0.25s ease, border-color 0.25s ease;
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 8px 20px;
+}
+
+    .sidebar-brand .brand-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--primary), #6b4bbf);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        flex-shrink: 0;
+    }
+
+    .sidebar-brand .brand-name {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-1);
+        letter-spacing: 0.2px;
+    }
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-2);
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+    .nav-link:hover {
+        background: var(--bg-soft);
+        color: var(--text-1);
+    }
+
+    .nav-link.active {
+        background: var(--primary-soft);
+        color: var(--primary);
+        font-weight: 600;
+    }
+
+.sidebar-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid var(--border-light);
+    padding-top: 14px;
+}
+
+.user-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-soft);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-2);
+    overflow: hidden;
+}
+
+    .user-box span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+.main {
+    flex: 1;
+    min-width: 0;
+    padding: 24px 28px 40px;
+    max-width: 1500px;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+}
+
+    .page-header h1 {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-1);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+.status-pill {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-2);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 14px;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

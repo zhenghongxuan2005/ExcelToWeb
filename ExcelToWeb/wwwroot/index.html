@@ -276,9 +276,13 @@
         })();
     </script>
 
-    <!-- ===== 加载 JS 模块（按依赖顺序） ===== -->
+    <!-- ===== 加载 JS 模块（按依赖顺序：state.js 须最先，app.js 须最后） ===== -->
     <script src="js/api.js"></script>
     <script src="js/state.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/history.js"></script>
+    <script src="js/tables.js"></script>
+    <script src="js/io.js"></script>
     <script src="js/render.js"></script>
     <script src="js/edit.js"></script>
     <script src="js/filter.js"></script>

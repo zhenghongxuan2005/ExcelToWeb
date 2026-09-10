@@ -1,0 +1,202 @@
+/* ================================================================
+   ExcelToWeb 样式模块：table.css —— 数据表格、可编辑单元格、统计栏、空状态
+   （由 style.css 拆分而来；style.css 以 @import 汇总，加载顺序即层叠顺序）
+   ================================================================ */
+
+/* ================================================================
+   表格
+   ================================================================ */
+#tableContainer {
+    overflow: auto;
+    max-height: calc(100vh - 250px);
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg-head);
+    text-align: left;
+    padding: 11px 14px;
+    font-weight: 600;
+    color: var(--text-2);
+    border-bottom: 2px solid var(--border);
+    font-size: 13px;
+    white-space: nowrap;
+    user-select: none;
+}
+
+tbody td {
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: middle;
+}
+
+tbody tr:nth-child(even) td {
+    background: color-mix(in srgb, var(--bg-soft) 45%, transparent);
+}
+
+tbody tr:hover td {
+    background: var(--bg-head);
+}
+
+.th-inner {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.th-sort {
+    cursor: pointer;
+}
+
+    .th-sort:hover {
+        color: var(--primary);
+    }
+
+.th-filter {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-3);
+    padding: 2px;
+    border-radius: 4px;
+    display: inline-flex;
+    transition: color 0.15s ease;
+}
+
+    .th-filter:hover {
+        color: var(--primary);
+    }
+
+.cell-center {
+    text-align: center;
+}
+
+.row-index {
+    font-weight: 500;
+    color: var(--text-3);
+    font-size: 12px;
+}
+
+/* ===== 可编辑单元格 ===== */
+.cell-input,
+.cell-select {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-size: 13px;
+    background: transparent;
+    font-family: inherit;
+    color: var(--text-1);
+    min-width: 60px;
+    transition: all 0.15s ease;
+}
+
+    .cell-input:hover,
+    .cell-select:hover {
+        background: var(--bg-soft);
+        border-color: var(--border);
+    }
+
+    .cell-input:focus,
+    .cell-select:focus {
+        border-color: var(--primary);
+        outline: none;
+        background: var(--bg-card);
+        box-shadow: var(--focus-ring);
+    }
+
+.editable-cell {
+    position: relative;
+}
+
+.suggest-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: var(--shadow-pop);
+    display: none;
+}
+
+.suggest-item {
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-1);
+}
+
+    .suggest-item:hover {
+        background: var(--primary-soft);
+        color: var(--primary);
+    }
+
+/* ================================================================
+   统计栏 / 空状态
+   ================================================================ */
+.stats-bar {
+    display: flex;
+    gap: 20px;
+    padding: 12px 16px;
+    background: var(--bg-soft);
+    border-radius: var(--radius-sm);
+    margin: 14px 4px 4px;
+    font-size: 13px;
+    color: var(--text-2);
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+    .stats-bar strong {
+        color: var(--text-1);
+    }
+
+.stat-hint {
+    color: var(--text-3);
+    margin-left: auto;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 70px 0;
+    color: var(--text-4);
+}
+
+.empty-icon {
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: center;
+}
+
+    .empty-icon .icon {
+        width: 52px;
+        height: 52px;
+        stroke-width: 1.4;
+    }
+
+.empty-state p {
+    margin: 4px 0;
+}
+
+.empty-sub {
+    font-size: 13px;
+    color: var(--text-4);
+}

@@ -1,0 +1,264 @@
+/* ================================================================
+   ExcelToWeb 样式模块：toolbar.css —— 按钮、工具栏、下拉菜单、表格选择器
+   （由 style.css 拆分而来；style.css 以 @import 汇总，加载顺序即层叠顺序）
+   ================================================================ */
+
+/* ================================================================
+   按钮
+   ================================================================ */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    background: var(--bg-soft);
+    color: var(--text-2);
+    white-space: nowrap;
+}
+
+    .btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .btn:active {
+        transform: translateY(0);
+    }
+
+    .btn:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring);
+    }
+
+.btn .icon {
+    width: 15px;
+    height: 15px;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(26, 92, 255, 0.2);
+}
+
+    .btn-primary:hover {
+        background: var(--primary-hover);
+        box-shadow: 0 4px 14px rgba(26, 92, 255, 0.28);
+    }
+
+.btn-success {
+    background: var(--success);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(15, 151, 61, 0.2);
+}
+
+    .btn-success:hover {
+        background: var(--success-hover);
+    }
+
+.btn-danger {
+    background: var(--danger-soft);
+    color: var(--danger);
+    border-color: transparent;
+}
+
+    .btn-danger:hover {
+        background: var(--danger);
+        color: #fff;
+    }
+
+.btn-purple {
+    background: var(--purple);
+    color: #fff;
+}
+
+.btn-outline {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text-2);
+}
+
+    .btn-outline:hover {
+        background: var(--bg-soft);
+        border-color: var(--text-4);
+        color: var(--text-1);
+    }
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+.icon {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+}
+
+.icon-sm {
+    width: 13px;
+    height: 13px;
+}
+
+/* ===== 图标按钮（规则表格中的 ↑ ↓ ✕） ===== */
+.icon-btn {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    color: var(--primary);
+    font-size: 15px;
+    line-height: 1;
+    transition: background 0.15s ease;
+}
+
+    .icon-btn:hover {
+        background: var(--bg-soft);
+    }
+
+    .icon-btn.icon-btn-danger {
+        color: var(--danger);
+    }
+
+/* ================================================================
+   工具栏（分组 + 下拉菜单）
+   ================================================================ */
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toolbar-divider {
+    width: 1px;
+    align-self: stretch;
+    margin: 2px 4px;
+    background: var(--border-light);
+}
+
+.toolbar-spacer {
+    flex: 1;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+    .filter-group input[type="date"] {
+        padding: 7px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        font-size: 13px;
+        font-family: inherit;
+        background: var(--bg-card);
+        color: var(--text-1);
+        outline: none;
+        width: 148px;
+        transition: all 0.18s ease;
+    }
+
+        .filter-group input[type="date"]:focus {
+            border-color: var(--primary);
+            box-shadow: var(--focus-ring);
+        }
+
+/* ===== 下拉菜单 ===== */
+.dropdown {
+    position: relative;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 168px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-pop);
+    padding: 6px;
+    z-index: 80;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(6px);
+    transition: all 0.18s ease;
+}
+
+    .dropdown:hover .dropdown-menu,
+    .dropdown:focus-within .dropdown-menu {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 9px 12px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text-2);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+
+    .dropdown-item:hover {
+        background: var(--bg-soft);
+        color: var(--text-1);
+    }
+
+/* ===== 表格选择器 ===== */
+.table-select {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 13px;
+    font-family: inherit;
+    background: var(--bg-card);
+    color: var(--text-1);
+    min-width: 170px;
+    max-width: 300px;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+    .table-select:focus {
+        border-color: var(--primary);
+        box-shadow: var(--focus-ring);
+    }

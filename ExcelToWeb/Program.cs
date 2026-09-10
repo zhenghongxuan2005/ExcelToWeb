@@ -2,6 +2,7 @@ using System.Text;
 using ExcelToWeb.Data;
 using ExcelToWeb.Middleware;
 using ExcelToWeb.Services;
+using ExcelToWeb.Services.Excel;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -47,6 +48,13 @@ builder.Services.AddAuthentication(options =>
 .AddNegotiate();
 
 // ===== 服务注册 =====
+// 无状态的读表 / 校验工具，注册为单例即可
+builder.Services.AddSingleton<ExcelSheetReader>();
+builder.Services.AddSingleton<RowValidator>();
+// 依赖 AppDbContext（Scoped），生命周期保持一致
+builder.Services.AddScoped<TableRepository>();
+builder.Services.AddScoped<ExcelExportService>();
+
 builder.Services.AddScoped<IExcelService, ExcelService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 

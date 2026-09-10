@@ -1,0 +1,304 @@
+/* ================================================================
+   ExcelToWeb 样式模块：pages.css —— 登录页、看板页、响应式断点
+   （由 style.css 拆分而来；style.css 以 @import 汇总，加载顺序即层叠顺序）
+   ================================================================ */
+
+/* ================================================================
+   登录页
+   ================================================================ */
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background:
+        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(26, 92, 255, 0.12), transparent),
+        radial-gradient(ellipse 60% 50% at 90% 110%, rgba(107, 75, 191, 0.10), transparent),
+        var(--bg-page);
+}
+
+.auth-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: 20px;
+    padding: 44px 40px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: var(--shadow-card);
+}
+
+.auth-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 22px;
+}
+
+    .auth-brand .brand-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 11px;
+        background: linear-gradient(135deg, var(--primary), #6b4bbf);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+    }
+
+    .auth-brand .brand-name {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-1);
+    }
+
+.auth-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-1);
+    margin-bottom: 6px;
+}
+
+.auth-sub {
+    color: var(--text-3);
+    font-size: 14px;
+    margin-bottom: 26px;
+}
+
+.auth-status {
+    text-align: center;
+    color: var(--text-3);
+    font-size: 14px;
+    padding: 24px 0;
+}
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-4);
+    font-size: 12px;
+    margin: 18px 0;
+}
+
+    .auth-divider::before,
+    .auth-divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border-light);
+    }
+
+.auth-alt {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 14px;
+    color: var(--text-3);
+}
+
+    .auth-alt a,
+    .link {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+        .auth-alt a:hover,
+        .link:hover {
+            text-decoration: underline;
+        }
+
+.error-msg {
+    color: var(--danger);
+    font-size: 13px;
+    margin-top: 4px;
+    min-height: 20px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ================================================================
+   看板页
+   ================================================================ */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 22px;
+}
+
+.stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    padding: 18px 20px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-pop);
+    }
+
+    .stat-card .label {
+        font-size: 13px;
+        color: var(--text-3);
+    }
+
+    .stat-card .value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-1);
+        margin-top: 4px;
+    }
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    margin-bottom: 22px;
+    padding: 14px 18px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    align-items: center;
+}
+
+    .controls label {
+        font-size: 13px;
+        color: var(--text-2);
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .controls select {
+        padding: 7px 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        font-family: inherit;
+        background: var(--bg-card);
+        color: var(--text-1);
+        outline: none;
+        cursor: pointer;
+    }
+
+#chartContainer {
+    width: 100%;
+    height: 400px;
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+    padding: 16px;
+    margin-bottom: 22px;
+}
+
+.summary-table-wrap {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+    overflow: hidden;
+}
+
+    .summary-table-wrap table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+    }
+
+    .summary-table-wrap th {
+        background: var(--bg-head);
+        text-align: left;
+        padding: 12px 16px;
+        font-weight: 600;
+        color: var(--text-2);
+        border-bottom: 2px solid var(--border);
+    }
+
+    .summary-table-wrap td {
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .summary-table-wrap tr:hover td {
+        background: var(--bg-head);
+    }
+
+/* ================================================================
+   响应式
+   ================================================================ */
+@media (max-width: 960px) {
+    .app-shell {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-right: none;
+        border-bottom: 1px solid var(--border-light);
+        flex-wrap: wrap;
+    }
+
+    .sidebar-brand {
+        padding: 0;
+    }
+
+    .sidebar-nav {
+        flex-direction: row;
+        flex: 1;
+    }
+
+    .sidebar-bottom {
+        flex-direction: row;
+        border-top: none;
+        padding-top: 0;
+    }
+
+    .user-box {
+        max-width: 140px;
+    }
+
+    .main {
+        padding: 16px;
+    }
+
+    .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .toolbar-divider {
+        width: auto;
+        height: 1px;
+        align-self: stretch;
+        margin: 4px 0;
+    }
+
+    .toolbar-group {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-spacer {
+        display: none;
+    }
+
+    .filter-group {
+        margin-left: 0;
+        width: 100%;
+    }
+
+        .filter-group input[type="date"] {
+            flex: 1;
+        }
+}
