@@ -31,30 +31,30 @@ function renderRuleList() {
     if (!container) return;
 
     if (currentRules.length === 0) {
-        container.innerHTML = '<div style="text-align:center; padding:20px 0; color:#9aabbf; font-size:14px;">📋 暂无规则，点击下方 "添加规则" 开始设置</div>';
+        container.innerHTML = '<div class="muted-center">暂无规则，点击下方"添加规则"开始设置</div>';
         return;
     }
 
     let html = '<table class="rule-table"><thead><tr>';
-    html += '<th style="padding:8px 12px; text-align:left;">优先级</th>';
-    html += '<th style="padding:8px 12px; text-align:left;">最小值</th>';
-    html += '<th style="padding:8px 12px; text-align:left;">最大值</th>';
-    html += '<th style="padding:8px 12px; text-align:left;">颜色</th>';
-    html += '<th style="padding:8px 12px; text-align:center;">上移/下移</th>';
-    html += '<th style="padding:8px 12px; text-align:center; width:40px;"></th>';
+    html += '<th>优先级</th>';
+    html += '<th>最小值</th>';
+    html += '<th>最大值</th>';
+    html += '<th>颜色</th>';
+    html += '<th style="text-align:center;">上移/下移</th>';
+    html += '<th style="text-align:center; width:40px;"></th>';
     html += '</tr></thead><tbody>';
 
     currentRules.forEach((rule, i) => {
         html += '<tr>';
-        html += `<td style="padding:6px 8px; text-align:center; color:#6b7b93; font-weight:500;">${i + 1}</td>`;
-        html += `<td style="padding:6px 8px;"><input type="number" class="rule-min" value="${rule.minValue}" data-index="${i}" style="width:80px; padding:4px 8px; border:1px solid #dce3ed; border-radius:4px; font-size:13px;" /></td>`;
-        html += `<td style="padding:6px 8px;"><input type="number" class="rule-max" value="${rule.maxValue !== null && rule.maxValue !== undefined ? rule.maxValue : ''}" data-index="${i}" style="width:80px; padding:4px 8px; border:1px solid #dce3ed; border-radius:4px; font-size:13px;" /></td>`;
-        html += `<td style="padding:6px 8px;"><input type="color" class="rule-color" value="${rule.colorCode}" data-index="${i}" style="width:40px; height:32px; border:none; cursor:pointer;" /></td>`;
-        html += '<td style="padding:6px 8px; text-align:center;">';
-        if (i > 0) html += `<button onclick="moveRuleUp(${i})" style="border:none; background:transparent; cursor:pointer; color:#3b82f6; font-size:16px;">↑</button>`;
-        if (i < currentRules.length - 1) html += `<button onclick="moveRuleDown(${i})" style="border:none; background:transparent; cursor:pointer; color:#3b82f6; font-size:16px;">↓</button>`;
+        html += `<td class="cell-center row-index">${i + 1}</td>`;
+        html += `<td><input type="number" class="input-sm" value="${rule.minValue}" data-index="${i}" /></td>`;
+        html += `<td><input type="number" class="input-sm" value="${rule.maxValue !== null && rule.maxValue !== undefined ? rule.maxValue : ''}" data-index="${i}" /></td>`;
+        html += `<td><input type="color" class="color-input" value="${rule.colorCode}" data-index="${i}" /></td>`;
+        html += '<td class="cell-center">';
+        if (i > 0) html += `<button class="icon-btn" title="上移" onclick="moveRuleUp(${i})">↑</button>`;
+        if (i < currentRules.length - 1) html += `<button class="icon-btn" title="下移" onclick="moveRuleDown(${i})">↓</button>`;
         html += '</td>';
-        html += `<td style="padding:6px 8px; text-align:center;"><button onclick="removeRule(${i})" style="border:none; background:transparent; color:#dc2626; cursor:pointer; font-size:16px;">✕</button></td>`;
+        html += `<td class="cell-center"><button class="icon-btn icon-btn-danger" title="删除规则" onclick="removeRule(${i})">✕</button></td>`;
         html += '</tr>';
     });
     html += '</tbody></table>';
@@ -171,27 +171,27 @@ function renderValidationRuleList() {
     if (!container) return;
 
     let html = '<table class="rule-table"><thead><tr>';
-    html += '<th style="padding:8px 12px; text-align:left;">列名</th>';
-    html += '<th style="padding:8px 12px; text-align:center; width:60px;">必填</th>';
-    html += '<th style="padding:8px 12px; text-align:left; width:100px;">类型</th>';
-    html += '<th style="padding:8px 12px; text-align:left;">限制</th>';
+    html += '<th>列名</th>';
+    html += '<th style="text-align:center; width:60px;">必填</th>';
+    html += '<th style="width:100px;">类型</th>';
+    html += '<th>限制</th>';
     html += '</tr></thead><tbody>';
 
     currentValidationRules.forEach((rule, i) => {
         html += '<tr>';
-        html += `<td style="padding:6px 8px;"><strong>${escapeHtml(rule.columnName)}</strong></td>`;
-        html += `<td style="padding:6px 8px; text-align:center;"><input type="checkbox" class="rule-required" data-index="${i}" ${rule.required ? 'checked' : ''} /></td>`;
-        html += `<td style="padding:6px 8px;"><select class="rule-datatype" data-index="${i}" style="width:100%; padding:4px 6px; border:1px solid #dce3ed; border-radius:4px; font-size:13px;">`;
+        html += `<td><strong>${escapeHtml(rule.columnName)}</strong></td>`;
+        html += `<td class="cell-center"><input type="checkbox" class="rule-required" data-index="${i}" ${rule.required ? 'checked' : ''} /></td>`;
+        html += `<td><select class="select-sm rule-datatype" style="width:100%;" data-index="${i}">`;
         html += `<option value="text"${rule.dataType === 'text' ? ' selected' : ''}>文本</option>`;
         html += `<option value="number"${rule.dataType === 'number' ? ' selected' : ''}>数字</option>`;
         html += `<option value="date"${rule.dataType === 'date' ? ' selected' : ''}>日期</option>`;
         html += `<option value="email"${rule.dataType === 'email' ? ' selected' : ''}>邮箱</option>`;
         html += '</select></td>';
-        html += '<td style="padding:6px 8px;"><div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">';
-        html += `<input type="number" class="rule-min" placeholder="最小值" value="${rule.minValue || ''}" data-index="${i}" style="width:70px; padding:4px 6px; border:1px solid #dce3ed; border-radius:4px; font-size:12px;" />`;
-        html += '<span style="color:#6b7b93;">~</span>';
-        html += `<input type="number" class="rule-max" placeholder="最大值" value="${rule.maxValue || ''}" data-index="${i}" style="width:70px; padding:4px 6px; border:1px solid #dce3ed; border-radius:4px; font-size:12px;" />`;
-        html += `<input type="text" class="rule-allowed" placeholder="允许值(逗号分隔)" value="${rule.allowedValues || ''}" data-index="${i}" style="flex:1; min-width:120px; padding:4px 6px; border:1px solid #dce3ed; border-radius:4px; font-size:12px;" />`;
+        html += '<td><div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">';
+        html += `<input type="number" class="input-sm rule-min" style="width:70px;" placeholder="最小值" value="${rule.minValue || ''}" data-index="${i}" />`;
+        html += '<span style="color:var(--text-3);">~</span>';
+        html += `<input type="number" class="input-sm rule-max" style="width:70px;" placeholder="最大值" value="${rule.maxValue || ''}" data-index="${i}" />`;
+        html += `<input type="text" class="input-sm rule-allowed" style="flex:1; min-width:120px; width:auto;" placeholder="允许值(逗号分隔)" value="${rule.allowedValues || ''}" data-index="${i}" />`;
         html += '</div></td></tr>';
     });
     html += '</tbody></table>';

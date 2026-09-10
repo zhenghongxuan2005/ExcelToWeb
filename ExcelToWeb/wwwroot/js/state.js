@@ -85,7 +85,7 @@ function checkLogin() {
     const username = localStorage.getItem('username');
     const userInfoEl = document.getElementById('userInfo');
     if (userInfoEl && username) {
-        userInfoEl.textContent = '👤 ' + username;
+        userInfoEl.textContent = username;
     }
     getCurrentUser()
         .then(() => loadTableList())

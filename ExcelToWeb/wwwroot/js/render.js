@@ -19,7 +19,7 @@ function renderTable() {
 
     // 空状态
     if (currentHeaders.length === 0 || currentRows.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-icon">📂</div><p>暂无数据，请上传 Excel 文件</p></div>';
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#i-inbox"/></svg></div><p>暂无数据，请上传 Excel 文件</p></div>';
         updateUndoButtons();
         return;
     }
@@ -55,14 +55,14 @@ function renderTable() {
 
     // 生成表格 HTML
     let html = '<table><thead><tr>';
-    html += '<th style="width:36px; min-width:36px;"><input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes()" /></th>';
-    html += '<th style="width:44px; min-width:44px;">#</th>';
+    html += '<th class="cell-center" style="width:36px; min-width:36px;"><input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes()" /></th>';
+    html += '<th class="cell-center" style="width:44px; min-width:44px;">#</th>';
     for (const h of currentHeaders) {
         const arrow = sortField === h ? (sortOrder === 1 ? ' ▲' : ' ▼') : ' ⇅';
-        html += '<th style="position:relative;">';
-        html += '<div style="display:flex; align-items:center; gap:4px;">';
-        html += `<span onclick="sortBy('${escapeHtml(h)}')" style="cursor:pointer; user-select:none;">${escapeHtml(h)}${arrow}</span>`;
-        html += `<span onclick="openFilter('${escapeHtml(h)}')" style="cursor:pointer; font-size:12px; color:#6b7b93;">🔽</span>`;
+        html += '<th>';
+        html += '<div class="th-inner">';
+        html += `<span class="th-sort" onclick="sortBy('${escapeHtml(h)}')">${escapeHtml(h)}${arrow}</span>`;
+        html += `<button class="th-filter" title="筛选该列" onclick="openFilter('${escapeHtml(h)}')"><svg class="icon icon-sm"><use href="#i-filter"/></svg></button>`;
         html += '</div></th>';
     }
     html += '</tr></thead><tbody>';
@@ -72,8 +72,8 @@ function renderTable() {
         const row = displayRows[r];
         const actualIndex = currentRows.indexOf(row);
         html += '<tr>';
-        html += `<td style="text-align:center;"><input type="checkbox" class="row-checkbox" data-index="${actualIndex}" /></td>`;
-        html += `<td style="text-align:center; font-weight:500; color:#6b7b93;">${r + 1}</td>`;
+        html += `<td class="cell-center"><input type="checkbox" class="row-checkbox" data-index="${actualIndex}" /></td>`;
+        html += `<td class="cell-center row-index">${r + 1}</td>`;
         for (const key of currentHeaders) {
             const val = row[key] !== undefined && row[key] !== null ? row[key] : '';
             const suggestions = suggestionsMap[key] || [];
@@ -96,9 +96,9 @@ function renderTable() {
 
     // 统计栏
     html += '<div class="stats-bar">';
-    html += `<span>📊 共 <strong>${displayRows.length}</strong> 行</span>`;
-    html += `<span>📋 <strong>${currentHeaders.length}</strong> 列</span>`;
-    html += '<span style="color:#6b7b93;">💡 勾选行→删除，点击表头排序，编辑后点击"保存"</span>';
+    html += `<span>共 <strong>${displayRows.length}</strong> 行</span>`;
+    html += `<span><strong>${currentHeaders.length}</strong> 列</span>`;
+    html += '<span class="stat-hint">勾选行→删除，点击表头排序，编辑后点击"保存"</span>';
     html += '</div>';
 
     container.innerHTML = html;

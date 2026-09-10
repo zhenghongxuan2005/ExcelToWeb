@@ -47,7 +47,7 @@ function loadData(id) {
 function showEmptyState(msg) {
     const container = document.getElementById('dashboardContent');
     if (!container) return;
-    container.innerHTML = `<div class="empty-state" style="text-align:center; padding:60px 0; color:#9aabbf;"><div class="empty-icon" style="font-size:48px; margin-bottom:12px;">📂</div><p>${msg}</p></div>`;
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#i-inbox"/></svg></div><p>${msg}</p></div>`;
 }
 
 // ================================================================
@@ -103,7 +103,7 @@ function renderDashboard() {
     const { dimensions: dims, metrics } = identifyDimensions();
 
     if (dims.length === 0 || metrics.length === 0) {
-        container.innerHTML = '<div class="empty-state" style="text-align:center; padding:60px 0; color:#9aabbf;"><div class="empty-icon" style="font-size:48px; margin-bottom:12px;">📊</div><p>数据中未识别到分组维度或数值指标</p><p style="font-size:13px; color:#9aabbf;">请确保 Excel 包含文本列（如销售员）和数值列（如金额）</p></div>';
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#i-inbox"/></svg></div><p>数据中未识别到分组维度或数值指标</p><p class="empty-sub">请确保 Excel 包含文本列（如销售员）和数值列（如金额）</p></div>';
         return;
     }
 
@@ -137,34 +137,34 @@ function renderDashboard() {
     }
 
     let html = '';
-    html += '<div class="stats-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:16px; margin-bottom:24px;">';
-    html += `<div class="stat-card" style="background:#f8faff; padding:16px 20px; border-radius:12px; border:1px solid #eaf0f8;"><div class="label" style="font-size:13px; color:#6b7b93;">📋 总记录数</div><div class="value" style="font-size:28px; font-weight:700; color:#0b1e33; margin-top:4px;">${totalRows}</div></div>`;
-    html += `<div class="stat-card" style="background:#f8faff; padding:16px 20px; border-radius:12px; border:1px solid #eaf0f8;"><div class="label" style="font-size:13px; color:#6b7b93;">💰 总金额</div><div class="value" style="font-size:28px; font-weight:700; color:#0b1e33; margin-top:4px;">${totalAmount.toFixed(0)}</div></div>`;
-    html += `<div class="stat-card" style="background:#f8faff; padding:16px 20px; border-radius:12px; border:1px solid #eaf0f8;"><div class="label" style="font-size:13px; color:#6b7b93;">📈 平均</div><div class="value" style="font-size:28px; font-weight:700; color:#0b1e33; margin-top:4px;">${avgAmount.toFixed(0)}</div></div>`;
-    html += `<div class="stat-card" style="background:#f8faff; padding:16px 20px; border-radius:12px; border:1px solid #eaf0f8;"><div class="label" style="font-size:13px; color:#6b7b93;">✅ 完成率</div><div class="value" style="font-size:28px; font-weight:700; color:#0b1e33; margin-top:4px;">${completionRate}%</div></div>`;
+    html += '<div class="stats-grid">';
+    html += `<div class="stat-card"><div class="label">总记录数</div><div class="value">${totalRows}</div></div>`;
+    html += `<div class="stat-card"><div class="label">总金额</div><div class="value">${totalAmount.toFixed(0)}</div></div>`;
+    html += `<div class="stat-card"><div class="label">平均值</div><div class="value">${avgAmount.toFixed(0)}</div></div>`;
+    html += `<div class="stat-card"><div class="label">完成率</div><div class="value">${completionRate}%</div></div>`;
     html += '</div>';
 
     const dimOptions = dims.map(d => `<option value="${d}"${d === defaultDim ? ' selected' : ''}>${d}</option>`).join('');
     const metricOptions = metrics.map(m => `<option value="${m}"${m === defaultMetric ? ' selected' : ''}>${m}</option>`).join('');
 
-    html += '<div class="controls" style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:24px; padding:16px 20px; background:#f8faff; border-radius:12px; border:1px solid #eaf0f8; align-items:center;">';
-    html += `<label style="font-size:13px; color:#4a5a72; font-weight:500;">分组：<select id="dimSelect" onchange="updateChart()" style="padding:6px 12px; border:1px solid #dce3ed; border-radius:6px; font-size:13px; background:white;">${dimOptions}</select></label>`;
-    html += `<label style="font-size:13px; color:#4a5a72; font-weight:500;">指标：<select id="metricSelect" onchange="updateChart()" style="padding:6px 12px; border:1px solid #dce3ed; border-radius:6px; font-size:13px; background:white;">${metricOptions}</select></label>`;
-    html += '<label style="font-size:13px; color:#4a5a72; font-weight:500;">图表：<select id="chartTypeSelect" onchange="updateChart()" style="padding:6px 12px; border:1px solid #dce3ed; border-radius:6px; font-size:13px; background:white;">';
-    html += '<option value="bar">📊 柱状图</option>';
-    html += '<option value="line">📈 折线图</option>';
-    html += '<option value="area">📈 面积图</option>';
-    html += '<option value="horizontal">📊 水平条形图</option>';
-    html += '<option value="pie">🍩 饼图</option>';
+    html += '<div class="controls">';
+    html += `<label>分组：<select id="dimSelect" onchange="updateChart()">${dimOptions}</select></label>`;
+    html += `<label>指标：<select id="metricSelect" onchange="updateChart()">${metricOptions}</select></label>`;
+    html += '<label>图表：<select id="chartTypeSelect" onchange="updateChart()">';
+    html += '<option value="bar">柱状图</option>';
+    html += '<option value="line">折线图</option>';
+    html += '<option value="area">面积图</option>';
+    html += '<option value="horizontal">水平条形图</option>';
+    html += '<option value="pie">饼图</option>';
     html += '</select></label></div>';
 
-    html += '<div id="chartContainer" style="width:100%; height:400px; background:white; border-radius:12px; border:1px solid #eaf0f8; padding:16px; margin-bottom:24px;"></div>';
+    html += '<div id="chartContainer"></div>';
 
-    html += '<div class="summary-table-wrap" style="background:white; border-radius:12px; border:1px solid #eaf0f8; overflow:hidden;"><table style="width:100%; border-collapse:collapse; font-size:14px;"><thead><tr>';
-    html += `<th style="background:#f8faff; text-align:left; padding:12px 16px; font-weight:600; color:#4a5a72; border-bottom:2px solid #e2e8f0;">${defaultDim}</th>`;
-    html += '<th style="background:#f8faff; text-align:left; padding:12px 16px; font-weight:600; color:#4a5a72; border-bottom:2px solid #e2e8f0;">记录数</th>';
-    html += `<th style="background:#f8faff; text-align:left; padding:12px 16px; font-weight:600; color:#4a5a72; border-bottom:2px solid #e2e8f0;">${defaultMetric} 合计</th>`;
-    html += `<th style="background:#f8faff; text-align:left; padding:12px 16px; font-weight:600; color:#4a5a72; border-bottom:2px solid #e2e8f0;">${defaultMetric} 平均</th>`;
+    html += '<div class="summary-table-wrap"><table><thead><tr>';
+    html += `<th>${defaultDim}</th>`;
+    html += '<th>记录数</th>';
+    html += `<th>${defaultMetric} 合计</th>`;
+    html += `<th>${defaultMetric} 平均</th>`;
     html += '</tr></thead><tbody id="summaryBody"></tbody></table></div>';
 
     container.innerHTML = html;
@@ -198,14 +198,20 @@ function updateChart() {
         for (const d of dims) {
             const g = groups[d];
             const avg = g.count > 0 ? g.total / g.count : 0;
-            tableHtml += `<tr><td style="padding:10px 16px; border-bottom:1px solid #f0f4fa;"><strong>${d}</strong></td><td style="padding:10px 16px; border-bottom:1px solid #f0f4fa;">${g.count}</td><td style="padding:10px 16px; border-bottom:1px solid #f0f4fa;">${g.total.toFixed(0)}</td><td style="padding:10px 16px; border-bottom:1px solid #f0f4fa;">${avg.toFixed(0)}</td></tr>`;
+            tableHtml += `<tr><td><strong>${d}</strong></td><td>${g.count}</td><td>${g.total.toFixed(0)}</td><td>${avg.toFixed(0)}</td></tr>`;
         }
         tbody.innerHTML = tableHtml;
     }
 
     if (!chartInstance) return;
 
+    // 适配亮/暗主题的坐标轴颜色
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const axisColor = isDark ? '#b3c2d9' : '#4a5a72';
+    const splitColor = isDark ? '#223046' : '#eef2f7';
+
     const option = {
+        textStyle: { color: axisColor },
         tooltip: {
             trigger: 'axis',
             formatter: params => {
@@ -215,6 +221,13 @@ function updateChart() {
         },
         grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true }
     };
+
+    // 图表重新渲染前刷新主题
+    if (chartInstance.__theme !== undefined && chartInstance.__theme !== isDark) {
+        chartInstance.dispose();
+        chartInstance = echarts.init(document.getElementById('chartContainer'));
+    }
+    chartInstance.__theme = isDark;
 
     const colors = ['#1a5cff', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -251,6 +264,19 @@ function updateChart() {
     }
 
     chartInstance.setOption(option);
+
+    // 坐标轴主题色（在 switch 之后统一补充，避免覆盖各类型特有配置）
+    if (option.xAxis) {
+        option.xAxis.axisLabel = Object.assign({ color: axisColor }, option.xAxis.axisLabel || {});
+        option.xAxis.axisLine = { lineStyle: { color: splitColor } };
+    }
+    if (option.yAxis) {
+        option.yAxis.axisLabel = Object.assign({ color: axisColor }, option.yAxis.axisLabel || {});
+        option.yAxis.splitLine = { lineStyle: { color: splitColor } };
+        option.yAxis.nameTextStyle = { color: axisColor };
+    }
+    chartInstance.setOption(option);
+
     chartInstance.resize();
 }
 

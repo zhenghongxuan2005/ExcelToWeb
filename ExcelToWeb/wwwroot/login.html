@@ -4,90 +4,74 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>登录 - Excel 在线编辑工具</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: #f0f4f8;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        .login-container {
-            background: #fff;
-            border-radius: 20px;
-            padding: 48px 40px;
-            max-width: 420px;
-            width: 100%;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-        }
-        .login-container h1 { font-size: 28px; font-weight: 700; color: #0b1e33; margin-bottom: 8px; }
-        .login-container p.sub { color: #6b7b93; font-size: 14px; margin-bottom: 32px; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; font-size: 13px; font-weight: 500; color: #4a5a72; margin-bottom: 6px; }
-        .form-group input {
-            width: 100%; padding: 10px 14px; border: 1px solid #dce3ed; border-radius: 8px;
-            font-size: 14px; transition: border-color 0.2s; outline: none; font-family: inherit;
-        }
-        .form-group input:focus { border-color: #1a5cff; box-shadow: 0 0 0 3px rgba(26,92,255,0.08); }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-        .btn-primary { background: #1a5cff; color: #fff; }
-        .btn-primary:hover { background: #0f4ad6; }
-        .btn-outline { background: transparent; color: #1a5cff; border: 1px solid #dce3ed; margin-top: 12px; }
-        .btn-outline:hover { background: #f8faff; }
-        .error-msg { color: #dc2626; font-size: 13px; margin-top: 4px; min-height: 20px; }
-        .switch-link { text-align: center; margin-top: 16px; font-size: 14px; color: #6b7b93; }
-        .switch-link a { color: #1a5cff; text-decoration: none; font-weight: 500; }
-        .switch-link a:hover { text-decoration: underline; }
-        .toast {
-            position: fixed; top: 24px; right: 24px; padding: 14px 28px; border-radius: 12px;
-            font-weight: 600; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-            z-index: 999; animation: slideIn 0.3s ease; max-width: 400px;
-        }
-        .toast-success { background: #0f973d; color: #fff; }
-        .toast-error { background: #dc2626; color: #fff; }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-        .hidden { display: none; }
-    </style>
+    <script>
+        (function () {
+            var t = localStorage.getItem('theme');
+            if (t === 'dark' || (!t && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="login-container">
-        <h1 id="pageTitle">👋 欢迎回来</h1>
-        <p class="sub" id="pageSub">登录后继续管理你的数据</p>
+    <!-- ===== SVG 图标库 ===== -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none;">
+        <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></symbol>
+        <symbol id="i-windows" viewBox="0 0 24 24"><path d="M3 5.5 10.5 4.4v7.1H3zM11.5 4.2 21 3v8.5h-9.5zM3 12.5h7.5v7.1L3 18.5zM11.5 12.5H21V21l-9.5-1.3z"/></symbol>
+        <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+        <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+        <symbol id="i-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+    </svg>
 
-        <div id="loginForm">
-            <div class="form-group">
-                <label>用户名</label>
-                <input type="text" id="loginUsername" placeholder="请输入用户名" autocomplete="username">
+    <div class="auth-page">
+        <div class="auth-card">
+            <div class="auth-brand">
+                <div class="brand-icon"><svg class="icon" style="width:20px;height:20px;"><use href="#i-table"/></svg></div>
+                <span class="brand-name">ExcelToWeb</span>
             </div>
-            <div class="form-group">
-                <label>密码</label>
-                <input type="password" id="loginPassword" placeholder="请输入密码" autocomplete="current-password">
-                <div class="error-msg" id="loginError"></div>
-            </div>
-            <button class="btn btn-primary" onclick="handleLogin()">登 录</button>
-            <button class="btn btn-outline" onclick="tryWindowsLogin(true)">使用 Windows 账号登录</button>
-            <div class="switch-link">还没有账号？<a href="#" onclick="showRegister()">立即注册</a></div>
-        </div>
+            <h1 class="auth-title" id="pageTitle">欢迎回来</h1>
+            <p class="auth-sub" id="pageSub">登录后继续管理你的数据</p>
 
-        <div id="registerForm" class="hidden">
-            <div class="form-group">
-                <label>用户名（3-20位，仅字母和数字）</label>
-                <input type="text" id="registerUsername" placeholder="请输入用户名">
+            <div id="windowsStatus" class="auth-status hidden">
+                正在使用 Windows 账号自动登录...
             </div>
-            <div class="form-group">
-                <label>密码（至少6位）</label>
-                <input type="password" id="registerPassword" placeholder="请输入密码">
+
+            <div id="loginForm" class="hidden">
+                <div class="field">
+                    <label class="field-label">用户名</label>
+                    <input type="text" id="loginUsername" class="input" placeholder="请输入用户名" autocomplete="username">
+                </div>
+                <div class="field">
+                    <label class="field-label">密码</label>
+                    <input type="password" id="loginPassword" class="input" placeholder="请输入密码" autocomplete="current-password">
+                    <div class="error-msg" id="loginError"></div>
+                </div>
+                <button class="btn btn-primary" style="width:100%; padding:12px; font-size:15px;" onclick="handleLogin()">登 录</button>
+                <div class="auth-divider">或</div>
+                <button class="btn btn-outline" style="width:100%; padding:11px;" onclick="tryWindowsLogin(true)">
+                    <svg class="icon"><use href="#i-windows"/></svg>使用 Windows 账号登录
+                </button>
+                <div class="auth-alt">还没有账号？<a href="#" onclick="showRegister()">立即注册</a></div>
             </div>
-            <div class="form-group">
-                <label>确认密码</label>
-                <input type="password" id="registerConfirmPassword" placeholder="请再次输入密码">
-                <div class="error-msg" id="registerError"></div>
+
+            <div id="registerForm" class="hidden">
+                <div class="field">
+                    <label class="field-label">用户名（3-20位，仅字母和数字）</label>
+                    <input type="text" id="registerUsername" class="input" placeholder="请输入用户名">
+                </div>
+                <div class="field">
+                    <label class="field-label">密码（至少6位）</label>
+                    <input type="password" id="registerPassword" class="input" placeholder="请输入密码">
+                </div>
+                <div class="field">
+                    <label class="field-label">确认密码</label>
+                    <input type="password" id="registerConfirmPassword" class="input" placeholder="请再次输入密码">
+                    <div class="error-msg" id="registerError"></div>
+                </div>
+                <button class="btn btn-primary" style="width:100%; padding:12px; font-size:15px;" onclick="handleRegister()">注 册</button>
+                <div class="auth-alt">已有账号？<a href="#" onclick="showLogin()">去登录</a></div>
             </div>
-            <button class="btn btn-primary" onclick="handleRegister()">注 册</button>
-            <div class="switch-link">已有账号？<a href="#" onclick="showLogin()">去登录</a></div>
         </div>
     </div>
 
@@ -95,7 +79,7 @@
         function showRegister() {
             document.getElementById('loginForm').classList.add('hidden');
             document.getElementById('registerForm').classList.remove('hidden');
-            document.getElementById('pageTitle').textContent = '📝 创建账号';
+            document.getElementById('pageTitle').textContent = '创建账号';
             document.getElementById('pageSub').textContent = '注册后即可开始使用';
             document.getElementById('loginError').textContent = '';
             document.getElementById('registerError').textContent = '';
@@ -104,7 +88,7 @@
         function showLogin() {
             document.getElementById('registerForm').classList.add('hidden');
             document.getElementById('loginForm').classList.remove('hidden');
-            document.getElementById('pageTitle').textContent = '👋 欢迎回来';
+            document.getElementById('pageTitle').textContent = '欢迎回来';
             document.getElementById('pageSub').textContent = '登录后继续管理你的数据';
             document.getElementById('loginError').textContent = '';
             document.getElementById('registerError').textContent = '';
@@ -139,7 +123,7 @@
                 if (result.success && result.data) {
                     localStorage.setItem('token', result.data.token);
                     localStorage.setItem('username', result.data.username);
-                    showToast('✅ 登录成功，跳转中...', 'success');
+                    showToast('登录成功，跳转中...', 'success');
                     setTimeout(() => { window.location.href = '/'; }, 800);
                 } else {
                     errorEl.textContent = result.message || '登录失败';
@@ -174,7 +158,7 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    showToast('✅ 注册成功，请登录', 'success');
+                    showToast('注册成功，请登录', 'success');
                     showLogin();
                     document.getElementById('loginUsername').value = username;
                 } else {
@@ -185,16 +169,6 @@
                 console.error(err);
             }
         }
-
-        document.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                if (!document.getElementById('loginForm').classList.contains('hidden')) {
-                    handleLogin();
-                } else {
-                    handleRegister();
-                }
-            }
-        });
 
         // 尝试 Windows 集成身份验证（浏览器自动协商，无需输入账号密码）
         async function tryWindowsLogin(manual) {
@@ -224,6 +198,16 @@
             document.getElementById('loginForm').classList.remove('hidden');
             if (manual && !success) showToast('Windows 登录不可用或已被拒绝，请使用账号密码登录', 'error');
         }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                if (!document.getElementById('loginForm').classList.contains('hidden')) {
+                    handleLogin();
+                } else {
+                    handleRegister();
+                }
+            }
+        });
 
         // 页面加载：已有有效 token 直接进主页；否则尝试 Windows 静默登录，失败回退到表单
         (async function initLoginPage() {
