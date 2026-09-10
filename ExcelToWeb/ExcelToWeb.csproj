@@ -14,8 +14,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- 6.0.3 是 NuGet 实际解析到的版本（原声明的 5.8.17 在源上已不可用，会触发 NU1603） -->
-    <PackageReference Include="EPPlus" Version="6.0.3" />
+    <!--
+      EPPlus 8.7.0：原生 net10.0 目标框架，且已不再依赖 EPPlus.System.Drawing →
+      System.Drawing.Common。6.0.3/7.x 会传递引入 System.Drawing.Common 5.0.0，
+      触发 NU1904（GHSA-rxg9-xrhp-64gj / CVE-2021-24112，严重级）——升级即根除。
+    -->
+    <PackageReference Include="EPPlus" Version="8.7.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="10.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />

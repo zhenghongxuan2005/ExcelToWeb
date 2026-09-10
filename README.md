@@ -26,7 +26,7 @@
 - **Excel 导入**：读取首个工作表的表头与数据行，自动跳过空行，日期列自动从 Excel 序列号转换为 `yyyy-MM-dd`
 - **在线编辑**：单元格级编辑、新增/删除行，前端状态管理 + 统一保存
 - **按日期筛选**：`query` 接口支持 `date` 参数，自动匹配「日期 / 成交日期 / 创建时间 / 更新时间 / Date」等同义列名前缀
-- **批量写入**：导入时通过原生 SQL 多值 `INSERT` 批量落库，避免逐行往返
+- **批量写入**：导入时通过原生 SQL 多值 `INSERT` 批量落库（每批 500 行循环，规避 SQL Server 2100 参数上限），避免逐行往返
 
 ### 导出
 - **导出 Excel**（`.xlsx`，EPPlus 生成，自动列宽）
@@ -44,8 +44,15 @@
 - **数据隔离**：所有表格查询、保存、删除、导出均校验 `UserId` 归属
 
 ### 界面
-- 三页面：`login.html` 登录注册、`index.html` 表格编辑、`dashboard.html` 数据看板
+- **六个页面**：`index.html` 表格编辑、`login.html` 登录注册、`tables.html` 表格管理、`dashboard.html` 数据看板、`settings.html` 设置、`help.html` 使用帮助
+- **搜索 / 排序 / 分页**：全局搜索命中高亮；排序与分页只做显示层裁剪，不改写底层数据，编辑始终作用于真实行
+- **列自定义**：按需隐藏列、调整列宽，偏好写入 `localStorage` 并在下次打开时恢复
+- **选中统计**：勾选若干行后，对纯数字列自动求和 / 求平均
+- **拖拽上传**：把 Excel 拖到页面上即可导入，与「上传 Excel」按钮共用同一套导入流程
+- **可折叠侧边栏**：收起后仅留图标并悬停提示，窄屏自动还原
+- **加载骨架屏**：数据请求慢时才出现（延迟 120ms），避免快响应时闪屏
 - 深浅色主题切换（跟随系统偏好，`localStorage` 持久化，首屏内联脚本防闪烁）
+- 无障碍支持：跳到主要内容链接、`aria-live` 状态播报、可见焦点圈、`prefers-reduced-motion` 降级
 - 内联 SVG 图标 sprite，无外部图标库依赖
 
 ---
@@ -59,7 +66,7 @@
 | ORM | Entity Framework Core 10.0.10（SqlServer Provider） |
 | 数据库 | SQL Server（`Microsoft.Data.SqlClient`） |
 | 认证 | `Microsoft.AspNetCore.Authentication.JwtBearer` + `Negotiate` |
-| Excel 读写 | EPPlus 5.8.17（csproj 声明值，实际解析为 6.0.3），`LicenseContext.NonCommercial` |
+| Excel 读写 | EPPlus 8.7.0（原生 `net10.0` 目标框架），`ExcelPackage.License.SetNonCommercialPersonal(...)` 声明非商业用途 |
 | API 文档 | Swashbuckle.AspNetCore 7.2.0（Swagger UI，仅开发环境启用） |
 | 前端 | 原生 HTML / CSS / JavaScript，无构建步骤 |
 
@@ -69,24 +76,31 @@
 
 ```
 ExcelToWeb/
-├── ExcelToWeb.sln                # Visual Studio 解决方案
-├── ExcelToWeb.slnx               # 新版 SLNX 格式解决方案
-├── .gitignore                    # 标准 VisualStudio 忽略规则（另含 .workbuddy/ 等本地目录）
+├── ExcelToWeb.slnx               # SLNX 格式解决方案（新版 Visual Studio 原生支持）
+├── .gitattributes                # 行尾统一为 auto
+├── .gitignore                    # 标准 VisualStudio 忽略规则（另含 .workbuddy/、*.sln 等本地文件）
 ├── LICENSE                       # MIT 许可证
 ├── README.md
 └── ExcelToWeb/
-    ├── Program.cs                # 应用入口：DI、认证、CORS、中间件管道、建库
+    ├── Program.cs                # 应用入口：DI、认证、CORS、中间件管道、建库、EPPlus 许可
     ├── ExcelToWeb.csproj
     ├── appsettings.json          # 连接串、JWT 配置、日志
+    ├── appsettings.Development.json
     ├── Properties/
     │   └── launchSettings.json   # http profile，端口 5185
     ├── Controllers/
-    │   ├── AuthController.cs     # 注册 / 登录 / Windows 登录 / 当前用户
-    │   └── ExcelController.cs    # 表格、导出、规则、校验导入
+    │   ├── AuthController.cs     # 注册 / 登录 / Windows 登录 / 当前用户 / 修改密码
+    │   └── ExcelController.cs    # 表格 CRUD、导入导出、模板、重命名/复制、规则、校验导入
     ├── Services/
-    │   ├── IExcelService.cs
-    │   ├── ExcelService.cs       # 全部业务逻辑（EPPlus 解析 + EF Core 持久化）
+    │   ├── IExcelService.cs      # 对外的 Excel 服务契约
+    │   ├── ExcelService.cs       # 门面：编排下列协作类，本身只做流程串联
     │   ├── TokenService.cs       # JWT 签发与用户 ID 提取
+    │   └── Excel/                # Excel 协作类（按职责拆分，避免单文件膨胀）
+    │       ├── ExcelSheetReader.cs    # xlsx 解析 → 表头 + 数据行
+    │       ├── ExcelExportService.cs  # xlsx / csv 导出、导入模板生成
+    │       ├── TableRepository.cs     # 动态表持久化（分批插入、整表替换、重命名、复制）
+    │       ├── RowValidator.cs        # 按校验规则逐行校验
+    │       └── RuleService.cs         # 配色规则 / 校验规则读写
     ├── Data/
     │   └── AppDbContext.cs       # DbSet 定义与实体映射（索引、精度、级联删除）
     ├── Models/
@@ -107,16 +121,40 @@ ExcelToWeb/
         ├── index.html            # 表格编辑页
         ├── login.html            # 登录 / 注册页
         ├── dashboard.html        # 数据看板页
-        ├── css/style.css
-        └── js/
+        ├── tables.html           # 表格管理页（二级页面）
+        ├── settings.html         # 设置页（二级页面）
+        ├── help.html             # 使用帮助页（二级页面）
+        ├── css/
+        │   ├── style.css         # 入口：按顺序 @import 下列模块，层叠顺序即加载顺序
+        │   ├── tokens.css        # 设计令牌（亮/暗）+ 全局重置 + 无障碍基础
+        │   ├── layout.css        # 应用外壳：侧边栏（含折叠态）+ 主内容
+        │   ├── toolbar.css       # 按钮、工具栏、下拉菜单
+        │   ├── search.css        # 全局搜索框、列显示 / 列宽菜单
+        │   ├── table.css         # 数据表格、可编辑单元格、统计栏、骨架屏
+        │   ├── modal.css         # 弹窗、表单、规则表格、Toast
+        │   ├── pages.css         # 登录页、看板页、响应式断点
+        │   └── console.css       # 二级页面（表格管理 / 设置 / 帮助）
+        └── js/                   # 按依赖顺序用 <script> 加载：shell→…→app
+            ├── shell.js          # 页面外壳：图标 sprite、主题、导航高亮、侧边栏折叠、登出
             ├── api.js            # 统一 fetch 封装 + 全部接口调用
-            ├── state.js          # 前端状态容器
-            ├── app.js            # 应用初始化与页面编排
-            ├── render.js         # 表格渲染
-            ├── edit.js           # 单元格编辑
-            ├── filter.js         # 筛选
-            ├── rules.js          # 配色 / 校验规则管理
-            └── dashboard.js      # 看板图表
+            ├── state.js          # 全局状态容器（须最先加载）
+            ├── utils.js          # toast / 状态栏 / 通用格式化 / escapeHtml
+            ├── view.js           # 搜索·排序·分页·列显隐管线
+            ├── selection.js      # 选中行统计
+            ├── history.js        # 撤销 / 重做
+            ├── tables.js         # 表格列表、切换、删除、刷新
+            ├── io.js             # 保存 / 导出 / 导出当前视图 / 下载模板
+            ├── dnd.js            # 拖拽上传（与按钮上传共用同一导入流程）
+            ├── render.js         # 表格渲染 + 加载骨架屏
+            ├── edit.js           # 单元格编辑、增删行
+            ├── filter.js         # 日期筛选
+            ├── color-rules.js    # 条件配色规则
+            ├── validation.js     # 数据校验规则
+            ├── upload-validated.js # 带校验的导入
+            ├── tables-page.js    # 表格管理页逻辑
+            ├── settings.js       # 设置页逻辑
+            ├── dashboard.js      # 看板图表
+            └── app.js            # 应用初始化与页面编排（须最后加载）
 ```
 
 ---
@@ -155,6 +193,7 @@ ExcelToWeb/
 | `POST` | `/api/auth/login` | 登录，返回用户信息 + JWT | 匿名 |
 | `GET` | `/api/auth/windows` | Windows 集成认证登录（NTLM/Kerberos 协商） | Negotiate |
 | `GET` | `/api/auth/me` | 获取当前登录用户 | JWT |
+| `POST` | `/api/auth/change-password` | 修改密码（校验原密码；Windows 建档账号无本地密码，不支持修改） | JWT |
 
 ### 表格 `/api/excel`
 
@@ -164,6 +203,8 @@ ExcelToWeb/
 | `GET` | `/api/excel/query` | `tableId`、`date?` | 查询表数据，可选按日期前缀筛选 |
 | `POST` | `/api/excel/save` | `{ tableId, rows[] }` | 保存数据（**先清空后写入**，整表替换语义） |
 | `DELETE` | `/api/excel/delete` | `tableId` | 删除表格（级联删除数据行） |
+| `PUT` | `/api/excel/rename` | `{ tableId, tableName }` | 重命名表格 |
+| `POST` | `/api/excel/duplicate` | `{ tableId }` | 复制表格（含全部数据行），副本名自动去重为「- 副本」「- 副本(2)」… |
 | `GET` | `/api/excel/tables` | — | 当前用户的表格列表（按时更新时间倒序，仅返回有数据的表） |
 | `GET` | `/api/excel/export` | `tableId` | 导出 `.xlsx` |
 | `GET` | `/api/excel/export-csv` | `tableId` | 导出 `.csv`（UTF-8 BOM） |
@@ -225,9 +266,9 @@ dotnet user-secrets set "Jwt:Key" "<你的随机密钥，建议 48 字节 Base64
 dotnet run --project ExcelToWeb
 ```
 
-或直接用 Visual Studio 打开 `ExcelToWeb.sln` 后按 F5。
+或直接用 Visual Studio 打开 `ExcelToWeb.slnx` 后按 F5。
 
-应用监听 **http://localhost:5185**（`Program.cs` 中 `UseUrls` 兜底，`launchSettings.json` 与环境变量 `ASPNETCORE_URLS` 优先级更高）。数据库与所有表会在首次启动时自动创建。
+应用监听 **http://localhost:5185**（由 `Program.cs` 中 `UseUrls` 兜底，端口优先级见下方「配置说明」）。数据库与所有表会在首次启动时自动创建。
 
 ### 4. 访问
 
@@ -235,7 +276,10 @@ dotnet run --project ExcelToWeb
 | --- | --- |
 | http://localhost:5185/ | 表格编辑页（静态首页，未登录会跳登录） |
 | http://localhost:5185/login.html | 登录 / 注册 |
+| http://localhost:5185/tables.html | 表格管理（列表、重命名、复制、删除） |
 | http://localhost:5185/dashboard.html | 数据看板 |
+| http://localhost:5185/settings.html | 设置（修改密码、界面偏好） |
+| http://localhost:5185/help.html | 使用帮助 |
 | http://localhost:5185/swagger | Swagger UI（**仅开发环境**） |
 
 先在登录页注册一个账号，再登录使用。
@@ -259,7 +303,7 @@ dotnet run --project ExcelToWeb
 
 端口由 `Program.cs` 中的 `UseUrls` 固定为 5185。注意它**优先于** `ASPNETCORE_URLS` 环境变量；要改端口请改 `launchSettings.json` 的 `applicationUrl`（`dotnet run` 时以命令行参数注入，可覆盖 `UseUrls`）。
 
-`ExcelPackage.LicenseContext = LicenseContext.NonCommercial` 已设为**非商业用途**；若用于商业场景，需自行购买 EPPlus 商业许可证并调整此设置。
+EPPlus 的许可通过 `ExcelPackage.License.SetNonCommercialPersonal("…")` 声明为**非商业个人使用**（EPPlus 7+ 已移除旧的 `LicenseContext` 属性，旧写法会编译失败）；若用于商业场景，需自行购买 EPPlus 商业许可证并改用 `SetCommercial(key)`。
 
 Swagger UI 仅在**开发环境**启用，生产环境访问 `/swagger` 返回 404。
 
@@ -286,10 +330,10 @@ Swagger UI 仅在**开发环境**启用，生产环境访问 `/swagger` 返回 4
 - **CORS 已按环境区分**：开发环境仍放开（`AllowAnyOrigin`，便于本地调试）；生产环境只放行 `Cors:AllowedOrigins` 中显式配置的来源，未配置即不启用跨域。正式上线前记得填白名单。
 - **异常信息已按环境收敛**：生产环境只返回 `服务器内部错误，请稍后重试（追踪号：xxx）`，异常明细仅写服务端日志；开发环境保留明细便于排查。顺带修正了一处 JSON 大小写缺陷 —— 原先该中间件用默认序列化输出 PascalCase（`Success`/`Message`），与 MVC 的 camelCase 不一致，导致前端拿不到 `result.message`，错误提示丢失。
 - **`.gitignore` 已补充** `.workbuddy/` 与 `appsettings.*.local.json`。
+- **依赖漏洞已根除**：原先 EPPlus 6.0.3 会传递引入 `System.Drawing.Common` 5.0.0，触发 `NU1904`（GHSA-rxg9-xrhp-64gj / CVE-2021-24112，严重级）。已升级到 **EPPlus 8.7.0**，该版本不再依赖 `System.Drawing.Common`，依赖图中已无易受攻击的包（`dotnet list package --vulnerable --include-transitive` 返回空），构建 0 警告。
 
 **仍需注意：**
 
-- **依赖存在已知警告**：构建时会报 `NU1603`（csproj 声明 EPPlus 5.8.17，实际解析到 **6.0.3**），且传递依赖 `System.Drawing.Common` 5.0.0 存在**严重级别**已知漏洞（GHSA-rxg9-xrhp-64gj）。建议把 csproj 版本号改为实际使用的版本，并评估升级 `System.Drawing.Common`。
 - **Windows 集成认证**需服务端与客户端处于同一域（或受信任域）才有意义；跨域裸机环境请只使用 JWT 登录。
 - **未启用 HTTPS 重定向**，示例仅监听 HTTP。
 
@@ -306,4 +350,4 @@ Swagger UI 仅在**开发环境**启用，生产环境访问 `/swagger` 返回 4
 
 本项目以 **MIT 许可证** 开源，详见 [LICENSE](LICENSE)。
 
-**注意**：MIT 只覆盖本仓库自身的源代码。项目依赖的 **EPPlus 5.x / 6.x 采用 Polyform Noncommercial 许可证**，非商业使用免费，商业使用需单独获得授权。
+**注意**：MIT 只覆盖本仓库自身的源代码。项目依赖的 **EPPlus 8.x 采用 Polyform Noncommercial 许可证**，非商业使用免费，商业使用需单独获得授权。
