@@ -30,8 +30,11 @@ function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = 'toast toast-' + type;
     toast.textContent = message;
+    toast.addEventListener('click', () => toast.remove());
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    // 包含校验明细的错误提示内容较长，给更长的阅读时间，并支持点击关闭
+    const duration = type === 'error' ? 8000 : 3200;
+    setTimeout(() => toast.remove(), duration);
 }
 
 function setStatus(text) {
@@ -45,17 +48,20 @@ function isDateColumnName(name) {
     return keywords.some(k => name.indexOf(k) !== -1);
 }
 
+/** 判定某列是否为数值列：抽样非空值必须全部可解析为数字（用于颜色规则选列、统计栏） */
 function isNumericColumn(name) {
     if (!name || currentRows.length === 0) return false;
-    let numericCount = 0;
-    const sample = currentRows.slice(0, 10);
+    let checked = 0;
+    const sample = currentRows.slice(0, 50);
     for (const row of sample) {
-        const val = row[name];
-        if (val !== undefined && val !== null && val !== '') {
-            if (!isNaN(parseFloat(val))) numericCount++;
-        }
+        const raw = row[name];
+        if (raw === undefined || raw === null) continue;
+        const val = String(raw).trim();
+        if (val === '') continue;
+        checked++;
+        if (isNaN(Number(val))) return false;
     }
-    return numericCount > 0;
+    return checked > 0;
 }
 
 function formatTime(dateStr) {
@@ -160,8 +166,9 @@ function updateUndoButtons() {
 // ================================================================
 // 颜色规则
 // ================================================================
-function loadColorRules(columnName) {
-    return fetchColorRules(columnName)
+/** 一次性加载当前用户的全部颜色规则（不按列过滤），使所有设过规则的列都能正确着色 */
+function loadColorRules() {
+    return fetchColorRules()
         .then(rules => {
             colorRulesCache = rules || [];
             return colorRulesCache;
@@ -238,7 +245,7 @@ function loadTableData(tableId) {
                 currentRows = data.rows;
                 sortField = null;
                 sortOrder = 1;
-                loadColorRules(ruleColumnName).then(() => renderTable());
+                loadColorRules().then(() => renderTable());
                 setStatus(`已加载: ${getTableName(tableId)} (${currentRows.length}行)`);
                 showToast('✅ 已切换到: ' + getTableName(tableId), 'success');
             } else {
@@ -311,7 +318,7 @@ function refreshData() {
                 currentRows = data.rows;
                 sortField = null;
                 sortOrder = 1;
-                loadColorRules(ruleColumnName).then(() => renderTable());
+                loadColorRules().then(() => renderTable());
                 showToast('✅ 已刷新', 'success');
                 setStatus(`已刷新 (${data.rows.length}行)`);
             }

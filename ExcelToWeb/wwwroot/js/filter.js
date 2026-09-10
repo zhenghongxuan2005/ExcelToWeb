@@ -33,7 +33,7 @@ function applyDateFilter() {
                 currentRows = data.rows;
                 sortField = null;
                 sortOrder = 1;
-                loadColorRules(ruleColumnName).then(() => renderTable());
+                loadColorRules().then(() => renderTable());
                 showToast(`✅ 已筛选 ${data.rows.length} 条数据`, 'success');
                 setStatus(`已筛选: ${date} (${data.rows.length}行)`);
             } else {

@@ -158,10 +158,9 @@
             <p class="modal-sub">设置数值列的颜色规则，输入范围后点击保存。留空最大值表示"以上"。</p>
 
             <div class="field">
-                <label class="field-label">应用列：</label>
-                <select id="ruleColumnSelect" class="select" style="width:auto; min-width:160px;">
-                    <option value="数量">数量</option>
-                    <option value="单价(元)">单价(元)</option>
+                <label class="field-label">应用列</label>
+                <select id="ruleColumnSelect" class="select" style="width:auto; min-width:180px;" onchange="handleRuleColumnChange()">
+                    <!-- 选项由 populateRuleColumnSelect() 按当前表格的真实列名填充 -->
                 </select>
             </div>
 

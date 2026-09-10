@@ -68,9 +68,13 @@ function renderTable() {
     html += '</tr></thead><tbody>';
 
     // 数据行
+    // 预计算「行对象 → 原始下标」映射，避免逐行 indexOf 造成 O(n²) 卡顿
+    const rowIndexMap = new Map();
+    for (let i = 0; i < currentRows.length; i++) rowIndexMap.set(currentRows[i], i);
+
     for (let r = 0; r < displayRows.length; r++) {
         const row = displayRows[r];
-        const actualIndex = currentRows.indexOf(row);
+        const actualIndex = rowIndexMap.get(row);
         html += '<tr>';
         html += `<td class="cell-center"><input type="checkbox" class="row-checkbox" data-index="${actualIndex}" /></td>`;
         html += `<td class="cell-center row-index">${r + 1}</td>`;

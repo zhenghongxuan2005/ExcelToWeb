@@ -128,8 +128,9 @@ public class ExcelService : IExcelService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "上传 Excel 失败");
-            return ApiResponse<UploadResult>.Fail($"上传失败: {ex.Message}");
+            // 异常明细只进日志，避免把内部异常信息暴露给客户端
+            _logger.LogError(ex, "上传 Excel 失败：用户 {UserId}", userId);
+            return ApiResponse<UploadResult>.Fail("文件解析失败，请确认上传的是有效的 .xlsx / .xls 文件");
         }
     }
 
@@ -183,6 +184,9 @@ public class ExcelService : IExcelService
     // ================================================================
     public async Task<ApiResponse> SaveTableDataAsync(int tableId, int userId, List<Dictionary<string, object>> rows)
     {
+        // 本接口是「整表替换」语义（先删后插），必须放在同一个事务里：
+        // 否则插入阶段一旦失败，旧数据已经被 RemoveRange 删掉、新数据又没写进去，会造成数据丢失。
+        await using var transaction = await _db.Database.BeginTransactionAsync();
         try
         {
             var table = await _db.DynamicTables
@@ -204,13 +208,18 @@ public class ExcelService : IExcelService
             table.UpdatedAt = DateTime.Now;
             await _db.SaveChangesAsync();
 
+            await transaction.CommitAsync();
+
             _logger.LogInformation("用户 {UserId} 保存表格 {TableId}，共 {RowCount} 行", userId, tableId, rows.Count);
             return ApiResponse.Ok($"成功保存 {rows.Count} 条数据");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "保存表格数据失败");
-            return ApiResponse.Fail($"保存失败: {ex.Message}");
+            // 回滚保证「要么全部替换成功，要么保持原样」
+            await transaction.RollbackAsync();
+            // 异常明细只进服务端日志，不返回给客户端
+            _logger.LogError(ex, "保存表格数据失败：表 {TableId}，用户 {UserId}", tableId, userId);
+            return ApiResponse.Fail("保存失败，请稍后重试");
         }
     }
 
@@ -452,6 +461,21 @@ public class ExcelService : IExcelService
         if (file == null || file.Length == 0)
             return ApiResponse<ValidationResult>.Fail("请选择文件");
 
+        try
+        {
+            return await ValidateAndImportAsync(file, tableId, userId);
+        }
+        catch (Exception ex)
+        {
+            // 这里原先完全没有异常保护：上传一个损坏的 xlsx 会直接抛到中间件变成 500
+            _logger.LogError(ex, "带校验上传失败：表 {TableId}，用户 {UserId}", tableId, userId);
+            return ApiResponse<ValidationResult>.Fail("文件解析失败，请确认上传的是有效的 .xlsx / .xls 文件");
+        }
+    }
+
+    /// <summary>读取上传文件，按该表已配置的校验规则逐行校验，返回合法行与错误明细</summary>
+    private async Task<ApiResponse<ValidationResult>> ValidateAndImportAsync(IFormFile file, int tableId, int userId)
+    {
         var table = await _db.DynamicTables
             .FirstOrDefaultAsync(t => t.Id == tableId && t.UserId == userId);
 
