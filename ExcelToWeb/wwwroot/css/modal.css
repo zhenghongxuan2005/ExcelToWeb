@@ -195,20 +195,42 @@
 
 /* ================================================================
    Toast
+   ----------------------------------------------------------------
+   所有提示挂在同一个 .toast-host 里纵向排列，
+   避免原本「每个 toast 都 fixed 在同一个位置」导致多条提示互相重叠。
    ================================================================ */
-.toast {
+.toast-host {
     position: fixed;
     top: 24px;
     right: 24px;
-    padding: 14px 24px;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    /* 容器不接收鼠标事件，避免遮挡下方内容；单个 toast 自己恢复 */
+    pointer-events: none;
+}
+
+.toast {
+    position: relative;
+    padding: 13px 20px;
     border-radius: var(--radius-md);
     font-weight: 600;
     font-size: 14px;
     box-shadow: var(--shadow-pop);
-    z-index: 999;
-    animation: slideIn 0.3s ease;
     max-width: 400px;
     white-space: pre-line;
+    pointer-events: auto;
+    cursor: pointer;
+    animation: toastIn var(--transition-slow);
+    transition: opacity var(--transition-base), transform var(--transition-base);
+}
+
+/* 由 utils.js 在移除前加上，做出淡出效果 */
+.toast.toast-out {
+    opacity: 0;
+    transform: translateX(24px);
 }
 
 .toast-success {
@@ -226,14 +248,28 @@
     color: #fff;
 }
 
-@keyframes slideIn {
+@keyframes toastIn {
     from {
         opacity: 0;
-        transform: translateX(20px);
+        transform: translateX(24px) scale(0.98);
     }
 
     to {
         opacity: 1;
-        transform: translateX(0);
+        transform: translateX(0) scale(1);
+    }
+}
+
+/* 窄屏下让提示占满可用宽度，长文本（如校验明细）更好读 */
+@media (max-width: 640px) {
+    .toast-host {
+        left: 12px;
+        right: 12px;
+        top: 12px;
+        align-items: stretch;
+    }
+
+    .toast {
+        max-width: none;
     }
 }

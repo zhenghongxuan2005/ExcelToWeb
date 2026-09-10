@@ -18,7 +18,9 @@
     font-weight: 500;
     font-family: inherit;
     cursor: pointer;
-    transition: all 0.18s ease;
+    transition: background var(--transition-fast), color var(--transition-fast),
+                border-color var(--transition-fast), box-shadow var(--transition-fast),
+                transform var(--transition-fast);
     background: var(--bg-soft);
     color: var(--text-2);
     white-space: nowrap;
@@ -29,12 +31,21 @@
     }
 
     .btn:active {
-        transform: translateY(0);
+        transform: translateY(0) scale(0.985);
     }
 
     .btn:focus-visible {
         outline: none;
         box-shadow: var(--focus-ring);
+    }
+
+    /* 禁用态：不再响应悬停位移，避免「看起来还能点」的误导 */
+    .btn:disabled,
+    .btn[disabled] {
+        opacity: 0.55;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
     }
 
 .btn .icon {
@@ -43,24 +54,25 @@
 }
 
 .btn-primary {
-    background: var(--primary);
+    background: var(--grad-brand);
     color: #fff;
-    box-shadow: 0 2px 8px rgba(26, 92, 255, 0.2);
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--primary) 28%, transparent);
 }
 
     .btn-primary:hover {
-        background: var(--primary-hover);
-        box-shadow: 0 4px 14px rgba(26, 92, 255, 0.28);
+        filter: brightness(1.07);
+        box-shadow: 0 5px 16px color-mix(in srgb, var(--primary) 36%, transparent);
     }
 
 .btn-success {
     background: var(--success);
     color: #fff;
-    box-shadow: 0 2px 8px rgba(15, 151, 61, 0.2);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--success) 24%, transparent);
 }
 
     .btn-success:hover {
         background: var(--success-hover);
+        box-shadow: 0 5px 16px color-mix(in srgb, var(--success) 32%, transparent);
     }
 
 .btn-danger {
@@ -79,6 +91,10 @@
     color: #fff;
 }
 
+    .btn-purple:hover {
+        filter: brightness(1.07);
+    }
+
 .btn-outline {
     background: transparent;
     border-color: var(--border);
@@ -87,7 +103,7 @@
 
     .btn-outline:hover {
         background: var(--bg-soft);
-        border-color: var(--text-4);
+        border-color: var(--border-strong);
         color: var(--text-1);
     }
 

@@ -1,40 +1,82 @@
 /* ================================================================
-   ExcelToWeb 全局样式（设计令牌 + 暗色模式 + 侧边栏布局）
+   ExcelToWeb 设计令牌与全局基础样式
+   ----------------------------------------------------------------
+   说明：
+   - 所有页面/组件只使用这里定义的变量，避免颜色、圆角、阴影散落在各处
+   - 暗色模式下除了替换颜色，也会提高文字与边框的对比度
+   - 文件末尾是全局无障碍与动效偏好设置
    ================================================================ */
 
 /* ===== 设计令牌（亮色） ===== */
 :root {
+    /* --- 品牌与语义色 --- */
     --primary: #1a5cff;
     --primary-hover: #0f4ad6;
     --primary-soft: #eef3fc;
+
     --success: #0f973d;
     --success-hover: #0c7f33;
+
     --danger: #dc2626;
     --danger-hover: #b91c1c;
+
+    --warning: #b45309;
+    --info: #1a5cff;
+
     --purple: #6b4bbf;
 
+    /* --- 文字层级（1 最深，4 最浅） --- */
     --text-1: #0b1e33;
     --text-2: #4a5a72;
     --text-3: #6b7b93;
     --text-4: #9aabbf;
 
+    /* --- 背景层级 --- */
     --bg-page: #eef2f7;
     --bg-card: #ffffff;
     --bg-soft: #f0f4fa;
     --bg-head: #f8faff;
     --bg-sidebar: #ffffff;
 
+    /* --- 描边 --- */
     --border: #dce3ed;
     --border-light: #f0f4fa;
+    --border-strong: #c3cede;
 
+    /* --- 遮罩与阴影梯度 --- */
     --overlay: rgba(11, 30, 51, 0.45);
+    --shadow-xs: 0 1px 2px rgba(11, 30, 51, 0.06);
     --shadow-card: 0 8px 32px rgba(11, 30, 51, 0.06);
     --shadow-pop: 0 8px 24px rgba(11, 30, 51, 0.14);
     --shadow-modal: 0 20px 60px rgba(11, 30, 51, 0.22);
 
+    /* --- 圆角梯度 --- */
+    --radius-xs: 5px;
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-full: 999px;
+
+    /* --- 间距梯度（4 的倍数） --- */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+
+    /* --- 动效时长 --- */
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.22s ease;
+    --transition-slow: 0.32s ease;
+
+    /* --- 布局尺寸 --- */
+    --sidebar-w: 228px;
+    --sidebar-w-collapsed: 68px;
+
+    /* --- 品牌渐变（图标底色等复用） --- */
+    --grad-brand: linear-gradient(135deg, var(--primary), var(--purple));
 
     --focus-ring: 0 0 0 3px rgba(26, 92, 255, 0.14);
 }
@@ -44,6 +86,19 @@ html[data-theme="dark"] {
     --primary: #3d76ff;
     --primary-hover: #5c8bff;
     --primary-soft: #1c2b4d;
+
+    /* 暗色下语义色整体提亮，否则在深底上几乎看不出差别 */
+    --success: #22a75c;
+    --success-hover: #2cbe6c;
+
+    --danger: #e5484d;
+    --danger-hover: #ef5f63;
+
+    --warning: #d99a2b;
+    --info: #5c8bff;
+
+    --purple: #8b6ce6;
+
     --danger-soft: #3d1a1a;
     --success-soft: #12301e;
 
@@ -60,8 +115,10 @@ html[data-theme="dark"] {
 
     --border: #2a3a52;
     --border-light: #223046;
+    --border-strong: #3a4d6b;
 
     --overlay: rgba(0, 0, 0, 0.6);
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.35);
     --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.45);
     --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.55);
@@ -69,9 +126,17 @@ html[data-theme="dark"] {
     --focus-ring: 0 0 0 3px rgba(61, 118, 255, 0.25);
 }
 
+/* 亮色下的浅底语义色（放在暗色块之后，靠选择器优先级让暗色值仍然生效） */
 :root {
     --danger-soft: #fef2f2;
     --success-soft: #e8f8ee;
+    --warning-soft: #fff8ec;
+    --info-soft: #eef3fc;
+}
+
+html[data-theme="dark"] {
+    --warning-soft: #3a2c12;
+    --info-soft: #1c2b4d;
 }
 
 /* ===== 全局重置 ===== */
@@ -86,5 +151,100 @@ body {
     background: var(--bg-page);
     color: var(--text-1);
     min-height: 100vh;
-    transition: background 0.25s ease, color 0.25s ease;
+    transition: background var(--transition-base), color var(--transition-base);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ================================================================
+   无障碍：键盘焦点
+   ----------------------------------------------------------------
+   只在键盘操作时显示焦点圈，鼠标点击不显示，避免视觉噪音。
+   组件自身已有 focus 样式的（如输入框）保持原样。
+   ================================================================ */
+:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+}
+
+/* 表单控件用统一的 focus-ring，避免与上面的 outline 叠加出双层边框 */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: none;
+}
+
+/* 仅供屏幕阅读器识别的文本 */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* 跳转到主内容（键盘用户按 Tab 可直达） */
+.skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 999;
+    padding: 10px 16px;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 0 0 var(--radius-sm) 0;
+    font-size: 13px;
+    text-decoration: none;
+}
+
+    .skip-link:focus {
+        left: 0;
+    }
+
+/* ================================================================
+   滚动条：跟随主题，避免亮暗切换时出现突兀的系统滚动条
+   ================================================================ */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+}
+
+    *::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    *::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    *::-webkit-scrollbar-thumb {
+        background: var(--border-strong);
+        border: 2px solid transparent;
+        border-radius: var(--radius-full);
+        background-clip: content-box;
+    }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background: var(--text-4);
+            background-clip: content-box;
+        }
+
+/* ================================================================
+   尊重系统的「减少动态效果」偏好
+   ================================================================ */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }

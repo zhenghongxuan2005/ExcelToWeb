@@ -32,6 +32,8 @@
         '<symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>',
         '<symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>',
         '<symbol id="i-chevron-down" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>',
+        '<symbol id="i-chevron-left" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></symbol>',
+        '<symbol id="i-chevron-right" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></symbol>',
         '<symbol id="i-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>',
         '<symbol id="i-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></symbol>',
         '<symbol id="i-inbox" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>',
@@ -135,6 +137,47 @@
     }
 
     // ---------------------------------------------------------------
+    // 5. 侧边栏折叠（图标模式）
+    // ---------------------------------------------------------------
+    var COLLAPSE_KEY = 'sidebarCollapsed';
+
+    function applyCollapse(collapsed) {
+        var shell = document.querySelector('.app-shell');
+        if (!shell) return;
+        shell.classList.toggle('sidebar-collapsed', collapsed);
+
+        var btn = document.getElementById('sidebarToggle');
+        if (!btn) return;
+
+        var icon = btn.querySelector('use');
+        if (icon) icon.setAttribute('href', collapsed ? '#i-chevron-right' : '#i-chevron-left');
+
+        var label = btn.querySelector('.collapse-label');
+        if (label) label.textContent = collapsed ? '展开' : '折叠侧边栏';
+
+        // 供屏幕阅读器与悬停提示使用
+        var text = collapsed ? '展开侧边栏' : '折叠侧边栏';
+        btn.setAttribute('aria-label', text);
+        btn.setAttribute('title', text);
+        btn.setAttribute('aria-expanded', String(!collapsed));
+    }
+
+    function initSidebarCollapse() {
+        var btn = document.getElementById('sidebarToggle');
+        if (!btn) return;
+
+        // 恢复上次的选择
+        applyCollapse(localStorage.getItem(COLLAPSE_KEY) === '1');
+
+        btn.addEventListener('click', function () {
+            var shell = document.querySelector('.app-shell');
+            var collapsed = !shell.classList.contains('sidebar-collapsed');
+            applyCollapse(collapsed);
+            localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0');
+        });
+    }
+
+    // ---------------------------------------------------------------
     // 初始化
     // ---------------------------------------------------------------
     injectSprite();   // 同步注入，确保后续脚本渲染图标时符号已就绪
@@ -143,6 +186,7 @@
         highlightNav();
         initTheme();
         initUserBox();
+        initSidebarCollapse();
     }
 
     if (document.readyState === 'loading') {

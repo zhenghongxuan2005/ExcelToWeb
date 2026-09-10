@@ -23,8 +23,10 @@ function uploadFile(file) {
     }
 
     setStatus('上传中...');
+    showTableSkeleton(currentHeaders.length);
     uploadExcel(file)
         .then(data => {
+            hideTableSkeleton();
             currentTableId = data.tableId;
             currentHeaders = data.headers;
             currentRows = data.rows;
@@ -44,6 +46,7 @@ function uploadFile(file) {
             loadTableList();
         })
         .catch(err => {
+            hideTableSkeleton();
             showToast('❌ 上传失败：' + err.message, 'error');
             setStatus('上传失败');
             console.error(err);

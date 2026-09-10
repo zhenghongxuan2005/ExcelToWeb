@@ -15,15 +15,44 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
+/** 取（或创建）消息提示的容器，使多条提示纵向排列而不是互相重叠 */
+function getToastHost() {
+    let host = document.getElementById('toastHost');
+    if (!host) {
+        host = document.createElement('div');
+        host.id = 'toastHost';
+        host.className = 'toast-host';
+        // 让屏幕阅读器能播报提示内容
+        host.setAttribute('aria-live', 'polite');
+        host.setAttribute('aria-atomic', 'false');
+        document.body.appendChild(host);
+    }
+    return host;
+}
+
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = 'toast toast-' + type;
     toast.textContent = message;
-    toast.addEventListener('click', () => toast.remove());
-    document.body.appendChild(toast);
+    // 错误提示用 alert 角色，立即被读到；其余用 status，避免打断用户
+    toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+
     // 包含校验明细的错误提示内容较长，给更长的阅读时间，并支持点击关闭
     const duration = type === 'error' ? 8000 : 3200;
-    setTimeout(() => toast.remove(), duration);
+
+    let timer = null;
+    const dismiss = () => {
+        clearTimeout(timer);
+        toast.classList.add('toast-out');
+        // 等淡出动画结束再移除；animationend 兜底防止事件未触发导致节点残留
+        const remove = () => toast.remove();
+        toast.addEventListener('transitionend', remove, { once: true });
+        setTimeout(remove, 400);
+    };
+
+    toast.addEventListener('click', dismiss);
+    getToastHost().appendChild(toast);
+    timer = setTimeout(dismiss, duration);
 }
 
 function setStatus(text) {

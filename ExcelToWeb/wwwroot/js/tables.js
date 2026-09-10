@@ -60,8 +60,10 @@ function getTableName(tableId) {
 
 function loadTableData(tableId) {
     setStatus('加载中...');
+    showTableSkeleton(currentHeaders.length);
     queryTableData(tableId)
         .then(data => {
+            hideTableSkeleton();
             if (data && data.headers && data.rows) {
                 currentHeaders = data.headers;
                 currentRows = data.rows;
@@ -78,6 +80,7 @@ function loadTableData(tableId) {
             }
         })
         .catch(err => {
+            hideTableSkeleton();
             showToast('❌ 加载失败：' + err.message, 'error');
             setStatus('加载失败');
             console.error(err);
@@ -133,8 +136,10 @@ function refreshData() {
         return;
     }
     setStatus('刷新中...');
+    showTableSkeleton(currentHeaders.length);
     queryTableData(currentTableId)
         .then(data => {
+            hideTableSkeleton();
             if (data && data.headers && data.rows) {
                 currentHeaders = data.headers;
                 currentRows = data.rows;
@@ -146,6 +151,7 @@ function refreshData() {
             }
         })
         .catch(err => {
+            hideTableSkeleton();
             showToast('❌ 刷新失败：' + err.message, 'error');
             setStatus('刷新失败');
             console.error(err);

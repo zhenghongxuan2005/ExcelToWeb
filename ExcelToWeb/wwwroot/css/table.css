@@ -15,6 +15,50 @@
     box-shadow: var(--shadow-card);
 }
 
+/* ===== 骨架屏（加载态） =====
+   加载数据时先占位出表格的形状，避免出现「白屏 → 表格突然出现」的跳动。 */
+.skeleton-table {
+    padding: 18px;
+}
+
+.skeleton-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+    .skeleton-row:first-child .skeleton-cell {
+        height: 34px;
+        opacity: 0.75;
+    }
+
+.skeleton-cell {
+    flex: 1;
+    height: 30px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(90deg,
+        var(--bg-soft) 25%,
+        var(--bg-head) 37%,
+        var(--bg-soft) 63%);
+    background-size: 400% 100%;
+    animation: skeletonShimmer 1.4s ease infinite;
+}
+
+/* 首列（复选框列）窄一些，更接近真实表格的观感 */
+.skeleton-cell.skeleton-narrow {
+    flex: 0 0 36px;
+}
+
+@keyframes skeletonShimmer {
+    0% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0 50%;
+    }
+}
+
 table {
     width: 100%;
     border-collapse: collapse;

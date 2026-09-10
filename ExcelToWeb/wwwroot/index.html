@@ -18,6 +18,7 @@
 <body>
     <!-- 页面外壳：图标 sprite / 主题切换 / 退出登录 / 导航高亮，由 js/shell.js 统一提供 -->
     <script src="js/shell.js"></script>
+    <a class="skip-link" href="#mainContent">跳到主要内容</a>
 
     <div class="app-shell">
         <!-- ===== 侧边栏 ===== -->
@@ -28,32 +29,36 @@
             </div>
 
             <nav class="sidebar-nav">
-                <a class="nav-link" href="/" data-page="index"><svg class="icon"><use href="#i-table"/></svg>表格编辑</a>
-                <a class="nav-link" href="/tables.html" data-page="tables"><svg class="icon"><use href="#i-columns"/></svg>表格管理</a>
-                <a class="nav-link" href="/dashboard.html" data-page="dashboard"><svg class="icon"><use href="#i-chart"/></svg>数据看板</a>
-                <a class="nav-link" href="/help.html" data-page="help"><svg class="icon"><use href="#i-help"/></svg>使用帮助</a>
-                <a class="nav-link" href="/settings.html" data-page="settings"><svg class="icon"><use href="#i-settings"/></svg>设置</a>
+                <a class="nav-link" href="/" data-page="index" data-label="表格编辑"><svg class="icon"><use href="#i-table"/></svg><span class="collapse-hide">表格编辑</span></a>
+                <a class="nav-link" href="/tables.html" data-page="tables" data-label="表格管理"><svg class="icon"><use href="#i-columns"/></svg><span class="collapse-hide">表格管理</span></a>
+                <a class="nav-link" href="/dashboard.html" data-page="dashboard" data-label="数据看板"><svg class="icon"><use href="#i-chart"/></svg><span class="collapse-hide">数据看板</span></a>
+                <a class="nav-link" href="/help.html" data-page="help" data-label="使用帮助"><svg class="icon"><use href="#i-help"/></svg><span class="collapse-hide">使用帮助</span></a>
+                <a class="nav-link" href="/settings.html" data-page="settings" data-label="设置"><svg class="icon"><use href="#i-settings"/></svg><span class="collapse-hide">设置</span></a>
             </nav>
 
             <div class="sidebar-bottom">
-                <button class="btn btn-outline btn-sm" id="themeToggle">
-                    <svg class="icon"><use href="#i-moon"/></svg><span class="theme-label">深色模式</span>
+                <button class="btn btn-outline btn-sm sidebar-collapse-btn" id="sidebarToggle"
+                        aria-label="折叠侧边栏" title="折叠侧边栏" aria-expanded="true">
+                    <svg class="icon"><use href="#i-chevron-left"/></svg><span class="collapse-label collapse-hide">折叠侧边栏</span>
+                </button>
+                <button class="btn btn-outline btn-sm" id="themeToggle" aria-label="切换主题">
+                    <svg class="icon"><use href="#i-moon"/></svg><span class="theme-label collapse-hide">深色模式</span>
                 </button>
                 <div class="user-box">
                     <svg class="icon icon-sm"><use href="#i-user"/></svg>
                     <span id="userInfo"></span>
                 </div>
                 <button class="btn btn-outline btn-sm" onclick="handleLogout()">
-                    <svg class="icon"><use href="#i-logout"/></svg>退出登录
+                    <svg class="icon"><use href="#i-logout"/></svg><span class="collapse-hide">退出登录</span>
                 </button>
             </div>
         </aside>
 
         <!-- ===== 主内容 ===== -->
-        <main class="main">
+        <main class="main" id="mainContent">
             <div class="page-header">
                 <h1><svg class="icon"><use href="#i-table"/></svg>数据表格</h1>
-                <span class="status-pill" id="statusText">就绪</span>
+                <span class="status-pill" id="statusText" role="status" aria-live="polite">就绪</span>
             </div>
 
             <!-- ===== 工具栏 ===== -->
@@ -165,7 +170,7 @@
     <!-- ===== 条件格式规则弹窗 ===== -->
     <div id="ruleModal" class="modal">
         <div class="modal-card">
-            <button class="modal-close" onclick="closeRuleModal()"><svg class="icon"><use href="#i-x"/></svg></button>
+            <button class="modal-close" aria-label="关闭弹窗" onclick="closeRuleModal()"><svg class="icon"><use href="#i-x"/></svg></button>
             <h3 class="modal-title">条件格式规则设置</h3>
             <p class="modal-sub">设置数值列的颜色规则，输入范围后点击保存。留空最大值表示"以上"。</p>
 
@@ -194,7 +199,7 @@
     <!-- ===== 列筛选弹窗 ===== -->
     <div id="filterModal" class="modal">
         <div class="modal-card modal-sm">
-            <button class="modal-close" onclick="closeFilter()"><svg class="icon"><use href="#i-x"/></svg></button>
+            <button class="modal-close" aria-label="关闭弹窗" onclick="closeFilter()"><svg class="icon"><use href="#i-x"/></svg></button>
             <h3 class="modal-title" style="font-size:17px;">筛选: <span id="filterColumnName"></span></h3>
             <p class="modal-sub">按条件筛选当前列的数据</p>
 
@@ -225,7 +230,7 @@
     <!-- ===== 批量编辑弹窗 ===== -->
     <div id="batchModal" class="modal">
         <div class="modal-card modal-sm">
-            <button class="modal-close" onclick="closeBatchModal()"><svg class="icon"><use href="#i-x"/></svg></button>
+            <button class="modal-close" aria-label="关闭弹窗" onclick="closeBatchModal()"><svg class="icon"><use href="#i-x"/></svg></button>
             <h3 class="modal-title">批量编辑</h3>
             <p class="modal-sub">将选中行的某一列统一修改为新值</p>
 
@@ -249,7 +254,7 @@
     <!-- ===== 数据校验规则弹窗 ===== -->
     <div id="validationModal" class="modal">
         <div class="modal-card modal-wide">
-            <button class="modal-close" onclick="closeValidationModal()"><svg class="icon"><use href="#i-x"/></svg></button>
+            <button class="modal-close" aria-label="关闭弹窗" onclick="closeValidationModal()"><svg class="icon"><use href="#i-x"/></svg></button>
             <h3 class="modal-title">数据校验规则设置</h3>
             <p class="modal-sub">为每列设置校验规则，点击"保存"时自动检查数据合法性</p>
 
@@ -282,7 +287,9 @@
     <script src="js/render.js"></script>
     <script src="js/edit.js"></script>
     <script src="js/filter.js"></script>
-    <script src="js/rules.js"></script>
+    <script src="js/color-rules.js"></script>
+    <script src="js/validation.js"></script>
+    <script src="js/upload-validated.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

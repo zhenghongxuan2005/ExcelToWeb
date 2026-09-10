@@ -18,6 +18,7 @@
 <body>
     <!-- 页面外壳：图标 sprite / 主题切换 / 退出登录 / 导航高亮，由 js/shell.js 统一提供 -->
     <script src="js/shell.js"></script>
+    <a class="skip-link" href="#mainContent">跳到主要内容</a>
 
     <div class="app-shell">
         <!-- ===== 侧边栏 ===== -->
@@ -28,29 +29,33 @@
             </div>
 
             <nav class="sidebar-nav">
-                <a class="nav-link" href="/" data-page="index"><svg class="icon"><use href="#i-table"/></svg>表格编辑</a>
-                <a class="nav-link" href="/tables.html" data-page="tables"><svg class="icon"><use href="#i-columns"/></svg>表格管理</a>
-                <a class="nav-link" href="/dashboard.html" data-page="dashboard"><svg class="icon"><use href="#i-chart"/></svg>数据看板</a>
-                <a class="nav-link" href="/help.html" data-page="help"><svg class="icon"><use href="#i-help"/></svg>使用帮助</a>
-                <a class="nav-link" href="/settings.html" data-page="settings"><svg class="icon"><use href="#i-settings"/></svg>设置</a>
+                <a class="nav-link" href="/" data-page="index" data-label="表格编辑"><svg class="icon"><use href="#i-table"/></svg><span class="collapse-hide">表格编辑</span></a>
+                <a class="nav-link" href="/tables.html" data-page="tables" data-label="表格管理"><svg class="icon"><use href="#i-columns"/></svg><span class="collapse-hide">表格管理</span></a>
+                <a class="nav-link" href="/dashboard.html" data-page="dashboard" data-label="数据看板"><svg class="icon"><use href="#i-chart"/></svg><span class="collapse-hide">数据看板</span></a>
+                <a class="nav-link" href="/help.html" data-page="help" data-label="使用帮助"><svg class="icon"><use href="#i-help"/></svg><span class="collapse-hide">使用帮助</span></a>
+                <a class="nav-link" href="/settings.html" data-page="settings" data-label="设置"><svg class="icon"><use href="#i-settings"/></svg><span class="collapse-hide">设置</span></a>
             </nav>
 
             <div class="sidebar-bottom">
-                <button class="btn btn-outline btn-sm" id="themeToggle">
-                    <svg class="icon"><use href="#i-moon"/></svg><span class="theme-label">深色模式</span>
+                <button class="btn btn-outline btn-sm sidebar-collapse-btn" id="sidebarToggle"
+                        aria-label="折叠侧边栏" title="折叠侧边栏" aria-expanded="true">
+                    <svg class="icon"><use href="#i-chevron-left"/></svg><span class="collapse-label collapse-hide">折叠侧边栏</span>
+                </button>
+                <button class="btn btn-outline btn-sm" id="themeToggle" aria-label="切换主题">
+                    <svg class="icon"><use href="#i-moon"/></svg><span class="theme-label collapse-hide">深色模式</span>
                 </button>
                 <div class="user-box">
                     <svg class="icon icon-sm"><use href="#i-user"/></svg>
                     <span id="userInfo"></span>
                 </div>
                 <button class="btn btn-outline btn-sm" onclick="handleLogout()">
-                    <svg class="icon"><use href="#i-logout"/></svg>退出登录
+                    <svg class="icon"><use href="#i-logout"/></svg><span class="collapse-hide">退出登录</span>
                 </button>
             </div>
         </aside>
 
         <!-- ===== 主内容 ===== -->
-        <main class="main">
+        <main class="main" id="mainContent">
             <div class="page-header">
                 <h1><svg class="icon"><use href="#i-chart"/></svg>数据看板</h1>
                 <a class="link" href="/" style="font-size:14px;">返回表格编辑</a>
