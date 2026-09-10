@@ -13,6 +13,11 @@ ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 默认端口兜底：launchSettings 未生效（如直接运行 exe）时监听 5185。
+// 注意：此处 UseUrls 的优先级高于 ASPNETCORE_URLS 环境变量（实测不生效）；
+// 但 dotnet run 时 launchSettings 的 applicationUrl 以命令行参数注入，可覆盖此设置。
+builder.WebHost.UseUrls("http://localhost:5185");
+
 // ===== 数据库 =====
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -72,10 +77,23 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // ===== CORS =====
+// 前端静态文件由本应用同源托管，正常访问无需跨域。
+// 开发环境放开，方便 file:// 或独立前端 dev server 调试；
+// 生产环境只放行 Cors:AllowedOrigins 中显式配置的来源，未配置则不启用跨域。
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+    {
+        if (builder.Environment.IsDevelopment())
+        {
+            policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        }
+        else if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod();
+        }
+    });
 });
 
 var app = builder.Build();
