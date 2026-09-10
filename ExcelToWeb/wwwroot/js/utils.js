@@ -1,7 +1,19 @@
 // ================================================================
-// 通用工具函数：提示、状态栏、列类型判断、时间格式化
+// 通用工具函数：提示、状态栏、列类型判断、时间格式化、HTML 转义
 // 依赖：state.js（读取 currentRows 等全局状态）
+// 说明：本文件被所有页面共用，必须早于 view.js / render.js / rules.js 加载。
 // ================================================================
+
+/** HTML 转义，防止 XSS（所有拼接进 innerHTML 的用户数据都必须先过一遍） */
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
 
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设置 - Excel 在线编辑工具</title>
+    <script>
+        // 尽早应用主题与字号，避免闪烁
+        (function () {
+            var t = localStorage.getItem('theme');
+            if (t === 'dark' || (!t && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+            if (localStorage.getItem('prefTextSize') === 'large') {
+                document.documentElement.setAttribute('data-text-size', 'large');
+            }
+        })();
+    </script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 页面外壳：图标 sprite / 主题切换 / 退出登录 / 导航高亮，由 js/shell.js 统一提供 -->
+    <script src="js/shell.js"></script>
+
+    <div class="app-shell">
+        <!-- ===== 侧边栏 ===== -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon"><svg class="icon"><use href="#i-table"/></svg></div>
+                <span class="brand-name">ExcelToWeb</span>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a class="nav-link" href="/" data-page="index"><svg class="icon"><use href="#i-table"/></svg>表格编辑</a>
+                <a class="nav-link" href="/tables.html" data-page="tables"><svg class="icon"><use href="#i-columns"/></svg>表格管理</a>
+                <a class="nav-link" href="/dashboard.html" data-page="dashboard"><svg class="icon"><use href="#i-chart"/></svg>数据看板</a>
+                <a class="nav-link" href="/help.html" data-page="help"><svg class="icon"><use href="#i-help"/></svg>使用帮助</a>
+                <a class="nav-link" href="/settings.html" data-page="settings"><svg class="icon"><use href="#i-settings"/></svg>设置</a>
+            </nav>
+
+            <div class="sidebar-bottom">
+                <button class="btn btn-outline btn-sm" id="themeToggle">
+                    <svg class="icon"><use href="#i-moon"/></svg><span class="theme-label">深色模式</span>
+                </button>
+                <div class="user-box">
+                    <svg class="icon icon-sm"><use href="#i-user"/></svg>
+                    <span id="userInfo"></span>
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="handleLogout()">
+                    <svg class="icon"><use href="#i-logout"/></svg>退出登录
+                </button>
+            </div>
+        </aside>
+
+        <!-- ===== 主内容 ===== -->
+        <main class="main">
+            <div class="page-header">
+                <h1><svg class="icon"><use href="#i-settings"/></svg>设置</h1>
+            </div>
+
+            <div class="settings-grid">
+
+                <!-- 账号 -->
+                <section class="panel">
+                    <h2 class="panel-title"><svg class="icon icon-sm"><use href="#i-user"/></svg>账号</h2>
+                    <div class="panel-row">
+                        <span class="panel-label">当前账号</span>
+                        <span class="panel-value" id="accountName">加载中...</span>
+                    </div>
+                    <p class="panel-hint">
+                        使用 Windows 集成身份验证自动创建的账号没有本地密码，无法在此修改。
+                    </p>
+                </section>
+
+                <!-- 修改密码 -->
+                <section class="panel">
+                    <h2 class="panel-title"><svg class="icon icon-sm"><use href="#i-key"/></svg>修改密码</h2>
+                    <form id="passwordForm" autocomplete="off">
+                        <div class="field">
+                            <label class="field-label" for="oldPassword">原密码</label>
+                            <input type="password" id="oldPassword" class="input" autocomplete="current-password" placeholder="请输入当前密码">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="newPassword">新密码</label>
+                            <input type="password" id="newPassword" class="input" autocomplete="new-password" placeholder="至少 6 位">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="confirmPassword">确认新密码</label>
+                            <input type="password" id="confirmPassword" class="input" autocomplete="new-password" placeholder="再次输入新密码">
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <svg class="icon"><use href="#i-save"/></svg>保存新密码
+                        </button>
+                    </form>
+                </section>
+
+                <!-- 偏好设置 -->
+                <section class="panel">
+                    <h2 class="panel-title"><svg class="icon icon-sm"><use href="#i-settings"/></svg>偏好设置</h2>
+
+                    <div class="field">
+                        <label class="field-label" for="prefTheme">主题</label>
+                        <select id="prefTheme" class="select">
+                            <option value="light">浅色</option>
+                            <option value="dark">深色</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" for="prefPageSize">默认每页行数</label>
+                        <select id="prefPageSize" class="select">
+                            <option value="0">全部（不分页）</option>
+                            <option value="50">50 行</option>
+                            <option value="100">100 行</option>
+                            <option value="500">500 行</option>
+                        </select>
+                        <p class="panel-hint">数据量较大时建议分页，可明显提升表格滚动与编辑的流畅度。</p>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" for="prefTextSize">表格字号</label>
+                        <select id="prefTextSize" class="select">
+                            <option value="normal">标准</option>
+                            <option value="large">大号</option>
+                        </select>
+                    </div>
+
+                    <button type="button" class="btn btn-outline" id="resetPrefs">
+                        <svg class="icon"><use href="#i-refresh"/></svg>恢复默认设置
+                    </button>
+                    <p class="panel-hint">偏好设置保存在本机浏览器中，不影响账号数据。</p>
+                </section>
+
+                <!-- 关于 -->
+                <section class="panel">
+                    <h2 class="panel-title"><svg class="icon icon-sm"><use href="#i-info"/></svg>关于</h2>
+                    <div class="panel-row">
+                        <span class="panel-label">版本</span>
+                        <span class="panel-value" id="appVersion">-</span>
+                    </div>
+                    <div class="panel-row">
+                        <span class="panel-label">后端</span>
+                        <span class="panel-value">ASP.NET Core Web API + EF Core + SQL Server</span>
+                    </div>
+                    <div class="panel-row">
+                        <span class="panel-label">前端</span>
+                        <span class="panel-value">原生 HTML / CSS / JavaScript（零构建、零依赖）</span>
+                    </div>
+                    <div class="panel-row">
+                        <span class="panel-label">浏览器</span>
+                        <span class="panel-value panel-value-wrap" id="appBrowser">-</span>
+                    </div>
+                    <div class="panel-row">
+                        <span class="panel-label">帮助文档</span>
+                        <a class="link" href="/help.html">查看使用帮助</a>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/settings.js"></script>
+</body>
+</html>

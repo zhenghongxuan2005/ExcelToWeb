@@ -147,4 +147,48 @@ public class AuthController : ControllerBase
             Username = user.Username
         }));
     }
+
+    /// <summary>修改当前用户密码（需登录并校验原密码）</summary>
+    [HttpPost("change-password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        var userId = _tokenService.GetUserId(User);
+        if (userId == null)
+            return Unauthorized(ApiResponse.Fail("未登录"));
+
+        var user = await _db.Users.FindAsync(userId.Value);
+        if (user == null)
+            return Unauthorized(ApiResponse.Fail("用户不存在"));
+
+        // Windows 集成身份验证自动建档的用户没有本地密码，禁止借此接口设置密码，
+        // 否则等于绕过了域认证这条唯一的凭据来源。
+        if (string.IsNullOrEmpty(user.PasswordHash))
+            return BadRequest(ApiResponse.Fail("该账号使用 Windows 集成身份验证，不支持修改密码"));
+
+        if (string.IsNullOrWhiteSpace(request.OldPassword))
+            return BadRequest(ApiResponse.Fail("请输入原密码"));
+
+        if (!PasswordHelper.VerifyPassword(request.OldPassword, user.PasswordHash))
+        {
+            _logger.LogWarning("修改密码失败（原密码不正确）：用户 {UserId}", user.Id);
+            // 不区分「原密码错误」与其它情况之外的细节，避免提供额外信息
+            return BadRequest(ApiResponse.Fail("原密码不正确"));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.NewPassword) || request.NewPassword.Length < 6)
+            return BadRequest(ApiResponse.Fail("新密码至少6位"));
+
+        if (request.NewPassword != request.ConfirmPassword)
+            return BadRequest(ApiResponse.Fail("两次输入的新密码不一致"));
+
+        if (request.NewPassword == request.OldPassword)
+            return BadRequest(ApiResponse.Fail("新密码不能与原密码相同"));
+
+        user.PasswordHash = PasswordHelper.HashPassword(request.NewPassword);
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("用户修改密码成功: {UserId}", user.Id);
+        return Ok(ApiResponse.Ok("密码修改成功"));
+    }
 }

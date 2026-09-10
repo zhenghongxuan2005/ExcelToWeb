@@ -16,31 +16,8 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- ===== SVG 图标库（内联 sprite） ===== -->
-    <svg xmlns="http://www.w3.org/2000/svg" style="display:none;">
-        <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></symbol>
-        <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
-        <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
-        <symbol id="i-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
-        <symbol id="i-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
-        <symbol id="i-edit" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
-        <symbol id="i-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></symbol>
-        <symbol id="i-refresh" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></symbol>
-        <symbol id="i-settings" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></symbol>
-        <symbol id="i-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
-        <symbol id="i-chart" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></symbol>
-        <symbol id="i-filter" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
-        <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
-        <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
-        <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></symbol>
-        <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
-        <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
-        <symbol id="i-chevron-down" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>
-        <symbol id="i-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
-        <symbol id="i-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></symbol>
-        <symbol id="i-inbox" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
-        <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
-    </svg>
+    <!-- 页面外壳：图标 sprite / 主题切换 / 退出登录 / 导航高亮，由 js/shell.js 统一提供 -->
+    <script src="js/shell.js"></script>
 
     <div class="app-shell">
         <!-- ===== 侧边栏 ===== -->
@@ -51,8 +28,11 @@
             </div>
 
             <nav class="sidebar-nav">
-                <a class="nav-link active" href="/"><svg class="icon"><use href="#i-table"/></svg>表格编辑</a>
-                <a class="nav-link" href="/dashboard.html"><svg class="icon"><use href="#i-chart"/></svg>数据看板</a>
+                <a class="nav-link" href="/" data-page="index"><svg class="icon"><use href="#i-table"/></svg>表格编辑</a>
+                <a class="nav-link" href="/tables.html" data-page="tables"><svg class="icon"><use href="#i-columns"/></svg>表格管理</a>
+                <a class="nav-link" href="/dashboard.html" data-page="dashboard"><svg class="icon"><use href="#i-chart"/></svg>数据看板</a>
+                <a class="nav-link" href="/help.html" data-page="help"><svg class="icon"><use href="#i-help"/></svg>使用帮助</a>
+                <a class="nav-link" href="/settings.html" data-page="settings"><svg class="icon"><use href="#i-settings"/></svg>设置</a>
             </nav>
 
             <div class="sidebar-bottom">
@@ -111,6 +91,7 @@
                         <div class="dropdown-menu">
                             <button class="dropdown-item" onclick="exportExcel()"><svg class="icon icon-sm"><use href="#i-file"/></svg>导出 Excel</button>
                             <button class="dropdown-item" onclick="exportCsv()"><svg class="icon icon-sm"><use href="#i-file"/></svg>导出 CSV</button>
+                            <button class="dropdown-item" onclick="exportViewCsv()"><svg class="icon icon-sm"><use href="#i-filter"/></svg>导出当前视图 CSV</button>
                             <button class="dropdown-item" onclick="downloadTemplate()"><svg class="icon icon-sm"><use href="#i-download"/></svg>下载导入模板</button>
                         </div>
                     </div>
@@ -131,11 +112,39 @@
 
                 <div class="toolbar-spacer"></div>
 
+                <!-- 全局搜索 -->
+                <div class="search-box">
+                    <svg class="icon icon-sm"><use href="#i-search"/></svg>
+                    <input type="text" id="globalSearch" class="search-input" placeholder="全表搜索..." autocomplete="off"
+                           oninput="onSearchInput(this.value)">
+                    <button type="button" class="search-clear" id="searchClear" title="清除搜索" onclick="clearSearch()">
+                        <svg class="icon icon-sm"><use href="#i-x"/></svg>
+                    </button>
+                </div>
+                <span class="search-count" id="searchCount"></span>
+
+                <!-- 列显示 / 列宽 -->
+                <div class="dropdown">
+                    <button class="btn btn-outline btn-sm"><svg class="icon icon-sm"><use href="#i-columns"/></svg>列</button>
+                    <div class="dropdown-menu dropdown-menu-scroll" id="columnMenu"></div>
+                </div>
+
                 <!-- 筛选组 -->
                 <div class="filter-group">
                     <input type="date" id="filterDate">
                     <button class="btn btn-primary btn-sm" onclick="applyDateFilter()"><svg class="icon icon-sm"><use href="#i-filter"/></svg>筛选</button>
                     <button class="btn btn-outline btn-sm" onclick="clearDateFilter()">全部</button>
+                </div>
+
+                <!-- 每页行数 -->
+                <div class="page-size-group">
+                    <label class="page-size-label" for="pageSizeSelect">每页</label>
+                    <select id="pageSizeSelect" class="table-select table-select-sm" onchange="setPageSize(this.value)">
+                        <option value="0">全部</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="500">500</option>
+                    </select>
                 </div>
             </div>
 
@@ -147,6 +156,9 @@
                     <p class="empty-sub">支持 .xlsx 和 .xls 格式</p>
                 </div>
             </div>
+
+            <!-- ===== 选中行统计（由 selection.js 填充） ===== -->
+            <div id="selectionStats"></div>
         </main>
     </div>
 
@@ -256,33 +268,17 @@
         </div>
     </div>
 
-    <!-- 主题切换 -->
-    <script>
-        (function () {
-            var btn = document.getElementById('themeToggle');
-            function refresh() {
-                var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-                btn.querySelector('use').setAttribute('href', dark ? '#i-sun' : '#i-moon');
-                btn.querySelector('.theme-label').textContent = dark ? '浅色模式' : '深色模式';
-            }
-            btn.addEventListener('click', function () {
-                var el = document.documentElement;
-                var dark = el.getAttribute('data-theme') === 'dark';
-                if (dark) { el.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); }
-                else { el.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); }
-                refresh();
-            });
-            refresh();
-        })();
-    </script>
 
     <!-- ===== 加载 JS 模块（按依赖顺序：state.js 须最先，app.js 须最后） ===== -->
     <script src="js/api.js"></script>
     <script src="js/state.js"></script>
     <script src="js/utils.js"></script>
+    <script src="js/view.js"></script>
+    <script src="js/selection.js"></script>
     <script src="js/history.js"></script>
     <script src="js/tables.js"></script>
     <script src="js/io.js"></script>
+    <script src="js/dnd.js"></script>
     <script src="js/render.js"></script>
     <script src="js/edit.js"></script>
     <script src="js/filter.js"></script>

@@ -61,6 +61,15 @@ function getCurrentUser() {
     return request('/auth/me');
 }
 
+/** 修改密码（需登录，后端会校验原密码）。后端返回的是纯消息，这里直接取 message */
+function changePassword(oldPassword, newPassword, confirmPassword) {
+    return request('/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldPassword, newPassword, confirmPassword })
+    }).then(r => (typeof r === 'string' ? r : (r && r.message) || '密码修改成功'));
+}
+
 // ================================================================
 // Excel 表格
 // ================================================================
@@ -86,6 +95,24 @@ function saveTableData(tableId, rows) {
 
 function deleteTable(tableId) {
     return request('/excel/delete?tableId=' + tableId, { method: 'DELETE' });
+}
+
+/** 重命名表格 */
+function renameTable(tableId, tableName) {
+    return request('/excel/rename', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableId, tableName })
+    });
+}
+
+/** 复制表格（表结构 + 全部数据行） */
+function duplicateTable(tableId) {
+    return request('/excel/duplicate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableId })
+    });
 }
 
 function fetchTableList() {

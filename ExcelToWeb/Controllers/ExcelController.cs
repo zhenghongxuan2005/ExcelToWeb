@@ -72,6 +72,30 @@ public class ExcelController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>重命名表格</summary>
+    [HttpPut("rename")]
+    public async Task<IActionResult> Rename([FromBody] RenameTableRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
+
+        var result = await _service.RenameTableAsync(request.TableId, userId, request.TableName);
+        if (!result.Success) return BadRequest(result);
+        return Ok(result);
+    }
+
+    /// <summary>复制表格（表结构 + 全部数据行），源表保持不变</summary>
+    [HttpPost("duplicate")]
+    public async Task<IActionResult> Duplicate([FromBody] DuplicateTableRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
+
+        var result = await _service.DuplicateTableAsync(request.TableId, userId);
+        if (!result.Success) return BadRequest(result);
+        return Ok(result);
+    }
+
     // ================================================================
     // 导出 Excel
     // ================================================================

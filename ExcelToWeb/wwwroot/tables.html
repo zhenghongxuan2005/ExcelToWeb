@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>数据看板 - Excel 在线编辑工具</title>
+    <title>表格管理 - Excel 在线编辑工具</title>
     <script>
+        // 尽早应用主题，避免闪烁
         (function () {
             var t = localStorage.getItem('theme');
             if (t === 'dark' || (!t && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -13,7 +14,6 @@
         })();
     </script>
     <link rel="stylesheet" href="css/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 </head>
 <body>
     <!-- 页面外壳：图标 sprite / 主题切换 / 退出登录 / 导航高亮，由 js/shell.js 统一提供 -->
@@ -52,23 +52,28 @@
         <!-- ===== 主内容 ===== -->
         <main class="main">
             <div class="page-header">
-                <h1><svg class="icon"><use href="#i-chart"/></svg>数据看板</h1>
-                <a class="link" href="/" style="font-size:14px;">返回表格编辑</a>
+                <h1><svg class="icon"><use href="#i-columns"/></svg>表格管理</h1>
+                <div class="header-tools">
+                    <span class="status-pill" id="tableCount"></span>
+                    <button class="btn btn-outline btn-sm" onclick="loadManageList()">
+                        <svg class="icon icon-sm"><use href="#i-refresh"/></svg>刷新
+                    </button>
+                    <a class="btn btn-primary btn-sm" href="/">
+                        <svg class="icon icon-sm"><use href="#i-upload"/></svg>导入新表格
+                    </a>
+                </div>
             </div>
 
-            <div id="dashboardContent">
-                <!-- 由 dashboard.js 动态渲染 -->
-                <div class="empty-state">
-                    <div class="empty-icon"><svg class="icon"><use href="#i-inbox"/></svg></div>
-                    <p>请先在表格页面上传 Excel 数据</p>
-                    <p class="empty-sub">上传后刷新此页面即可看到看板</p>
-                </div>
+            <p class="page-desc">集中管理已导入的表格：打开编辑、重命名、复制、导出或删除。</p>
+
+            <div id="tableGrid" class="table-grid">
+                <div class="empty-state"><p>加载中...</p></div>
             </div>
         </main>
     </div>
 
-
     <script src="js/api.js"></script>
-    <script src="js/dashboard.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/tables-page.js"></script>
 </body>
 </html>

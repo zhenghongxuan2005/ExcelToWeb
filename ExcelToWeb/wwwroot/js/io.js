@@ -132,6 +132,45 @@ function downloadTemplate() {
 }
 
 // ================================================================
+// 导出「当前视图」：把搜索结果 / 排序 / 隐藏列之后的表格导出为 CSV
+// 纯前端生成，不新增后端接口；导出的是全部筛选结果（不受分页限制）
+// ================================================================
+function exportViewCsv() {
+    if (currentRows.length === 0) {
+        showToast('没有可导出的数据', 'info');
+        return;
+    }
+
+    const headers = getVisibleHeaders();
+    const rows = buildDisplayRows();
+
+    if (rows.length === 0) {
+        showToast('当前筛选结果为空，无可导出内容', 'info');
+        return;
+    }
+
+    const lines = [headers.map(csvCell).join(',')];
+    for (const row of rows) {
+        lines.push(headers.map(h => csvCell(row[h])).join(','));
+    }
+
+    // 前置 UTF-8 BOM，否则 Excel 打开中文会乱码
+    const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const suffix = searchKeyword ? '_筛选结果' : '';
+    downloadBlob(blob, `数据${suffix}_${new Date().toISOString().slice(0, 10)}.csv`);
+    showToast(`✅ 已导出当前视图（${rows.length} 行）`, 'success');
+}
+
+/** CSV 单元格转义：含逗号/引号/换行的值必须用双引号包裹 */
+function csvCell(value) {
+    const s = value === undefined || value === null ? '' : String(value);
+    if (/[",\r\n]/.test(s)) {
+        return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+}
+
+// ================================================================
 // 全选/取消全选
 // ================================================================
 function toggleAllCheckboxes() {
@@ -140,4 +179,6 @@ function toggleAllCheckboxes() {
     document.querySelectorAll('.row-checkbox').forEach(cb => {
         cb.checked = selectAll.checked;
     });
+    // 勾选状态是代码改的，不会触发 change 事件，需手动刷新统计
+    updateSelectionStats();
 }

@@ -53,6 +53,7 @@ builder.Services.AddSingleton<ExcelSheetReader>();
 builder.Services.AddSingleton<RowValidator>();
 // 依赖 AppDbContext（Scoped），生命周期保持一致
 builder.Services.AddScoped<TableRepository>();
+builder.Services.AddScoped<RuleService>();
 builder.Services.AddScoped<ExcelExportService>();
 
 builder.Services.AddScoped<IExcelService, ExcelService>();

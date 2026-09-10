@@ -114,6 +114,26 @@
     min-width: 0;
     padding: 24px 28px 40px;
     max-width: 1500px;
+    /* 供拖拽上传的遮罩层定位使用；不影响布局 */
+    position: relative;
+}
+
+/* ===== 拖拽上传遮罩 ===== */
+.main.is-dragover::after {
+    content: "松开鼠标即可导入 Excel";
+    position: absolute;
+    inset: 14px;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--primary);
+    background: color-mix(in srgb, var(--primary-soft) 82%, transparent);
+    border: 2px dashed var(--primary);
+    border-radius: var(--radius-lg);
+    pointer-events: none;
 }
 
 .page-header {

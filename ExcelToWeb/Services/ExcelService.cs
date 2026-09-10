@@ -19,27 +19,27 @@ public class ExcelService : IExcelService
     private static readonly string[] DateColumnCandidates =
         { "日期", "成交日期", "创建时间", "更新时间", "Date", "date" };
 
-    private readonly AppDbContext _db;
     private readonly ILogger<ExcelService> _logger;
     private readonly ExcelSheetReader _reader;
     private readonly ExcelExportService _exporter;
     private readonly RowValidator _validator;
     private readonly TableRepository _repository;
+    private readonly RuleService _rules;
 
     public ExcelService(
-        AppDbContext db,
         ILogger<ExcelService> logger,
         ExcelSheetReader reader,
         ExcelExportService exporter,
         RowValidator validator,
-        TableRepository repository)
+        TableRepository repository,
+        RuleService rules)
     {
-        _db = db;
         _logger = logger;
         _reader = reader;
         _exporter = exporter;
         _validator = validator;
         _repository = repository;
+        _rules = rules;
     }
 
     // ================================================================
@@ -186,21 +186,86 @@ public class ExcelService : IExcelService
         _exporter.DownloadTemplateAsync(tableId, userId);
 
     // ================================================================
+    // 重命名 / 复制表格
+    // ================================================================
+    public async Task<ApiResponse> RenameTableAsync(int tableId, int userId, string newName)
+    {
+        var name = (newName ?? string.Empty).Trim();
+        if (name.Length == 0)
+            return ApiResponse.Fail("表格名称不能为空");
+        if (name.Length > 100)
+            return ApiResponse.Fail("表格名称不能超过 100 个字符");
+
+        var table = await _repository.FindTableAsync(tableId, userId);
+        if (table == null)
+            return ApiResponse.Fail("表格不存在");
+
+        await _repository.RenameAsync(table, name);
+
+        _logger.LogInformation("用户 {UserId} 重命名表格 {TableId} -> {NewName}", userId, tableId, name);
+        return ApiResponse.Ok("重命名成功");
+    }
+
+    public async Task<ApiResponse<UploadResult>> DuplicateTableAsync(int tableId, int userId)
+    {
+        try
+        {
+            var table = await _repository.FindTableAsync(tableId, userId);
+            if (table == null)
+                return ApiResponse<UploadResult>.Fail("表格不存在");
+
+            var rows = await _repository.GetRowDataAsync(tableId);
+
+            var copyName = await BuildCopyNameAsync(table.TableName, userId);
+            var copy = await _repository.CloneTableAsync(table, copyName);
+            await _repository.BulkInsertRowsAsync(copy.Id, rows);
+
+            _logger.LogInformation("用户 {UserId} 复制表格 {SourceId} -> {NewId}，共 {RowCount} 行",
+                userId, tableId, copy.Id, rows.Count);
+
+            return ApiResponse<UploadResult>.Ok(new UploadResult
+            {
+                TableId = copy.Id,
+                TableName = copy.TableName,
+                Headers = copy.Headers,
+                Rows = rows
+            }, $"复制成功，共 {rows.Count} 行");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "复制表格失败：源表 {TableId}，用户 {UserId}", tableId, userId);
+            return ApiResponse<UploadResult>.Fail("复制失败，请稍后重试");
+        }
+    }
+
+    /// <summary>生成副本名，形如「销售表 - 副本」「销售表 - 副本(2)」，避免与现有表格重名</summary>
+    private async Task<string> BuildCopyNameAsync(string sourceName, int userId)
+    {
+        var existing = await _repository.GetTableNamesAsync(userId);
+
+        var baseName = $"{sourceName} - 副本";
+        if (!existing.Contains(baseName)) return baseName;
+
+        for (int i = 2; i <= 999; i++)
+        {
+            var candidate = $"{baseName}({i})";
+            if (!existing.Contains(candidate)) return candidate;
+        }
+
+        // 极端情况下兜底：加时间戳，保证一定能插入
+        return $"{baseName}({DateTime.Now:HHmmss})";
+    }
+
+    // ================================================================
     // 获取表格列表
     // ================================================================
     public Task<List<TableInfoDto>> GetTablesAsync(int userId) => _repository.GetTableInfosAsync(userId);
 
     // ================================================================
-    // 颜色规则
+    // 颜色规则（委托给 RuleService，此处只做对外语义包装）
     // ================================================================
-    public async Task<List<ColorRule>> GetColorRulesAsync(int userId, string? columnName = null)
-    {
-        var query = _db.ColorRules.Where(r => r.UserId == userId);
-        if (!string.IsNullOrEmpty(columnName))
-            query = query.Where(r => r.ColumnName == columnName);
-
-        return await query.OrderBy(r => r.MinValue).ToListAsync();
-    }
+    public Task<List<ColorRule>> GetColorRulesAsync(int userId, string? columnName = null) =>
+        _rules.GetColorRulesAsync(userId, columnName);
 
     public async Task<ApiResponse> SaveColorRulesAsync(int userId, List<ColorRule> rules)
     {
@@ -211,35 +276,19 @@ public class ExcelService : IExcelService
             return ApiResponse.Ok("规则已清空");
         }
 
-        var columnName = rules[0].ColumnName;
-        var oldRules = await _db.ColorRules
-            .Where(r => r.UserId == userId && r.ColumnName == columnName)
-            .ToListAsync();
-        _db.ColorRules.RemoveRange(oldRules);
-
-        foreach (var rule in rules)
-        {
-            rule.UserId = userId;
-            rule.CreatedAt = DateTime.Now;
-            rule.UpdatedAt = DateTime.Now;
-            await _db.ColorRules.AddAsync(rule);
-        }
-        await _db.SaveChangesAsync();
-
-        return ApiResponse.Ok($"成功保存 {rules.Count} 条规则");
+        var count = await _rules.ReplaceColorRulesAsync(userId, rules);
+        return ApiResponse.Ok($"成功保存 {count} 条规则");
     }
 
     // ================================================================
-    // 校验规则
+    // 校验规则（归属校验留在门面，规则读写交给 RuleService）
     // ================================================================
     public async Task<List<ValidationRule>> GetValidationRulesAsync(int tableId, int userId)
     {
         var table = await _repository.FindTableAsync(tableId, userId);
         if (table == null) return new List<ValidationRule>();
 
-        return await _db.ValidationRules
-            .Where(r => r.TableId == tableId)
-            .ToListAsync();
+        return await _rules.GetValidationRulesAsync(tableId);
     }
 
     public async Task<ApiResponse> SaveValidationRulesAsync(int tableId, int userId, List<ValidationRule> rules)
@@ -251,19 +300,8 @@ public class ExcelService : IExcelService
         if (table == null)
             return ApiResponse.Fail("表格不存在");
 
-        var oldRules = await _db.ValidationRules.Where(r => r.TableId == tableId).ToListAsync();
-        _db.ValidationRules.RemoveRange(oldRules);
-
-        foreach (var rule in rules)
-        {
-            rule.TableId = tableId;
-            rule.CreatedAt = DateTime.Now;
-            rule.UpdatedAt = DateTime.Now;
-            await _db.ValidationRules.AddAsync(rule);
-        }
-        await _db.SaveChangesAsync();
-
-        return ApiResponse.Ok($"成功保存 {rules.Count} 条校验规则");
+        var count = await _rules.ReplaceValidationRulesAsync(tableId, rules);
+        return ApiResponse.Ok($"成功保存 {count} 条校验规则");
     }
 
     // ================================================================

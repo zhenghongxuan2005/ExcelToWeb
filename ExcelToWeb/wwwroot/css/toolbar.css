@@ -262,3 +262,21 @@
         border-color: var(--primary);
         box-shadow: var(--focus-ring);
     }
+
+.table-select-sm {
+    min-width: 76px;
+    max-width: 96px;
+    padding: 6px 8px;
+}
+
+.page-size-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.page-size-label {
+    font-size: 13px;
+    color: var(--text-3);
+    white-space: nowrap;
+}

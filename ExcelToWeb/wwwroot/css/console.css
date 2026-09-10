@@ -1,0 +1,369 @@
+/* ================================================================
+   ExcelToWeb 样式模块：console.css —— 二级页面（表格管理 / 设置 / 帮助）
+   （由 style.css 以 @import 汇总，加载顺序即层叠顺序）
+   ================================================================ */
+
+/* ===== 页头附加区域 ===== */
+.header-tools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.page-desc {
+    margin: -6px 0 18px;
+    font-size: 13px;
+    color: var(--text-3);
+}
+
+/* ================================================================
+   表格管理：卡片网格
+   ================================================================ */
+.table-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+}
+
+.table-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 18px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+    .table-card:hover {
+        transform: translateY(-2px);
+        border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+        box-shadow: var(--shadow-pop);
+    }
+
+.card-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border-radius: var(--radius-md);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+    .card-icon .icon {
+        width: 20px;
+        height: 20px;
+    }
+
+.card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-1);
+    margin: 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.card-headers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.chip {
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--bg-soft);
+    color: var(--text-2);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.chip-muted {
+    color: var(--text-4);
+}
+
+.card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--text-3);
+}
+
+    .card-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+.card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-light);
+}
+
+/* ================================================================
+   设置页：分栏面板
+   ================================================================ */
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 16px;
+    align-items: start;
+}
+
+.panel {
+    padding: 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+}
+
+.panel-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-1);
+}
+
+.panel-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 7px 0;
+    font-size: 13px;
+}
+
+.panel-label {
+    color: var(--text-3);
+    flex-shrink: 0;
+}
+
+.panel-value {
+    color: var(--text-1);
+    font-weight: 500;
+    text-align: right;
+}
+
+.panel-value-wrap {
+    word-break: break-all;
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--text-2);
+}
+
+.panel-hint {
+    margin: 10px 0 0;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-4);
+}
+
+.panel .field:last-of-type {
+    margin-bottom: 14px;
+}
+
+/* ================================================================
+   帮助页：文档排版
+   ================================================================ */
+.doc-section {
+    margin-bottom: 26px;
+    padding: 22px 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+}
+
+.doc-title {
+    margin: 0 0 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-1);
+}
+
+.doc-steps {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 14px;
+    line-height: 2;
+    color: var(--text-2);
+}
+
+    .doc-steps strong {
+        color: var(--text-1);
+    }
+
+.doc-section code {
+    padding: 2px 6px;
+    border-radius: 5px;
+    background: var(--bg-soft);
+    color: var(--primary);
+    font-size: 12.5px;
+    font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+}
+
+/* 折叠问答 */
+.faq {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    margin-bottom: 8px;
+    overflow: hidden;
+    transition: border-color 0.15s ease;
+}
+
+    .faq:hover {
+        border-color: var(--border);
+    }
+
+    .faq[open] {
+        border-color: color-mix(in srgb, var(--primary) 26%, var(--border));
+    }
+
+    .faq summary {
+        padding: 13px 16px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-1);
+        cursor: pointer;
+        list-style: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.15s ease;
+    }
+
+        .faq summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .faq summary::before {
+            content: "▸";
+            color: var(--primary);
+            font-size: 12px;
+            transition: transform 0.18s ease;
+        }
+
+        .faq[open] summary::before {
+            transform: rotate(90deg);
+        }
+
+        .faq summary:hover {
+            background: var(--bg-soft);
+        }
+
+.faq-body {
+    padding: 0 16px 14px 34px;
+    font-size: 13.5px;
+    line-height: 1.85;
+    color: var(--text-2);
+}
+
+    .faq-body p {
+        margin: 6px 0;
+    }
+
+    .faq-body strong {
+        color: var(--text-1);
+    }
+
+/* 快捷键 */
+kbd {
+    display: inline-block;
+    min-width: 22px;
+    padding: 2px 7px;
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 6px;
+    background: var(--bg-soft);
+    color: var(--text-1);
+    font-size: 12px;
+    font-family: inherit;
+    text-align: center;
+    line-height: 1.6;
+}
+
+.kbd-table {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 8px;
+}
+
+.kbd-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 10px 14px;
+    background: var(--bg-soft);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--text-2);
+}
+
+/* ================================================================
+   偏好设置：大号字号
+   通过根元素属性统一切换表格字号，避免各处硬编码
+   ================================================================ */
+html[data-text-size="large"] table {
+    font-size: 15px;
+}
+
+html[data-text-size="large"] .cell-input {
+    font-size: 14.5px;
+}
+
+html[data-text-size="large"] thead th {
+    font-size: 14px;
+}
+
+/* ================================================================
+   响应式：二级页面
+   ================================================================ */
+@media (max-width: 900px) {
+    .table-grid,
+    .settings-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .header-tools {
+        width: 100%;
+    }
+}
+
+@media (max-width: 640px) {
+    .doc-section {
+        padding: 16px;
+    }
+
+    .faq-body {
+        padding-left: 16px;
+    }
+}

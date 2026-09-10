@@ -29,6 +29,21 @@ function loadTableList() {
                 setStatus('无表格，请上传 Excel');
                 return;
             }
+
+            // 从「表格管理」页跳转过来时，优先打开它指定的表格（一次性消费）
+            const pending = localStorage.getItem('openTableId');
+            if (pending) {
+                localStorage.removeItem('openTableId');
+                const pid = parseInt(pending);
+                if (allTables.some(t => t.id === pid)) {
+                    currentTableId = pid;
+                    const sel = document.getElementById('tableSelector');
+                    if (sel) sel.value = pid;
+                    loadTableData(pid);
+                    return;
+                }
+            }
+
             if (!currentTableId) {
                 currentTableId = allTables[0].id;
                 document.getElementById('tableSelector').value = currentTableId;

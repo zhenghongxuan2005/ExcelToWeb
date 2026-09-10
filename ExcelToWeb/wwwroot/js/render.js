@@ -1,17 +1,7 @@
 // ================================================================
 // 渲染表格（带建议列表 + 颜色规则 + XSS 防护）
+// 说明：escapeHtml 已上移到 utils.js，供各页面共用
 // ================================================================
-
-/** HTML 转义，防止 XSS */
-function escapeHtml(str) {
-    if (str === null || str === undefined) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
 
 function renderTable() {
     const container = document.getElementById('tableContainer');
@@ -20,11 +10,12 @@ function renderTable() {
     // 空状态
     if (currentHeaders.length === 0 || currentRows.length === 0) {
         container.innerHTML = '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#i-inbox"/></svg></div><p>暂无数据，请上传 Excel 文件</p></div>';
+        clearSelectionStats();
         updateUndoButtons();
         return;
     }
 
-    // 提取每列去重值作为建议列表
+    // 提取每列去重值作为建议列表（基于全量数据，搜索不应改变候选值）
     const suggestionsMap = {};
     for (const colName of currentHeaders) {
         const uniqueValues = {};
@@ -40,26 +31,30 @@ function renderTable() {
         }
     }
 
-    // 排序
-    const displayRows = currentRows.slice();
-    if (sortField) {
-        displayRows.sort((a, b) => {
-            const va = a[sortField] !== undefined ? a[sortField] : '';
-            const vb = b[sortField] !== undefined ? b[sortField] : '';
-            const na = parseFloat(va);
-            const nb = parseFloat(vb);
-            if (!isNaN(na) && !isNaN(nb)) return (na - nb) * sortOrder;
-            return String(va).localeCompare(String(vb), 'zh-CN') * sortOrder;
-        });
+    // 搜索 + 排序 -> 分页，得到这一屏真正要渲染的行
+    const displayRows = buildDisplayRows();
+    const visibleHeaders = getVisibleHeaders();
+    const pageRows = getPagedRows(displayRows);
+
+    // 搜索把数据全部过滤掉了：给出与「无数据」不同的提示，避免用户以为文件丢了
+    if (displayRows.length === 0) {
+        container.innerHTML = '<div class="empty-state">'
+            + '<div class="empty-icon"><svg class="icon"><use href="#i-search"/></svg></div>'
+            + `<p>没有匹配「${escapeHtml(searchKeyword)}」的数据</p>`
+            + '<p class="empty-sub">换个关键词，或点搜索框右侧的 ✕ 清除</p>'
+            + '</div>';
+        clearSelectionStats();
+        updateUndoButtons();
+        return;
     }
 
     // 生成表格 HTML
     let html = '<table><thead><tr>';
     html += '<th class="cell-center" style="width:36px; min-width:36px;"><input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes()" /></th>';
     html += '<th class="cell-center" style="width:44px; min-width:44px;">#</th>';
-    for (const h of currentHeaders) {
+    for (const h of visibleHeaders) {
         const arrow = sortField === h ? (sortOrder === 1 ? ' ▲' : ' ▼') : ' ⇅';
-        html += '<th>';
+        html += `<th${columnWidthStyle(h)}>`;
         html += '<div class="th-inner">';
         html += `<span class="th-sort" onclick="sortBy('${escapeHtml(h)}')">${escapeHtml(h)}${arrow}</span>`;
         html += `<button class="th-filter" title="筛选该列" onclick="openFilter('${escapeHtml(h)}')"><svg class="icon icon-sm"><use href="#i-filter"/></svg></button>`;
@@ -68,22 +63,24 @@ function renderTable() {
     html += '</tr></thead><tbody>';
 
     // 数据行
-    // 预计算「行对象 → 原始下标」映射，避免逐行 indexOf 造成 O(n²) 卡顿
+    // 预计算「行对象 → 原始下标」映射，避免逐行 indexOf 造成 O(n²) 卡顿；
+    // 下标必须指向 currentRows，这样编辑/删除始终作用在真实数据上（与分页、搜索无关）
     const rowIndexMap = new Map();
     for (let i = 0; i < currentRows.length; i++) rowIndexMap.set(currentRows[i], i);
 
-    for (let r = 0; r < displayRows.length; r++) {
-        const row = displayRows[r];
+    for (let r = 0; r < pageRows.length; r++) {
+        const row = pageRows[r];
         const actualIndex = rowIndexMap.get(row);
         html += '<tr>';
-        html += `<td class="cell-center"><input type="checkbox" class="row-checkbox" data-index="${actualIndex}" /></td>`;
-        html += `<td class="cell-center row-index">${r + 1}</td>`;
-        for (const key of currentHeaders) {
+        html += `<td class="cell-center"><input type="checkbox" class="row-checkbox" data-index="${actualIndex}" onchange="updateSelectionStats()" /></td>`;
+        html += `<td class="cell-center row-index">${(currentPage - 1) * (pageSize > 0 ? pageSize : 0) + r + 1}</td>`;
+        for (const key of visibleHeaders) {
             const val = row[key] !== undefined && row[key] !== null ? row[key] : '';
             const suggestions = suggestionsMap[key] || [];
             const bgColor = getColorForValue(key, val);
+            const highlight = cellMatchesSearch(key, val) ? ' search-hit' : '';
             const style = bgColor ? ` style="background-color:${bgColor};"` : '';
-            html += `<td class="editable-cell"${style}>`;
+            html += `<td class="editable-cell${highlight}"${style}>`;
             html += `<input class="cell-input" type="text" value="${escapeHtml(val)}" data-index="${actualIndex}" data-key="${escapeHtml(key)}" autocomplete="off" />`;
             if (suggestions.length > 0) {
                 html += '<div class="suggest-list" style="display:none;">';
@@ -98,14 +95,25 @@ function renderTable() {
     }
     html += '</tbody></table>';
 
-    // 统计栏
+    // 统计栏：区分「全量」与「搜索后」的行数，避免用户误以为数据变少了
     html += '<div class="stats-bar">';
-    html += `<span>共 <strong>${displayRows.length}</strong> 行</span>`;
-    html += `<span><strong>${currentHeaders.length}</strong> 列</span>`;
+    if (searchKeyword) {
+        html += `<span>筛选出 <strong>${displayRows.length}</strong> 行</span>`;
+        html += `<span class="stats-muted">全量 ${currentRows.length} 行</span>`;
+    } else {
+        html += `<span>共 <strong>${currentRows.length}</strong> 行</span>`;
+    }
+    html += `<span><strong>${visibleHeaders.length}</strong> 列</span>`;
     html += '<span class="stat-hint">勾选行→删除，点击表头排序，编辑后点击"保存"</span>';
     html += '</div>';
 
+    // 分页条
+    html += renderPager(displayRows.length);
+
     container.innerHTML = html;
+
+    // 选中统计面板挂到表格下方（容器外，避免被 innerHTML 覆盖）
+    updateSelectionStats();
 
     // 绑定事件
     const editOldValue = {};

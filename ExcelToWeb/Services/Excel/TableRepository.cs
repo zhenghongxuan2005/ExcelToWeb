@@ -46,10 +46,40 @@ public class TableRepository
             })
             .ToListAsync();
 
+    /// <summary>取当前用户全部表格名（含空表），用于生成不重名的副本名称</summary>
+    public Task<List<string>> GetTableNamesAsync(int userId) =>
+        _db.DynamicTables
+            .Where(t => t.UserId == userId)
+            .Select(t => t.TableName)
+            .ToListAsync();
+
     public async Task AddTableAsync(DynamicTable table)
     {
         await _db.DynamicTables.AddAsync(table);
         await _db.SaveChangesAsync();
+    }
+
+    /// <summary>重命名表格（同时刷新 UpdatedAt）</summary>
+    public async Task RenameAsync(DynamicTable table, string newName)
+    {
+        table.TableName = newName;
+        table.UpdatedAt = DateTime.Now;
+        await _db.SaveChangesAsync();
+    }
+
+    /// <summary>复制表格骨架（表名 + 表头），返回新表实体（数据行由调用方另行复制）</summary>
+    public async Task<DynamicTable> CloneTableAsync(DynamicTable source, string newName)
+    {
+        var copy = new DynamicTable
+        {
+            TableName = newName,
+            Headers = new List<string>(source.Headers),
+            UserId = source.UserId,
+            CreatedAt = DateTime.Now,
+            UpdatedAt = DateTime.Now
+        };
+        await AddTableAsync(copy);
+        return copy;
     }
 
     /// <summary>
@@ -92,32 +122,42 @@ public class TableRepository
     }
 
     /// <summary>
-    /// 用原生 SQL 一次性插入多行，避免逐行 SaveChanges 带来的往返开销。
+    /// 用原生 SQL 批量插入多行，避免逐行 SaveChanges 带来的往返开销。
+    /// 注意：SQL Server 单条语句的参数上限为 2100，本方法每行占用 3 个参数，
+    /// 因此必须分批执行——否则行数超过 700 就会抛「参数过多」而整表导入失败。
     /// </summary>
     public async Task BulkInsertRowsAsync(int tableId, List<Dictionary<string, object>> rows)
     {
         if (rows.Count == 0) return;
 
-        var insertSql = new StringBuilder();
-        insertSql.AppendLine("INSERT INTO DynamicRows (TableId, DataJson, CreatedAt) VALUES");
+        // 每批 500 行 = 1500 个参数，留足安全余量
+        const int batchSize = 500;
 
-        var parameters = new List<SqlParameter>();
-        int idx = 0;
-
-        foreach (var row in rows)
+        for (int offset = 0; offset < rows.Count; offset += batchSize)
         {
-            parameters.Add(new SqlParameter($"@p{idx}", tableId));
-            parameters.Add(new SqlParameter($"@p{idx + 1}", SerializeRow(row)));
-            parameters.Add(new SqlParameter($"@p{idx + 2}", DateTime.Now));
+            var batch = rows.GetRange(offset, Math.Min(batchSize, rows.Count - offset));
 
-            insertSql.AppendLine($"  (@p{idx}, @p{idx + 1}, @p{idx + 2}),");
-            idx += 3;
+            var insertSql = new StringBuilder();
+            insertSql.AppendLine("INSERT INTO DynamicRows (TableId, DataJson, CreatedAt) VALUES");
+
+            var parameters = new List<SqlParameter>();
+            int idx = 0;
+
+            foreach (var row in batch)
+            {
+                parameters.Add(new SqlParameter($"@p{idx}", tableId));
+                parameters.Add(new SqlParameter($"@p{idx + 1}", SerializeRow(row)));
+                parameters.Add(new SqlParameter($"@p{idx + 2}", DateTime.Now));
+
+                insertSql.AppendLine($"  (@p{idx}, @p{idx + 1}, @p{idx + 2}),");
+                idx += 3;
+            }
+
+            // 去掉最后一行的逗号与换行
+            insertSql.Length -= 3;
+
+            await _db.Database.ExecuteSqlRawAsync(insertSql.ToString(), parameters.ToArray());
         }
-
-        // 去掉最后一行的逗号与换行
-        insertSql.Length -= 3;
-
-        await _db.Database.ExecuteSqlRawAsync(insertSql.ToString(), parameters.ToArray());
     }
 
     public static string SerializeRow(Dictionary<string, object> row) => JsonSerializer.Serialize(row);

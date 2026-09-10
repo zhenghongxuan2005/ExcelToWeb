@@ -22,6 +22,14 @@ public class AuthResponse
     public string Token { get; set; } = string.Empty;
 }
 
+/// <summary>修改密码请求（需登录，且校验原密码）</summary>
+public class ChangePasswordRequest
+{
+    public string OldPassword { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+    public string ConfirmPassword { get; set; } = string.Empty;
+}
+
 // ===== Excel 相关 DTO =====
 
 public class SaveRequest
@@ -53,4 +61,15 @@ public class TableDataDto
     public string TableName { get; set; } = string.Empty;
     public List<string> Headers { get; set; } = new();
     public List<Dictionary<string, object>> Rows { get; set; } = new();
+}
+
+public class RenameTableRequest
+{
+    public int TableId { get; set; }
+    public string TableName { get; set; } = string.Empty;
+}
+
+public class DuplicateTableRequest
+{
+    public int TableId { get; set; }
 }

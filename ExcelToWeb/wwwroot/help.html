@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>使用帮助 - Excel 在线编辑工具</title>
+    <script>
+        (function () {
+            var t = localStorage.getItem('theme');
+            if (t === 'dark' || (!t && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+            if (localStorage.getItem('prefTextSize') === 'large') {
+                document.documentElement.setAttribute('data-text-size', 'large');
+            }
+        })();
+    </script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 页面外壳：图标 sprite / 主题切换 / 退出登录 / 导航高亮，由 js/shell.js 统一提供 -->
+    <script src="js/shell.js"></script>
+
+    <div class="app-shell">
+        <!-- ===== 侧边栏 ===== -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon"><svg class="icon"><use href="#i-table"/></svg></div>
+                <span class="brand-name">ExcelToWeb</span>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a class="nav-link" href="/" data-page="index"><svg class="icon"><use href="#i-table"/></svg>表格编辑</a>
+                <a class="nav-link" href="/tables.html" data-page="tables"><svg class="icon"><use href="#i-columns"/></svg>表格管理</a>
+                <a class="nav-link" href="/dashboard.html" data-page="dashboard"><svg class="icon"><use href="#i-chart"/></svg>数据看板</a>
+                <a class="nav-link" href="/help.html" data-page="help"><svg class="icon"><use href="#i-help"/></svg>使用帮助</a>
+                <a class="nav-link" href="/settings.html" data-page="settings"><svg class="icon"><use href="#i-settings"/></svg>设置</a>
+            </nav>
+
+            <div class="sidebar-bottom">
+                <button class="btn btn-outline btn-sm" id="themeToggle">
+                    <svg class="icon"><use href="#i-moon"/></svg><span class="theme-label">深色模式</span>
+                </button>
+                <div class="user-box">
+                    <svg class="icon icon-sm"><use href="#i-user"/></svg>
+                    <span id="userInfo"></span>
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="handleLogout()">
+                    <svg class="icon"><use href="#i-logout"/></svg>退出登录
+                </button>
+            </div>
+        </aside>
+
+        <!-- ===== 主内容 ===== -->
+        <main class="main">
+            <div class="page-header">
+                <h1><svg class="icon"><use href="#i-help"/></svg>使用帮助</h1>
+                <a class="btn btn-primary btn-sm" href="/">
+                    <svg class="icon icon-sm"><use href="#i-home"/></svg>开始使用
+                </a>
+            </div>
+
+            <!-- 快速上手 -->
+            <section class="doc-section">
+                <h2 class="doc-title">快速上手</h2>
+                <ol class="doc-steps">
+                    <li><strong>登录</strong>：使用已注册的账号，或通过 Windows 集成身份验证直接进入。</li>
+                    <li><strong>导入数据</strong>：点击「上传 Excel」，或把 <code>.xlsx</code> / <code>.xls</code> 文件直接拖到页面上。</li>
+                    <li><strong>编辑数据</strong>：直接在单元格中输入；新增行、批量编辑、删除选中行都由工具栏完成。</li>
+                    <li><strong>保存</strong>：点击「保存」写回数据库，保存时会自动执行已配置的校验规则。</li>
+                    <li><strong>查看看板</strong>：进入「数据看板」查看自动生成的汇总图表。</li>
+                </ol>
+            </section>
+
+            <!-- 功能说明 -->
+            <section class="doc-section">
+                <h2 class="doc-title">功能说明</h2>
+
+                <details class="faq" open>
+                    <summary>全局搜索</summary>
+                    <div class="faq-body">
+                        <p>工具栏右侧的搜索框会在<strong>所有列</strong>中查找，命中内容以蓝色底纹高亮，并实时显示命中行数。搜索不影响原始数据，只改变显示范围。</p>
+                        <p>快捷键 <kbd>Ctrl</kbd> + <kbd>F</kbd> 可快速聚焦搜索框；点搜索框右侧的 ✕ 清除。</p>
+                    </div>
+                </details>
+
+                <details class="faq">
+                    <summary>分页</summary>
+                    <div class="faq-body">
+                        <p>通过工具栏「每页」下拉选择 50 / 100 / 500 或「全部」。默认值可在「设置 → 偏好设置」中调整。</p>
+                        <p>数据量较大时建议分页，能显著减少浏览器渲染压力。</p>
+                    </div>
+                </details>
+
+                <details class="faq">
+                    <summary>列显示与列宽</summary>
+                    <div class="faq-body">
+                        <p>工具栏「列」按钮可勾选要显示的列，旁边的输入框可指定列宽（60–600 px，留空表示自动）。</p>
+                        <p>隐藏列只影响显示，导出与保存时数据不受影响。</p>
+                    </div>
+                </details>
+
+                <details class="faq">
+                    <summary>选中行统计</summary>
+                    <div class="faq-body">
+                        <p>勾选任意行后，表格下方会出现统计条，对<strong>全部为数字</strong>的列给出求和（Σ）与平均值（x̄）。</p>
+                        <p>含非数字内容的列不会参与统计，避免把日期、编号算进去。</p>
+                    </div>
+                </details>
+
+                <details class="faq">
+                    <summary>条件格式（颜色规则）</summary>
+                    <div class="faq-body">
+                        <p>「设置 → 条件格式规则」可为数值列配置区间颜色。选择应用列后添加规则，填写最小值、最大值与颜色。</p>
+                        <p>最大值留空表示「该值以上」。所有设过规则的列都会同时着色，不只是当前选中的列。</p>
+                    </div>
+                </details>
+
+                <details class="faq">
+                    <summary>数据校验规则</summary>
+                    <div class="faq-body">
+                        <p>「设置 → 数据校验规则」可按列设置是否必填、数据类型（数字等）、最小值 / 最大值。</p>
+                        <p>保存数据时会逐行检查，校验不通过的行会给出具体行号与原因，整批数据不会写入。</p>
+                    </div>
+                </details>
+
+                <details class="faq">
+                    <summary>导出</summary>
+                    <div class="faq-body">
+                        <p>导出菜单提供四种方式：<strong>导出 Excel</strong>、<strong>导出 CSV</strong>、<strong>导出当前视图 CSV</strong>（只含搜索与排序后的结果、且遵循当前列显示设置）以及<strong>下载导入模板</strong>。</p>
+                    </div>
+                </details>
+
+                <details class="faq">
+                    <summary>撤销与重做</summary>
+                    <div class="faq-body">
+                        <p>单元格改动会记录历史，支持最多 50 步。</p>
+                        <p>快捷键：<kbd>Ctrl</kbd> + <kbd>Z</kbd> 撤销，<kbd>Ctrl</kbd> + <kbd>Y</kbd> 重做。状态栏会显示剩余可撤销 / 可重做步数。</p>
+                    </div>
+                </details>
+
+                <details class="faq">
+                    <summary>表格管理</summary>
+                    <div class="faq-body">
+                        <p>「表格管理」页以卡片形式列出全部表格，可打开编辑、重命名、复制、单独导出或删除。</p>
+                        <p>删除操作不可恢复，会弹出确认框。</p>
+                    </div>
+                </details>
+            </section>
+
+            <!-- 快捷键 -->
+            <section class="doc-section">
+                <h2 class="doc-title">快捷键</h2>
+                <div class="kbd-table">
+                    <div class="kbd-row"><span><kbd>Ctrl</kbd> + <kbd>F</kbd></span><span>聚焦全表搜索</span></div>
+                    <div class="kbd-row"><span><kbd>Ctrl</kbd> + <kbd>Z</kbd></span><span>撤销</span></div>
+                    <div class="kbd-row"><span><kbd>Ctrl</kbd> + <kbd>Y</kbd></span><span>重做</span></div>
+                    <div class="kbd-row"><span><kbd>Esc</kbd></span><span>关闭当前弹窗</span></div>
+                </div>
+            </section>
+
+            <!-- 常见问题 -->
+            <section class="doc-section">
+                <h2 class="doc-title">常见问题</h2>
+
+                <details class="faq">
+                    <summary>上传后提示「文件解析失败」怎么办？</summary>
+                    <div class="faq-body">
+                        <p>请确认文件确实是 <code>.xlsx</code> 或 <code>.xls</code> 格式（把 <code>.csv</code> 直接改后缀是不行的），并且第一行为表头、至少有一行数据。</p>
+                    </div>
+                </details>
+
+                <details class="faq">
+                    <summary>保存后为什么提示某些行不合法？</summary>
+                    <div class="faq-body">
+                        <p>说明这些行违反了「数据校验规则」。提示中会带行号与具体原因，修正后再次保存即可。校验不通过时整批数据都不会写入，不会出现「改了一半」的情况。</p>
+                    </div>
+                </details>
+
+                <details class="faq">
+                    <summary>关闭浏览器后数据会丢吗？</summary>
+                    <div class="faq-body">
+                        <p>不会。数据保存在服务器数据库中，只有点击「保存」后才会写回。未保存的编辑在关闭页面后会丢失。</p>
+                    </div>
+                </details>
+
+                <details class="faq">
+                    <summary>搜索后保存，会把搜索之外的行删掉吗？</summary>
+                    <div class="faq-body">
+                        <p>不会。保存提交的始终是完整数据，搜索只是显示层的筛选。但删除选中行时需要注意：删除只作用于被勾选的行。</p>
+                    </div>
+                </details>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/utils.js"></script>
+</body>
+</html>

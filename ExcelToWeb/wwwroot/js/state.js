@@ -30,6 +30,13 @@ let originalRows = [];
 let currentValidationRules = [];
 let currentRules = [];
 
+// ----- 视图设置（只影响显示，不改动 currentRows） -----
+let searchKeyword = '';      // 全局搜索关键词
+let pageSize = 0;            // 每页行数，0 表示「全部」（不分页）
+let currentPage = 1;
+let hiddenColumns = [];      // 被隐藏的列名
+let columnWidths = {};       // 列名 -> 列宽(px)
+
 // ================================================================
 // 认证（JWT）
 // ================================================================

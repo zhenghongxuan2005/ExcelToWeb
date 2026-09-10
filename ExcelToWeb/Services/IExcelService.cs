@@ -14,6 +14,8 @@ public interface IExcelService
     Task<byte[]?> DownloadTemplateAsync(int tableId, int userId);
     Task<List<TableInfoDto>> GetTablesAsync(int userId);
     Task<ApiResponse> DeleteTableAsync(int tableId, int userId);
+    Task<ApiResponse> RenameTableAsync(int tableId, int userId, string newName);
+    Task<ApiResponse<UploadResult>> DuplicateTableAsync(int tableId, int userId);
 
     // 颜色规则
     Task<List<ColorRule>> GetColorRulesAsync(int userId, string? columnName = null);
