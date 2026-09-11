@@ -130,6 +130,24 @@
                         </select>
                     </div>
 
+                    <div class="field">
+                        <label class="field-label" for="prefDensity">表格密度</label>
+                        <select id="prefDensity" class="select">
+                            <option value="compact">紧凑（一屏看更多行）</option>
+                            <option value="comfortable">舒适（默认）</option>
+                            <option value="spacious">宽松（便于触屏点选）</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label class="field-label" for="prefGrid">网格线</label>
+                        <select id="prefGrid" class="select">
+                            <option value="on">显示行分隔线</option>
+                            <option value="off">隐藏行分隔线</option>
+                        </select>
+                        <p class="panel-hint">密度与网格线在「表格编辑」页生效，可自行切换对比。</p>
+                    </div>
+
                     <button type="button" class="btn btn-outline" id="resetPrefs">
                         <svg class="icon"><use href="#i-refresh"/></svg>恢复默认设置
                     </button>

@@ -1,0 +1,226 @@
+/* ================================================================
+   ExcelToWeb 样式模块：stats.css —— 统计栏 / 汇总行 / 分页 / 选中统计 / 空状态
+   （由 table.css 拆分而来；style.css 以 @import 汇总，加载顺序即层叠顺序）
+   ================================================================ */
+
+/* ================================================================
+   表格汇总行（tfoot）
+   ----------------------------------------------------------------
+   模仿 Excel 表格的「汇总行」：贴在表格底部，横向滚动时保持可见，
+   数值右对齐。冻结列在汇总行里同样需要冻结，避免与数据行错位。
+   ================================================================ */
+.aggregate-row td {
+    position: sticky;
+    bottom: 0;
+    z-index: 6;
+    background: var(--bg-head);
+    border-top: 2px solid var(--border);
+    border-bottom: none;
+    padding: 7px 10px;
+    font-size: 13px;
+    color: var(--text-2);
+    white-space: nowrap;
+}
+
+.aggregate-row td.col-pin {
+    z-index: 8;
+    background: var(--bg-head);
+}
+
+.aggregate-label {
+    text-align: center;
+    padding: 3px 4px;
+}
+
+/* 汇总方式下拉：贴在汇总行里，形态与单元格一致 */
+.aggregate-select {
+    width: 100%;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-2);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 3px 2px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+    .aggregate-select:hover {
+        background: var(--bg-card);
+        border-color: var(--border);
+    }
+
+    .aggregate-select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: var(--focus-ring);
+    }
+
+.aggregate-cell {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--text-1);
+}
+
+    /* 非数值列没有可汇总的值 */
+    .aggregate-cell.is-empty {
+        color: var(--text-4);
+        font-weight: 400;
+    }
+
+.aggregate-unit {
+    color: var(--text-3);
+    font-weight: 400;
+    font-size: 11px;
+    margin-right: 4px;
+}
+
+/* ================================================================
+   统计栏 / 空状态
+   ================================================================ */
+.stats-bar {
+    display: flex;
+    gap: 20px;
+    padding: 12px 16px;
+    background: var(--bg-soft);
+    border-radius: var(--radius-sm);
+    margin: 14px 4px 4px;
+    font-size: 13px;
+    color: var(--text-2);
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+    .stats-bar strong {
+        color: var(--text-1);
+    }
+
+.stat-hint {
+    color: var(--text-3);
+    margin-left: auto;
+}
+
+.stats-muted {
+    color: var(--text-3);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 70px 0;
+    color: var(--text-4);
+}
+
+.empty-icon {
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: center;
+}
+
+    .empty-icon .icon {
+        width: 52px;
+        height: 52px;
+        stroke-width: 1.4;
+    }
+
+.empty-state p {
+    margin: 4px 0;
+}
+
+.empty-sub {
+    font-size: 13px;
+    color: var(--text-4);
+}
+
+/* ===== 分页条 ===== */
+.pager {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    margin: 10px 4px 4px;
+    flex-wrap: wrap;
+}
+
+.pager-info {
+    font-size: 13px;
+    color: var(--text-3);
+    margin-right: auto;
+}
+
+.pager-current {
+    font-size: 13px;
+    color: var(--text-2);
+    padding: 0 4px;
+}
+
+.pager-btn {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-card);
+    color: var(--text-2);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+    .pager-btn:hover:not(:disabled) {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: var(--primary-soft);
+    }
+
+    .pager-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+/* ===== 选中行统计 ===== */
+.selection-bar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 11px 16px;
+    margin: 10px 4px 4px;
+    background: var(--primary-soft);
+    border: 1px solid color-mix(in srgb, var(--primary) 24%, transparent);
+    border-radius: var(--radius-md);
+    font-size: 13px;
+}
+
+.selection-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.selection-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 3px 10px;
+    background: var(--bg-card);
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.selection-col {
+    color: var(--text-3);
+}
+
+.selection-sum {
+    color: var(--text-1);
+    font-weight: 600;
+}
+
+.selection-avg {
+    color: var(--text-3);
+}

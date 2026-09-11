@@ -115,6 +115,31 @@ function initPreferences() {
         });
     }
 
+    // 表格密度
+    const densitySel = document.getElementById('prefDensity');
+    if (densitySel) {
+        const savedDensity = readPref(PREF_KEYS.density, 'comfortable');
+        densitySel.value = ['compact', 'comfortable', 'spacious'].indexOf(savedDensity) !== -1
+            ? savedDensity
+            : 'comfortable';
+        densitySel.addEventListener('change', () => {
+            localStorage.setItem(PREF_KEYS.density, densitySel.value);
+            applyDensity(densitySel.value);
+            showToast('✅ 已保存表格密度', 'success');
+        });
+    }
+
+    // 网格线
+    const gridSel = document.getElementById('prefGrid');
+    if (gridSel) {
+        gridSel.value = readPref(PREF_KEYS.grid, 'on') === 'off' ? 'off' : 'on';
+        gridSel.addEventListener('change', () => {
+            localStorage.setItem(PREF_KEYS.grid, gridSel.value);
+            applyGridLines(gridSel.value !== 'off');
+            showToast('✅ 已保存网格线设置', 'success');
+        });
+    }
+
     // 清空本地偏好
     const resetBtn = document.getElementById('resetPrefs');
     if (resetBtn) {
@@ -122,9 +147,15 @@ function initPreferences() {
             if (!confirm('确定要恢复默认设置吗？（不会影响你的账号与数据）')) return;
             localStorage.removeItem(PREF_KEYS.pageSize);
             localStorage.removeItem(PREF_KEYS.textSize);
+            localStorage.removeItem(PREF_KEYS.density);
+            localStorage.removeItem(PREF_KEYS.grid);
             if (sizeSel) sizeSel.value = '0';
             if (textSel) textSel.value = 'normal';
+            if (densitySel) densitySel.value = 'comfortable';
+            if (gridSel) gridSel.value = 'on';
             applyTextSize('normal');
+            applyDensity('comfortable');
+            applyGridLines(true);
             showToast('✅ 已恢复默认设置', 'success');
         });
     }

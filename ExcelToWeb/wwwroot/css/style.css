@@ -8,7 +8,8 @@
 @import url("layout.css");   /* 应用外壳：侧边栏 + 主内容 */
 @import url("toolbar.css");  /* 按钮、工具栏、下拉菜单、表格选择器 */
 @import url("search.css");   /* 全局搜索框、列显示/列宽菜单 */
-@import url("table.css");    /* 数据表格、可编辑单元格、统计栏、空状态 */
+@import url("table.css");    /* 数据表格、冻结列、表格密度、可编辑单元格 */
+@import url("stats.css");    /* 汇总行、统计栏、分页条、选中统计、空状态 */
 @import url("modal.css");    /* 弹窗、表单、规则表格、Toast */
 @import url("pages.css");    /* 登录页、看板页、响应式断点 */
 @import url("console.css");  /* 二级页面：表格管理、设置、帮助 */

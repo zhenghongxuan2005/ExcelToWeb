@@ -90,9 +90,10 @@ function renderTable() {
     }
 
     // 生成表格 HTML
+    // col-pin / col-pin-1 / col-pin-2 用于冻结「勾选列 + 序号列」（样式见 table.css）
     let html = '<table><thead><tr>';
-    html += '<th class="cell-center" style="width:36px; min-width:36px;"><input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes()" /></th>';
-    html += '<th class="cell-center" style="width:44px; min-width:44px;">#</th>';
+    html += '<th class="cell-center col-pin col-pin-1" style="width:36px; min-width:36px;"><input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes()" /></th>';
+    html += '<th class="cell-center col-pin col-pin-2" style="width:44px; min-width:44px;">#</th>';
     for (const h of visibleHeaders) {
         const arrow = sortField === h ? (sortOrder === 1 ? ' ▲' : ' ▼') : ' ⇅';
         html += `<th${columnWidthStyle(h)}>`;
@@ -145,7 +146,7 @@ function renderTable() {
         html += `<span>共 <strong>${currentRows.length}</strong> 行</span>`;
     }
     html += `<span><strong>${visibleHeaders.length}</strong> 列</span>`;
-    html += '<span class="stat-hint">勾选行→删除，点击表头排序，编辑后点击"保存"</span>';
+    html += '<span class="stat-hint">勾选行→删除，点击表头排序，方向键 / Enter 移动单元格，编辑后点击"保存"</span>';
     html += '</div>';
 
     // 分页条

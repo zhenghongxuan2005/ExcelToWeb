@@ -1,6 +1,7 @@
 /* ================================================================
-   ExcelToWeb 样式模块：table.css —— 数据表格、可编辑单元格、统计栏、空状态
+   ExcelToWeb 样式模块：table.css —— 数据表格、冻结列、可编辑单元格
    （由 style.css 拆分而来；style.css 以 @import 汇总，加载顺序即层叠顺序）
+   统计栏 / 分页 / 选中统计 / 汇总行见 stats.css
    ================================================================ */
 
 /* ================================================================
@@ -86,12 +87,102 @@ tbody td {
     vertical-align: middle;
 }
 
+/* 斑马纹用「与卡片底色混合」的不透明色：
+   冻结列一旦需要遮挡横向滚动的内容，半透明底色会让后面的单元格透出来 */
 tbody tr:nth-child(even) td {
-    background: color-mix(in srgb, var(--bg-soft) 45%, transparent);
+    background: color-mix(in srgb, var(--bg-soft) 45%, var(--bg-card));
 }
 
 tbody tr:hover td {
     background: var(--bg-head);
+}
+
+/* ================================================================
+   冻结列（勾选列 + 序号列）
+   ----------------------------------------------------------------
+   勾选列宽 36px、序号列宽 44px，「分析」列紧贴其后（left: 36px）。
+   冻结单元格必须有**不透明**底色，否则横向滚动时下方内容会透出来。
+   ================================================================ */
+.col-pin {
+    position: sticky;
+}
+
+.col-pin-1 {
+    left: 0;
+}
+
+.col-pin-2 {
+    left: 36px;
+}
+
+thead th.col-pin {
+    z-index: 12;
+}
+
+tbody td.col-pin {
+    z-index: 4;
+    background: var(--bg-card);
+}
+
+tbody tr:nth-child(even) td.col-pin {
+    background: color-mix(in srgb, var(--bg-soft) 45%, var(--bg-card));
+}
+
+tbody tr:hover td.col-pin {
+    background: var(--bg-head);
+}
+
+/* 冻结区与滚动区之间的分隔线 */
+tbody td.col-pin-2 {
+    box-shadow: inset -1px 0 0 var(--border-light);
+}
+
+thead th.col-pin-2 {
+    box-shadow: inset -1px 0 0 var(--border);
+}
+
+/* ================================================================
+   表格密度（挂在文档根上：html[data-density="..."]）
+   compact 紧凑 / comfortable 舒适（默认） / spacious 宽松
+   ================================================================ */
+html[data-density="compact"] tbody td {
+    padding: 0 6px;
+}
+
+html[data-density="compact"] .cell-input,
+html[data-density="compact"] .cell-select {
+    padding: 2px 6px;
+    font-size: 12.5px;
+}
+
+html[data-density="compact"] .row-index {
+    font-size: 11px;
+}
+
+html[data-density="spacious"] tbody td {
+    padding: 10px 10px;
+}
+
+html[data-density="spacious"] .cell-input,
+html[data-density="spacious"] .cell-select {
+    padding: 10px 8px;
+    font-size: 14px;
+}
+
+/* ================================================================
+   网格线开关（html[data-grid="off"] 隐藏行分隔线）
+   ================================================================ */
+html[data-grid="off"] tbody td {
+    border-bottom-color: transparent;
+}
+
+html[data-grid="off"] thead th {
+    border-bottom-color: transparent;
+}
+
+html[data-grid="off"] tbody td.col-pin-2,
+html[data-grid="off"] thead th.col-pin-2 {
+    box-shadow: none;
 }
 
 .th-inner {
@@ -193,58 +284,6 @@ tbody tr:hover td {
         color: var(--primary);
     }
 
-/* ================================================================
-   统计栏 / 空状态
-   ================================================================ */
-.stats-bar {
-    display: flex;
-    gap: 20px;
-    padding: 12px 16px;
-    background: var(--bg-soft);
-    border-radius: var(--radius-sm);
-    margin: 14px 4px 4px;
-    font-size: 13px;
-    color: var(--text-2);
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-    .stats-bar strong {
-        color: var(--text-1);
-    }
-
-.stat-hint {
-    color: var(--text-3);
-    margin-left: auto;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 70px 0;
-    color: var(--text-4);
-}
-
-.empty-icon {
-    margin-bottom: 14px;
-    display: flex;
-    justify-content: center;
-}
-
-    .empty-icon .icon {
-        width: 52px;
-        height: 52px;
-        stroke-width: 1.4;
-    }
-
-.empty-state p {
-    margin: 4px 0;
-}
-
-.empty-sub {
-    font-size: 13px;
-    color: var(--text-4);
-}
-
 /* ===== 搜索命中高亮 =====
    单元格本身是 <input>，无法在文本内部套标签，
    因此用「单元格底色 + 内描边」标出命中位置。 */
@@ -258,99 +297,7 @@ tbody tr:hover td {
         font-weight: 600;
     }
 
-.stats-muted {
-    color: var(--text-3);
-}
-
-/* ===== 分页条 ===== */
-.pager {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-md);
-    margin: 10px 4px 4px;
-    flex-wrap: wrap;
-}
-
-.pager-info {
-    font-size: 13px;
-    color: var(--text-3);
-    margin-right: auto;
-}
-
-.pager-current {
-    font-size: 13px;
-    color: var(--text-2);
-    padding: 0 4px;
-}
-
-.pager-btn {
-    padding: 6px 12px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--bg-card);
-    color: var(--text-2);
-    font-size: 13px;
-    font-family: inherit;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-    .pager-btn:hover:not(:disabled) {
-        border-color: var(--primary);
-        color: var(--primary);
-        background: var(--primary-soft);
-    }
-
-    .pager-btn:disabled {
-        opacity: 0.45;
-        cursor: not-allowed;
-    }
-
-/* ===== 选中行统计 ===== */
-.selection-bar {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    flex-wrap: wrap;
-    padding: 11px 16px;
-    margin: 10px 4px 4px;
-    background: var(--primary-soft);
-    border: 1px solid color-mix(in srgb, var(--primary) 24%, transparent);
-    border-radius: var(--radius-md);
-    font-size: 13px;
-}
-
-.selection-title {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--primary);
-    font-weight: 600;
-}
-
-.selection-stat {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 3px 10px;
-    background: var(--bg-card);
-    border-radius: 999px;
-    white-space: nowrap;
-}
-
-.selection-col {
-    color: var(--text-3);
-}
-
-.selection-sum {
-    color: var(--text-1);
-    font-weight: 600;
-}
-
-.selection-avg {
-    color: var(--text-3);
+/* 查找/替换定位到的单元格（比搜索命中更醒目，且不依赖 input 内容） */
+.editable-cell.find-hit {
+    box-shadow: inset 0 0 0 2px var(--primary);
 }

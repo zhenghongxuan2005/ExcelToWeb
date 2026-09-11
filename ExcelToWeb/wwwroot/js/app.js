@@ -79,6 +79,8 @@ function applySavedPreferences() {
 // ================================================================
 Object.assign(window, {
     addRow, deleteSelectedRows, batchEdit, confirmBatchEdit, closeBatchModal,
+    // 行结构操作
+    insertRowsAbove, moveSelectedRows,
     clearAll, sortBy, applyDateFilter, clearDateFilter,
     openFilter, closeFilter, applyFilter, clearFilter,
     openRuleModal, closeRuleModal, addRuleRow, removeRule, moveRuleUp, moveRuleDown, saveRules,
@@ -87,6 +89,10 @@ Object.assign(window, {
     exportExcel, exportCsv, exportViewCsv, downloadTemplate,
     refreshData, saveData, switchTable, deleteCurrentTable, handleLogout,
     undo, redo,
+    // 查找 / 替换
+    openFindModal, closeFindModal, findNext, replaceCurrent, replaceAll, updateFindStatus,
+    // 汇总行
+    setAggregateMode, toggleAggregateRow,
     // 视图：搜索 / 分页 / 列
     onSearchInput, clearSearch, gotoPage, setPageSize,
     toggleColumn, setColumnWidth, showAllColumns,

@@ -135,3 +135,112 @@ function confirmBatchEdit() {
 
     showToast(`✅ 已成功修改 ${indices.length} 行的 "${column}" 列`, 'success');
 }
+
+// ================================================================
+// 行结构操作（插入 / 上移 / 下移）
+// ----------------------------------------------------------------
+// 作用对象：优先取勾选的行；没有勾选时取当前聚焦单元格所在的行，
+// 这样「点一下某行再插入」也能直接工作，符合 Excel 的操作直觉。
+// 所有操作只改前端 currentRows，点击「保存」后才落库，且都可用 Ctrl+Z 撤销。
+// ================================================================
+
+/** 取本次要操作的行下标（已排序）。没有目标时返回空数组 */
+function resolveTargetIndexes() {
+    const selected = getSelectedIndexes();
+    if (selected.length > 0) return selected.sort((a, b) => a - b);
+
+    const el = document.activeElement;
+    if (isCellInput(el)) {
+        const idx = parseInt(el.dataset.index);
+        if (!isNaN(idx) && currentRows[idx]) return [idx];
+    }
+    return [];
+}
+
+/** 在选中行上方插入与选中行数相同的空行（Excel 的「在上方插入行」） */
+function insertRowsAbove() {
+    if (!currentTableId) {
+        showToast('请先上传一个 Excel 文件', 'error');
+        return;
+    }
+
+    const indexes = resolveTargetIndexes();
+    if (indexes.length === 0) {
+        showToast('请先勾选一行，或点一下作为插入位置的单元格', 'info');
+        return;
+    }
+
+    const at = indexes[0];
+    const blanks = [];
+    for (let n = 0; n < indexes.length; n++) {
+        const blank = {};
+        for (const h of currentHeaders) blank[h] = '';
+        blanks.push(blank);
+    }
+
+    pushHistory();
+    currentRows.splice(at, 0, ...blanks);
+
+    sortField = null;
+    sortOrder = 1;
+    renderTable();
+
+    showToast(`✅ 已在第 ${at + 1} 行上方插入 ${blanks.length} 行`, 'success');
+    setStatus(`已插入 ${blanks.length} 行`);
+}
+
+/**
+ * 上移 / 下移选中行。
+ * 实现方式：把选中的行整体取出、把未选中的行按原顺序重组，
+ * 再把整块插到新位置 —— 这样相邻多行选中时会作为一整块移动，
+ * 不会出现块内互相交换导致顺序错乱。
+ * @param {number} dir -1 上移，1 下移
+ */
+function moveSelectedRows(dir) {
+    if (!currentTableId) {
+        showToast('请先上传一个 Excel 文件', 'error');
+        return;
+    }
+
+    const indexes = resolveTargetIndexes();
+    if (indexes.length === 0) {
+        showToast('请先勾选要移动的行', 'info');
+        return;
+    }
+
+    if (dir < 0 && indexes[0] === 0) {
+        showToast('已经是第一行，无法上移', 'info');
+        return;
+    }
+    if (dir > 0 && indexes[indexes.length - 1] === currentRows.length - 1) {
+        showToast('已经是最后一行，无法下移', 'info');
+        return;
+    }
+
+    const selected = new Set(indexes);
+    const group = indexes.map(i => currentRows[i]);
+    const rest = currentRows.filter((_, i) => !selected.has(i));
+
+    // 选中块之前有多少「未选中」的行，即它在 rest 里的落点基准。
+    // 下移时整块要跨过紧邻下方那一行，因此在 rest 里的落点是 before + 1；
+    // 上移时跨过上方那一行，落点是 before - 1。
+    let before = 0;
+    for (let i = 0; i < indexes[0]; i++) {
+        if (!selected.has(i)) before++;
+    }
+
+    const at = before + (dir < 0 ? -1 : 1);
+    // at === rest.length 表示插到末尾，这是合法的（等价于整体下沉到底）
+    if (at < 0 || at > rest.length) return;
+
+    pushHistory();
+    rest.splice(at, 0, ...group);
+    currentRows = rest;
+
+    sortField = null;
+    sortOrder = 1;
+    renderTable();
+
+    showToast(dir < 0 ? `✅ 已上移 ${group.length} 行` : `✅ 已下移 ${group.length} 行`, 'success');
+    setStatus(dir < 0 ? `上移 ${group.length} 行` : `下移 ${group.length} 行`);
+}

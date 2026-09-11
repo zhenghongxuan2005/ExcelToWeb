@@ -96,3 +96,31 @@ function formatTime(dateStr) {
         return dateStr;
     }
 }
+
+// ================================================================
+// 表格外观偏好（挂在文档根元素上，样式统一由 CSS 控制）
+// 放在 utils.js 是因为「表格编辑」与「设置」两个页面都要用到。
+// ================================================================
+
+/**
+ * 表格密度：compact 紧凑 / comfortable 舒适（默认）/ spacious 宽松。
+ * 传其它值一律回落到 comfortable，避免脏数据把表格样式弄坏。
+ */
+function applyDensity(mode) {
+    const allowed = ['compact', 'comfortable', 'spacious'];
+    const value = allowed.indexOf(mode) !== -1 ? mode : 'comfortable';
+    if (value === 'comfortable') {
+        document.documentElement.removeAttribute('data-density');
+    } else {
+        document.documentElement.setAttribute('data-density', value);
+    }
+}
+
+/** 网格线开关：关闭时移除行分隔线，让表格更接近「无边框」的看板观感 */
+function applyGridLines(on) {
+    if (on) {
+        document.documentElement.removeAttribute('data-grid');
+    } else {
+        document.documentElement.setAttribute('data-grid', 'off');
+    }
+}
