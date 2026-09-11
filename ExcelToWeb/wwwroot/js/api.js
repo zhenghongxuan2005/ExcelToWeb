@@ -119,6 +119,15 @@ function fetchTableList() {
     return request('/excel/tables');
 }
 
+/** 列结构维护（增 / 删 / 改 / 移）：headers 为最终列名，renames 为 [{oldName, newName}] */
+function updateHeaders(tableId, headers, renames) {
+    return request('/excel/headers', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableId, headers, renames: renames || [] })
+    });
+}
+
 // ================================================================
 // 导出（返回 blob，不走统一 JSON 解析）
 // ================================================================

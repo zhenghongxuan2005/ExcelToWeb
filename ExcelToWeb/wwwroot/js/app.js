@@ -51,6 +51,8 @@ document.addEventListener('DOMContentLoaded', () => {
             closeValidationModal();
             closeFilter();
             closeBatchModal();
+            closeColumnModal();
+            closeFindModal();
         }
     });
 });
@@ -91,6 +93,9 @@ Object.assign(window, {
     undo, redo,
     // 查找 / 替换
     openFindModal, closeFindModal, findNext, replaceCurrent, replaceAll, updateFindStatus,
+    // 列管理（增删改移）
+    openColumnModal, closeColumnModal, addColumnRow, removeColumnRow, moveColumnRow,
+    onColumnDraftInput, saveColumnStructure,
     // 汇总行
     setAggregateMode, toggleAggregateRow,
     // 视图：搜索 / 分页 / 列

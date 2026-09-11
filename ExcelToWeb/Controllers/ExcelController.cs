@@ -96,6 +96,22 @@ public class ExcelController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// 列结构维护（增 / 删 / 改 / 移）。一次请求完成：
+    /// 请求里给最终列名与可选的重命名映射，服务端推出 dropped/added，
+    /// 同步修改每行 DataJson 与 ColorRule / ValidationRule，整个过程在一个事务里。
+    /// </summary>
+    [HttpPut("headers")]
+    public async Task<IActionResult> UpdateHeaders([FromBody] UpdateHeadersRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
+
+        var result = await _service.UpdateHeadersAsync(request.TableId, userId, request);
+        if (!result.Success) return BadRequest(result);
+        return Ok(result);
+    }
+
     // ================================================================
     // 导出 Excel
     // ================================================================

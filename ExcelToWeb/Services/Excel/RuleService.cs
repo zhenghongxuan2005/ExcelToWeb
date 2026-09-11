@@ -1,4 +1,5 @@
 using ExcelToWeb.Data;
+using ExcelToWeb.DTOs;
 using ExcelToWeb.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -79,5 +80,54 @@ public class RuleService
         await _db.SaveChangesAsync();
 
         return rules.Count;
+    }
+
+    /// <summary>
+    /// 列结构变动时的规则迁移：删除引用了 dropped 列的规则，把引用了 renamed 列的规则改名跟随。
+    /// 调用方应包在事务里；本方法内部也会 SaveChangesAsync，但只要在同一 DbContext 里就会一起提交。
+    /// </summary>
+    public async Task<int> MigrateForColumnsAsync(int userId, int tableId,
+        IEnumerable<ColumnRenameItem> renames, IEnumerable<string> dropped)
+    {
+        var droppedList = dropped?.ToList() ?? new List<string>();
+        var renameList = renames?.ToList() ?? new List<ColumnRenameItem>();
+        var deleted = 0;
+
+        // 1) 删除引用了 dropped 列的规则
+        if (droppedList.Count > 0)
+        {
+            var droppedSet = new HashSet<string>(droppedList, StringComparer.Ordinal);
+
+            var oldColor = await _db.ColorRules
+                .Where(r => r.UserId == userId && droppedSet.Contains(r.ColumnName))
+                .ToListAsync();
+            _db.ColorRules.RemoveRange(oldColor);
+            deleted += oldColor.Count;
+
+            var oldVal = await _db.ValidationRules
+                .Where(r => r.TableId == tableId && droppedSet.Contains(r.ColumnName))
+                .ToListAsync();
+            _db.ValidationRules.RemoveRange(oldVal);
+            deleted += oldVal.Count;
+        }
+
+        // 2) 引用了 renamed 列的规则改名跟随
+        foreach (var item in renameList)
+        {
+            var renameColor = await _db.ColorRules
+                .Where(r => r.UserId == userId && r.ColumnName == item.OldName)
+                .ToListAsync();
+            foreach (var r in renameColor) r.ColumnName = item.NewName;
+
+            var renameVal = await _db.ValidationRules
+                .Where(r => r.TableId == tableId && r.ColumnName == item.OldName)
+                .ToListAsync();
+            foreach (var r in renameVal) r.ColumnName = item.NewName;
+        }
+
+        if (deleted > 0 || renameList.Count > 0)
+            await _db.SaveChangesAsync();
+
+        return deleted;
     }
 }

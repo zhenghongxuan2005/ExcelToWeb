@@ -109,6 +109,7 @@
                 <div class="dropdown">
                     <button class="btn btn-outline"><svg class="icon"><use href="#i-settings"/></svg>设置<svg class="icon icon-sm"><use href="#i-chevron-down"/></svg></button>
                     <div class="dropdown-menu">
+                        <button class="dropdown-item" onclick="openColumnModal()"><svg class="icon icon-sm"><use href="#i-columns"/></svg>列管理（增删改移）</button>
                         <button class="dropdown-item" onclick="openRuleModal()"><svg class="icon icon-sm"><use href="#i-settings"/></svg>条件格式规则</button>
                         <button class="dropdown-item" onclick="openValidationModal()"><svg class="icon icon-sm"><use href="#i-check"/></svg>数据校验规则</button>
                         <button class="dropdown-item" onclick="toggleAggregateRow()"><svg class="icon icon-sm"><use href="#i-sigma"/></svg>显示 / 关闭汇总行</button>
@@ -307,6 +308,28 @@
         </div>
     </div>
 
+    <!-- ===== 列管理弹窗 ===== -->
+    <div id="columnModal" class="modal">
+        <div class="modal-card">
+            <button class="modal-close" aria-label="关闭弹窗" onclick="closeColumnModal()"><svg class="icon"><use href="#i-x"/></svg></button>
+            <h3 class="modal-title">列管理</h3>
+            <p class="modal-sub">重排（↑↓）、改名（直接编辑）、删除（×）或添加列。删除列会连同数据与相关规则一起清除，保存时一次提交。</p>
+
+            <div id="columnDraftList" class="col-draft-list">
+                <!-- 列草稿行由 column-manager.js 动态生成 -->
+            </div>
+
+            <button class="btn btn-primary btn-sm" onclick="addColumnRow()" style="margin-top:12px;">
+                <svg class="icon icon-sm"><use href="#i-plus"/></svg>添加列
+            </button>
+
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeColumnModal()">取消</button>
+                <button class="btn btn-success" onclick="saveColumnStructure()"><svg class="icon"><use href="#i-save"/></svg>保存列结构</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ===== 加载 JS 模块（按依赖顺序：state.js 须最先，app.js 须最后） ===== -->
     <script src="js/api.js"></script>
     <script src="js/state.js"></script>
@@ -326,6 +349,7 @@
     <script src="js/color-rules.js"></script>
     <script src="js/validation.js"></script>
     <script src="js/upload-validated.js"></script>
+    <script src="js/column-manager.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

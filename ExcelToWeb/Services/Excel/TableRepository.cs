@@ -24,6 +24,12 @@ public class TableRepository
     public Task<List<DynamicRow>> GetRowsAsync(int tableId) =>
         _db.DynamicRows.Where(r => r.TableId == tableId).ToListAsync();
 
+    /// <summary>
+    /// 取出表的全部数据行（实体），供门面在事务里直接改 DataJson 字段。
+    /// 与 GetRowDataAsync（反序列化到字典）不同，这里返回 EF 实体，调用方修改后 SaveChanges 即可落库。
+    /// </summary>
+    public Task<List<DynamicRow>> LoadRawRowsAsync(int tableId) => GetRowsAsync(tableId);
+
     /// <summary>读取并反序列化某表的全部数据行</summary>
     public async Task<List<Dictionary<string, object>>> GetRowDataAsync(int tableId)
     {

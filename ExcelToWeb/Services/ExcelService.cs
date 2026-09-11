@@ -25,6 +25,7 @@ public class ExcelService : IExcelService
     private readonly RowValidator _validator;
     private readonly TableRepository _repository;
     private readonly RuleService _rules;
+    private readonly ColumnStructureService _columns;
 
     public ExcelService(
         ILogger<ExcelService> logger,
@@ -32,7 +33,8 @@ public class ExcelService : IExcelService
         ExcelExportService exporter,
         RowValidator validator,
         TableRepository repository,
-        RuleService rules)
+        RuleService rules,
+        ColumnStructureService columns)
     {
         _logger = logger;
         _reader = reader;
@@ -40,6 +42,7 @@ public class ExcelService : IExcelService
         _validator = validator;
         _repository = repository;
         _rules = rules;
+        _columns = columns;
     }
 
     // ================================================================
@@ -254,6 +257,28 @@ public class ExcelService : IExcelService
 
         // 极端情况下兜底：加时间戳，保证一定能插入
         return $"{baseName}({DateTime.Now:HHmmss})";
+    }
+
+    // ================================================================
+    // 列结构维护（增 / 删 / 改 / 移）
+    // ----------------------------------------------------------------
+    // 实现整体在 Services/Excel/ColumnStructureService.cs：
+    //   headers  - 最终列名（顺序即新顺序）
+    //   renames  - 把数据从 oldName 拷到 newName（避免 drop+add 丢数据）
+    //   服务端做集合差推出 dropped/added，事务内完成行数据迁移与规则清理
+    // 门面只保留异常日志与对外语义。
+    // ================================================================
+    public async Task<ApiResponse> UpdateHeadersAsync(int tableId, int userId, UpdateHeadersRequest request)
+    {
+        try
+        {
+            return await _columns.UpdateHeadersAsync(tableId, userId, request);
+        }
+        catch (ColumnUpdateException ex)
+        {
+            _logger.LogError(ex.InnerException, "更新表格 {TableId} 列结构失败", ex.TableId);
+            return ApiResponse.Fail("更新列结构失败，请稍后重试");
+        }
     }
 
     // ================================================================

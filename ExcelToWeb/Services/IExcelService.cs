@@ -17,6 +17,9 @@ public interface IExcelService
     Task<ApiResponse> RenameTableAsync(int tableId, int userId, string newName);
     Task<ApiResponse<UploadResult>> DuplicateTableAsync(int tableId, int userId);
 
+    /// <summary>列结构维护：增 / 删 / 改 / 移。一次请求完成，重命名保留数据。</summary>
+    Task<ApiResponse> UpdateHeadersAsync(int tableId, int userId, UpdateHeadersRequest request);
+
     // 颜色规则
     Task<List<ColorRule>> GetColorRulesAsync(int userId, string? columnName = null);
     Task<ApiResponse> SaveColorRulesAsync(int userId, List<ColorRule> rules);
