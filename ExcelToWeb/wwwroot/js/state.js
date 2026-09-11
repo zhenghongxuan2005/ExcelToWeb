@@ -20,8 +20,8 @@ let sortOrder = 1;
 let colorRulesCache = [];
 let ruleColumnName = '数量';
 
-let undoHistory = [];
-let historyIndex = -1;
+let undoHistory = [];   // 撤销栈：存「修改前」的快照
+let redoHistory = [];   // 重做栈：撤销时把当前状态转存到这里
 const MAX_HISTORY = 50;
 
 let filterColumn = null;

@@ -224,8 +224,16 @@ function renderTable() {
             if (!isNaN(idx) && currentRows[idx]) {
                 const keyId = idx + '_' + key;
                 const oldVal = editOldValue[keyId];
-                if (oldVal !== undefined && oldVal !== inp.value) {
-                    pushHistory();
+                if (oldVal !== undefined && String(oldVal) !== inp.value) {
+                    // pushHistory() 记录的是「修改前」的状态，而 input 事件已经
+                    // 把新值写进 currentRows 了，所以这里先把旧值临时放回去再快照。
+                    const cur = currentRows[idx][key];
+                    currentRows[idx][key] = oldVal;
+                    try {
+                        pushHistory();
+                    } finally {
+                        currentRows[idx][key] = cur;
+                    }
                 }
                 delete editOldValue[keyId];
             }
@@ -249,6 +257,8 @@ function renderTable() {
                     const key = inp.dataset.key;
                     if (!isNaN(idx) && currentRows[idx] && oldVal !== inp.value) {
                         editOldValue[idx + '_' + key] = oldVal;
+                        // 与手动输入保持一致：数据源同步更新，避免重渲染后回到旧值
+                        currentRows[idx][key] = inp.value;
                         inp.dispatchEvent(new Event('blur'));
                     }
                 });

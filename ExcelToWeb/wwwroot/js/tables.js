@@ -1,7 +1,9 @@
 // ================================================================
 // 表格列表管理：加载列表、切换、删除、刷新
 // 依赖：state.js（allTables / currentTableId 等全局状态）、utils.js、render.js、api.js
-//       history.js（刷新时清空撤销栈）
+//       history.js（resetHistory / undo / redo）
+// 说明：换了数据源的地方都必须调用 resetHistory()，否则 A 表的快照会被
+//       撤销到 B 表上 —— 那是会写错数据的。
 // ================================================================
 
 function renderTableSelector() {
@@ -11,7 +13,7 @@ function renderTableSelector() {
     for (const t of allTables) {
         const selected = t.id === currentTableId ? ' selected' : '';
         const timeStr = formatTime(t.updatedAt || t.createdAt);
-        html += `<option value="${t.id}"${selected}>${t.tableName} (${timeStr})</option>`;
+        html += `<option value="${t.id}"${selected}>${escapeHtml(t.tableName)} (${timeStr})</option>`;
     }
     selector.innerHTML = html;
 }
@@ -25,6 +27,7 @@ function loadTableList() {
                 currentTableId = null;
                 currentHeaders = [];
                 currentRows = [];
+                resetHistory();
                 renderTable();
                 setStatus('无表格，请上传 Excel');
                 return;
@@ -69,12 +72,15 @@ function loadTableData(tableId) {
                 currentRows = data.rows;
                 sortField = null;
                 sortOrder = 1;
+                // 加载新数据源，旧表格的撤销快照必须作废
+                resetHistory();
                 loadColorRules().then(() => renderTable());
                 setStatus(`已加载: ${getTableName(tableId)} (${currentRows.length}行)`);
                 showToast('✅ 已切换到: ' + getTableName(tableId), 'success');
             } else {
                 currentHeaders = [];
                 currentRows = [];
+                resetHistory();
                 renderTable();
                 setStatus('该表格没有数据');
             }
@@ -94,6 +100,7 @@ function switchTable() {
         currentTableId = null;
         currentHeaders = [];
         currentRows = [];
+        resetHistory();
         renderTable();
         setStatus('请选择表格');
         return;
@@ -116,6 +123,7 @@ function deleteCurrentTable() {
             currentTableId = null;
             currentHeaders = [];
             currentRows = [];
+            resetHistory();
             renderTableSelector();
             renderTable();
             setStatus('已删除');
@@ -137,6 +145,8 @@ function refreshData() {
     }
     setStatus('刷新中...');
     showTableSkeleton(currentHeaders.length);
+    // 从服务端重取数据，撤销栈随之作废
+    resetHistory();
     queryTableData(currentTableId)
         .then(data => {
             hideTableSkeleton();
@@ -156,7 +166,4 @@ function refreshData() {
             setStatus('刷新失败');
             console.error(err);
         });
-    undoHistory = [];
-    historyIndex = -1;
-    updateUndoButtons();
 }

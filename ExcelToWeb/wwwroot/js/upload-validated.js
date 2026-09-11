@@ -41,6 +41,8 @@ function uploadWithValidation() {
             } else {
                 showToast('✅ ' + msg, 'success');
                 currentRows = vr.validRows;
+                // 整表被替换，撤销栈随之作废
+                resetHistory();
                 renderTable();
                 setStatus(`已加载: ${currentTableId} (${currentRows.length}行)`);
             }
