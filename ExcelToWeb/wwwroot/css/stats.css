@@ -224,3 +224,38 @@
 .selection-avg {
     color: var(--text-3);
 }
+
+/* ===== 单元格选区提示条（range.js） ===== */
+.range-bar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 9px 16px;
+    margin: 8px 4px 4px;
+    background: var(--bg-soft);
+    border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent);
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    color: var(--text-2);
+}
+
+.range-title {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+    .range-title strong {
+        font-variant-numeric: tabular-nums;
+    }
+
+.range-keys {
+    color: var(--text-3);
+    font-size: 12px;
+}
+
+.range-actions {
+    margin-left: auto;
+    display: inline-flex;
+    gap: 8px;
+}

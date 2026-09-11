@@ -125,6 +125,16 @@ function handleCellKeydown(e) {
     if (!isCellInput(e.target)) return;
     if (e.altKey || e.metaKey) return;
 
+    // Shift + 方向键：交给 range.js 扩展单元格选区（Excel 的选区手感）；
+    // range.js 未接线或不在单元格上时返回 false，落回下面的普通移动逻辑。
+    if (e.shiftKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown' ||
+                       e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        if (typeof extendRangeByKey === 'function' && extendRangeByKey(e.key)) {
+            e.preventDefault();
+            return;
+        }
+    }
+
     if (e.key === 'Enter') {
         e.preventDefault();
         moveCell(e.shiftKey ? -1 : 1, 0);

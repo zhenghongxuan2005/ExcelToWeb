@@ -52,6 +52,8 @@ function renderTable() {
     if (currentHeaders.length === 0 || currentRows.length === 0) {
         container.innerHTML = '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#i-inbox"/></svg></div><p>暂无数据，请上传 Excel 文件</p></div>';
         clearSelectionStats();
+        // 表格已被替换成占位内容，旧选区失去意义（range.js 未接线时跳过）
+        if (typeof clearRange === 'function') clearRange();
         updateUndoButtons();
         return;
     }
@@ -85,6 +87,8 @@ function renderTable() {
             + '<p class="empty-sub">换个关键词，或点搜索框右侧的 ✕ 清除</p>'
             + '</div>';
         clearSelectionStats();
+        // 表格已被替换成占位内容，旧选区失去意义（range.js 未接线时跳过）
+        if (typeof clearRange === 'function') clearRange();
         updateUndoButtons();
         return;
     }
@@ -156,6 +160,9 @@ function renderTable() {
 
     // 选中统计面板挂到表格下方（容器外，避免被 innerHTML 覆盖）
     updateSelectionStats();
+
+    // 表格刚重建，把 range.js 的单元格选区重画到新 DOM 上
+    if (typeof paintSelection === 'function') paintSelection();
 
     // 绑定事件
     const editOldValue = {};

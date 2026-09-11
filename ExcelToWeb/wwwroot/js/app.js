@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 拖拽上传
     initDragAndDrop();
 
+    // 单元格区域选择 + 复制 / 粘贴
+    initRangeSelection();
+
     // 列显示 / 列宽菜单
     renderColumnMenu();
 
@@ -96,6 +99,8 @@ Object.assign(window, {
     // 列管理（增删改移）
     openColumnModal, closeColumnModal, addColumnRow, removeColumnRow, moveColumnRow,
     onColumnDraftInput, saveColumnStructure,
+    // 单元格选区（复制 / 粘贴 / 清空）
+    copyRangeSelection, clearRangeContent, clearRange,
     // 汇总行
     setAggregateMode, toggleAggregateRow,
     // 视图：搜索 / 分页 / 列

@@ -301,3 +301,29 @@ html[data-grid="off"] thead th.col-pin-2 {
 .editable-cell.find-hit {
     box-shadow: inset 0 0 0 2px var(--primary);
 }
+
+/* ================================================================
+   单元格区域选区（range.js）
+   ----------------------------------------------------------------
+   单元格本体是 <input>，底色由 input 自己画 —— 所以填充色必须给 input，
+   只在 td 上描边；否则底色会被 input 的实底盖住，选了看不出来。
+   ================================================================ */
+td.editable-cell.is-range-selected {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 28%, transparent);
+}
+
+    td.editable-cell.is-range-selected .cell-input {
+        background: color-mix(in srgb, var(--primary) 13%, var(--bg-card));
+        border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+    }
+
+/* 焦点格：比其余选中格更重的描边，指示「活动单元格」 */
+td.editable-cell.is-range-focus {
+    box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+/* 拖拽选取期间禁止选中文本，否则会连带选中一大片单元格文字 */
+body.is-range-dragging {
+    user-select: none;
+    -webkit-user-select: none;
+}

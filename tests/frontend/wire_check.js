@@ -54,7 +54,7 @@ sandbox.window = sandbox;
 sandbox.globalThis = sandbox;
 
 const STATE_PROBE = ['currentRows', 'currentHeaders', 'allTables', 'undoHistory', 'ruleColumnName', 'originalRows',
- 'searchKeyword', 'pageSize', 'currentPage', 'hiddenColumns', 'columnWidths'];
+ 'searchKeyword', 'pageSize', 'currentPage', 'hiddenColumns', 'columnWidths', 'rangeAnchor'];
 const EXPOSED = ['addRow','deleteSelectedRows','batchEdit','confirmBatchEdit','closeBatchModal',
  'clearAll','sortBy','applyDateFilter','clearDateFilter',
  'openFilter','closeFilter','applyFilter','clearFilter',
@@ -66,7 +66,8 @@ const EXPOSED = ['addRow','deleteSelectedRows','batchEdit','confirmBatchEdit','c
  'undo','redo',
  'onSearchInput','clearSearch','gotoPage','setPageSize',
  'toggleColumn','setColumnWidth','showAllColumns',
- 'updateSelectionStats'];
+ 'updateSelectionStats',
+ 'copyRangeSelection','clearRangeContent','clearRange'];
 
 const bundle = order
     .map(src => '\n/* ==== ' + src + ' ==== */\n' + fs.readFileSync(path.join(ROOT, src), 'utf8'))
