@@ -137,8 +137,8 @@ function deleteCurrentTable() {
 }
 
 function refreshData() {
-    originalRows = [];
-    filterColumn = null;
+    // 列筛选是纯视图状态，刷新时先清掉（撤销栈由下面的 resetHistory 一并清）
+    if (typeof resetFilter === 'function') resetFilter();
     if (!currentTableId) {
         showToast('请先上传一个 Excel 文件', 'error');
         return;

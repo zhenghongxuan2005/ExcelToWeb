@@ -29,7 +29,7 @@ vm.runInContext(
     FILES.map(f => '\n/* ' + f + ' */\n' + fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n;\n')
     // 渲染依赖 DOM，这里只需验证数据管线，直接打桩
     + '\n;function renderTable() {}'
-    + '\n;globalThis.__api = { getSearchedRows, buildDisplayRows, getPagedRows, getTotalPages, getVisibleHeaders, cellMatchesSearch, csvCell, formatNumber, columnWidthStyle };',
+    + '\n;globalThis.__api = { getFilteredRows, buildDisplayRows, getPagedRows, getTotalPages, getVisibleHeaders, cellMatchesSearch, csvCell, formatNumber, columnWidthStyle };',
     ctx, { filename: 'bundle.js' }
 );
 const api = sandbox.__api;
@@ -73,17 +73,17 @@ const ROWS = [
 
 console.log('[1] 全局搜索');
 setState(ROWS, HEADERS);
-check('无关键词时返回全部行', api.getSearchedRows().length === 4);
+check('无关键词时返回全部行', api.getFilteredRows().length === 4);
 setState(ROWS, HEADERS, { searchKeyword: '张三' });
-check('跨列命中（销售员列）', api.getSearchedRows().length === 2, api.getSearchedRows().length);
+check('跨列命中（销售员列）', api.getFilteredRows().length === 2, api.getFilteredRows().length);
 setState(ROWS, HEADERS, { searchKeyword: '2026-02' });
-check('跨列命中（日期列）', api.getSearchedRows().length === 2);
+check('跨列命中（日期列）', api.getFilteredRows().length === 2);
 setState(ROWS, HEADERS, { searchKeyword: '王五' });
-check('命中 1 行', api.getSearchedRows().length === 1);
+check('命中 1 行', api.getFilteredRows().length === 1);
 setState(ROWS, HEADERS, { searchKeyword: '不存在的东西' });
-check('无命中返回空数组', api.getSearchedRows().length === 0);
+check('无命中返回空数组', api.getFilteredRows().length === 0);
 setState(ROWS, HEADERS, { searchKeyword: 'zhang' });
-check('英文大小写不敏感（应无命中）', api.getSearchedRows().length === 0);
+check('英文大小写不敏感（应无命中）', api.getFilteredRows().length === 0);
 
 console.log('[2] 搜索高亮判定');
 setState(ROWS, HEADERS, { searchKeyword: '张' });

@@ -88,6 +88,8 @@ Object.assign(window, {
     insertRowsAbove, moveSelectedRows,
     clearAll, sortBy, applyDateFilter, clearDateFilter,
     openFilter, closeFilter, applyFilter, clearFilter,
+    // 列筛选：值清单 / 模式切换
+    setFilterMode, filterSelectAll, onFilterValueSearch, updateFilterValueCount,
     openRuleModal, closeRuleModal, addRuleRow, removeRule, moveRuleUp, moveRuleDown, saveRules,
     openValidationModal, closeValidationModal, addValidationRule, saveValidationRules,
     uploadWithValidation, toggleAllCheckboxes,

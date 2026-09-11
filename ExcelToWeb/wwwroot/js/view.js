@@ -17,11 +17,56 @@ function rowMatchesKeyword(row, kwLower) {
     return false;
 }
 
-/** 应用全局搜索后的行集合 */
-function getSearchedRows() {
-    if (!searchKeyword) return currentRows;
-    const kw = searchKeyword.toLowerCase();
-    return currentRows.filter(row => rowMatchesKeyword(row, kw));
+// ================================================================
+// 列筛选
+// ----------------------------------------------------------------
+// 只裁剪「显示」，绝不改 currentRows —— saveData() 保存的是整个 currentRows，
+// 一旦这里把 currentRows 换成筛选结果，「筛选后点保存」就会永久删掉被筛掉的行。
+// 视图状态（filterColumn / filterMode / filterValues / filterCondition / filterKeyword）
+// 声明在 state.js，交互在 filter.js。
+// ================================================================
+
+/** 当前是否有生效的列筛选（值清单模式下 null 表示不筛选、[] 表示结果为空集） */
+function isFilterActive() {
+    if (!filterColumn) return false;
+    if (filterMode === 'values') return Array.isArray(filterValues);
+    return !!filterKeyword;
+}
+
+/** 某一行的筛选列是否通过筛选 */
+function rowPassesColumnFilter(row) {
+    if (!isFilterActive()) return true;
+
+    const raw = row[filterColumn];
+    const val = raw === undefined || raw === null ? '' : String(raw);
+
+    if (filterMode === 'values') {
+        return filterValues.indexOf(val) !== -1;
+    }
+
+    const v = val.toLowerCase();
+    const k = filterKeyword.toLowerCase();
+    switch (filterCondition) {
+        case 'contains': return v.indexOf(k) !== -1;
+        case 'notContains': return v.indexOf(k) === -1;
+        case 'equals': return v === k;
+        case 'startsWith': return v.indexOf(k) === 0;
+        case 'endsWith': return v.lastIndexOf(k) === v.length - k.length;
+        default: return true;
+    }
+}
+
+/** 全局搜索 + 列筛选之后的行集合（纯视图裁剪，currentRows 原样不动） */
+function getFilteredRows() {
+    let rows = currentRows;
+    if (searchKeyword) {
+        const kw = searchKeyword.toLowerCase();
+        rows = rows.filter(row => rowMatchesKeyword(row, kw));
+    }
+    if (isFilterActive()) {
+        rows = rows.filter(rowPassesColumnFilter);
+    }
+    return rows;
 }
 
 /** 单个单元格是否命中搜索——用于高亮 */
@@ -48,9 +93,9 @@ function compareRows(a, b, field) {
     return String(va).localeCompare(String(vb), 'zh-CN') * sortOrder;
 }
 
-/** 当前要展示的全部行（搜索 + 排序，尚未分页） */
+/** 当前要展示的全部行（搜索 + 列筛选 + 排序，尚未分页） */
 function buildDisplayRows() {
-    const rows = getSearchedRows().slice();
+    const rows = getFilteredRows().slice();
     if (sortField) rows.sort((a, b) => compareRows(a, b, sortField));
     return rows;
 }
@@ -102,7 +147,7 @@ function updateSearchCount() {
         el.textContent = '';
         return;
     }
-    const matched = getSearchedRows().length;
+    const matched = getFilteredRows().length;
     el.textContent = matched > 0
         ? `命中 ${matched} 行`
         : '无匹配';

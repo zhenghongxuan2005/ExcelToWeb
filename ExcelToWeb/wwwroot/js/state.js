@@ -24,8 +24,16 @@ let undoHistory = [];   // 撤销栈：存「修改前」的快照
 let redoHistory = [];   // 重做栈：撤销时把当前状态转存到这里
 const MAX_HISTORY = 50;
 
-let filterColumn = null;
-let originalRows = [];
+// ----- 列筛选（纯视图裁剪：只影响显示，绝不改 currentRows） -----
+// 为什么死守这条：saveData() 保存的是整个 currentRows。一旦筛选时把
+// currentRows 换成筛选结果，用户「筛选后点保存」就会永久删掉被筛掉的行。
+let filterColumn = null;         // 参与筛选的列名，null 表示没有列筛选
+let filterMode = 'values';       // 'values' 按值清单 | 'condition' 按条件
+// 值清单模式下：null = 不筛选；[] = 一个值都没勾（结果为空集）；[...] = 只保留这些值。
+// 必须区分 null 与 []，否则「一个都不勾」会被当成「不筛选」而显示全部行。
+let filterValues = null;
+let filterCondition = 'contains';
+let filterKeyword = '';
 
 let currentValidationRules = [];
 let currentRules = [];

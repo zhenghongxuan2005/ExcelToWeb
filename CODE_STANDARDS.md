@@ -40,6 +40,14 @@
 7. **`pushHistory()` 语义全站统一为「修改前压栈」**；在 input 事件已改模型的场景，用「暂存旧值 → try/finally」
    模式恢复后压栈（见 `render.js` blur 处理器）。
 8. **集合推导 + 分步迁移要审交叉**：一个键同时落入两个集合（如 rename 源列 ∈ dropped）时必须显式剔除。
+9. **视图裁剪绝不改写数据模型**：搜索 / 排序 / 筛选 / 分页 / 列隐藏一律只裁剪「显示」，
+   必须经由 `view.js` 的管线（`getFilteredRows` → `buildDisplayRows` → `getPagedRows`）算出来，
+   **不允许把 `currentRows` 换成裁剪结果**。历史实现里 `applyFilter()` 干过这件事，
+   于是「筛选后点保存」永久删掉被筛掉的行 —— `saveData()` 保存的是整个 `currentRows`。
+   裁剪状态（`searchKeyword` / `filter*` / `sortField` / `hiddenColumns`）切换数据源时必须重置
+   （`resetHistory()` 已一并清列筛选）。
+10. **看板类状态必须可见**：搜索、筛选、选区这类「隐形」状态要有常驻提示（统计栏文字 / 筛选标签 / 选区提示条），
+    否则用户会以为数据丢了 —— 这类误判会直接变成「重新上传覆盖」的二次事故。
 
 ## 4. 前端接线（新模块 checklist）
 

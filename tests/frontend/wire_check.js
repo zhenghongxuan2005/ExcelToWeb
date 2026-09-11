@@ -53,11 +53,13 @@ const sandbox = {
 sandbox.window = sandbox;
 sandbox.globalThis = sandbox;
 
-const STATE_PROBE = ['currentRows', 'currentHeaders', 'allTables', 'undoHistory', 'ruleColumnName', 'originalRows',
- 'searchKeyword', 'pageSize', 'currentPage', 'hiddenColumns', 'columnWidths', 'rangeAnchor'];
+const STATE_PROBE = ['currentRows', 'currentHeaders', 'allTables', 'undoHistory', 'ruleColumnName',
+ 'searchKeyword', 'pageSize', 'currentPage', 'hiddenColumns', 'columnWidths', 'rangeAnchor',
+ 'filterColumn', 'filterMode', 'filterValues'];
 const EXPOSED = ['addRow','deleteSelectedRows','batchEdit','confirmBatchEdit','closeBatchModal',
  'clearAll','sortBy','applyDateFilter','clearDateFilter',
  'openFilter','closeFilter','applyFilter','clearFilter',
+ 'setFilterMode','filterSelectAll','onFilterValueSearch','updateFilterValueCount',
  'openRuleModal','closeRuleModal','addRuleRow','removeRule','moveRuleUp','moveRuleDown','saveRules',
  'openValidationModal','closeValidationModal','addValidationRule','saveValidationRules',
  'uploadWithValidation','toggleAllCheckboxes',

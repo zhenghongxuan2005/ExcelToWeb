@@ -203,29 +203,47 @@
 
     <!-- ===== 列筛选弹窗 ===== -->
     <div id="filterModal" class="modal">
-        <div class="modal-card modal-sm">
+        <div class="modal-card">
             <button class="modal-close" aria-label="关闭弹窗" onclick="closeFilter()"><svg class="icon"><use href="#i-x"/></svg></button>
             <h3 class="modal-title" style="font-size:17px;">筛选: <span id="filterColumnName"></span></h3>
-            <p class="modal-sub">按条件筛选当前列的数据</p>
+            <p class="modal-sub">勾选要显示的值（Excel 式值清单），或切换到「按条件」用关键词筛选。筛选只影响显示，保存时仍会保存全部数据。</p>
 
-            <div class="field">
-                <label class="field-label">条件</label>
-                <select id="filterCondition" class="select">
-                    <option value="contains">包含</option>
-                    <option value="notContains">不包含</option>
-                    <option value="equals">等于</option>
-                    <option value="startsWith">开头是</option>
-                    <option value="endsWith">结尾是</option>
-                </select>
+            <div class="filter-mode">
+                <label class="filter-mode-opt"><input type="radio" name="filterMode" value="values" checked onchange="setFilterMode('values')"> 按值选择</label>
+                <label class="filter-mode-opt"><input type="radio" name="filterMode" value="condition" onchange="setFilterMode('condition')"> 按条件</label>
             </div>
 
-            <div class="field">
-                <label class="field-label">关键词</label>
-                <input type="text" id="filterKeyword" class="input" placeholder="输入筛选关键词...">
+            <div id="filterValuesPane">
+                <input type="text" id="filterValueSearch" class="input" placeholder="搜索值..." autocomplete="off"
+                       oninput="onFilterValueSearch(this.value)">
+                <div class="filter-value-tools">
+                    <button class="btn btn-outline btn-sm" onclick="filterSelectAll(true)">全选</button>
+                    <button class="btn btn-outline btn-sm" onclick="filterSelectAll(false)">全不选</button>
+                    <span class="filter-value-count" id="filterValueCount"></span>
+                </div>
+                <div class="filter-value-list" id="filterValueList"></div>
             </div>
 
-            <div class="modal-footer" style="border-top:none; padding-top:0;">
-                <button class="btn btn-outline" onclick="clearFilter()">清除</button>
+            <div id="filterConditionPane" style="display:none;">
+                <div class="field">
+                    <label class="field-label">条件</label>
+                    <select id="filterCondition" class="select">
+                        <option value="contains">包含</option>
+                        <option value="notContains">不包含</option>
+                        <option value="equals">等于</option>
+                        <option value="startsWith">开头是</option>
+                        <option value="endsWith">结尾是</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label class="field-label">关键词</label>
+                    <input type="text" id="filterKeyword" class="input" placeholder="输入筛选关键词...">
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="clearFilter()">清除筛选</button>
                 <button class="btn btn-outline" onclick="closeFilter()">取消</button>
                 <button class="btn btn-primary" onclick="applyFilter()">应用</button>
             </div>

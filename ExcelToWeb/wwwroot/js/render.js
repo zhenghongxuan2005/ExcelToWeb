@@ -79,12 +79,18 @@ function renderTable() {
     const visibleHeaders = getVisibleHeaders();
     const pageRows = getPagedRows(displayRows);
 
-    // 搜索把数据全部过滤掉了：给出与「无数据」不同的提示，避免用户以为文件丢了
+    // 搜索把数据全部过滤掉了 / 列筛选筛空了：给出与「无数据」不同的提示，避免用户以为文件丢了
     if (displayRows.length === 0) {
+        const emptyMsg = searchKeyword
+            ? `没有匹配「${escapeHtml(searchKeyword)}」的数据`
+            : '当前筛选条件下没有数据';
+        const emptySub = searchKeyword
+            ? '换个关键词，或点搜索框右侧的 ✕ 清除'
+            : '点下方统计栏里的筛选标签 ✕ 可清除筛选';
         container.innerHTML = '<div class="empty-state">'
             + '<div class="empty-icon"><svg class="icon"><use href="#i-search"/></svg></div>'
-            + `<p>没有匹配「${escapeHtml(searchKeyword)}」的数据</p>`
-            + '<p class="empty-sub">换个关键词，或点搜索框右侧的 ✕ 清除</p>'
+            + `<p>${emptyMsg}</p>`
+            + `<p class="empty-sub">${emptySub}</p>`
             + '</div>';
         clearSelectionStats();
         // 表格已被替换成占位内容，旧选区失去意义（range.js 未接线时跳过）
@@ -141,16 +147,24 @@ function renderTable() {
     }
     html += '</tbody></table>';
 
-    // 统计栏：区分「全量」与「搜索后」的行数，避免用户误以为数据变少了
+    // 统计栏：区分「全量」与「被视图裁剪后」的行数，避免用户误以为数据变少了；
+    // 生效中的筛选必须一直看得见（筛选是隐形状态，看不见就会以为数据丢了）
+    const viewFiltered = !!searchKeyword || (typeof isFilterActive === 'function' && isFilterActive());
     html += '<div class="stats-bar">';
-    if (searchKeyword) {
+    if (viewFiltered) {
         html += `<span>筛选出 <strong>${displayRows.length}</strong> 行</span>`;
         html += `<span class="stats-muted">全量 ${currentRows.length} 行</span>`;
     } else {
         html += `<span>共 <strong>${currentRows.length}</strong> 行</span>`;
     }
+    if (typeof isFilterActive === 'function' && isFilterActive()) {
+        html += '<span class="filter-chip">';
+        html += `<span>筛选：${escapeHtml(filterSummaryText())}</span>`;
+        html += '<button class="filter-chip-x" title="清除筛选" onclick="clearFilter()"><svg class="icon icon-sm"><use href="#i-x"/></svg></button>';
+        html += '</span>';
+    }
     html += `<span><strong>${visibleHeaders.length}</strong> 列</span>`;
-    html += '<span class="stat-hint">勾选行→删除，点击表头排序，方向键 / Enter 移动单元格，编辑后点击"保存"</span>';
+    html += '<span class="stat-hint">拖拽 / Shift+方向键选区 · Ctrl+C·V 与 Excel 互通 · 勾选行→删除 · 编辑后点击"保存"</span>';
     html += '</div>';
 
     // 分页条

@@ -25,11 +25,14 @@ function snapshotState() {
 }
 
 /**
- * 清空撤销 / 重做记录。换了数据源时必须调用，避免 A 表的快照覆盖到 B 表。
+ * 清空撤销 / 重做记录，并一并清掉列筛选。
+ * 换了数据源时必须调用，避免 A 表的快照覆盖到 B 表；列筛选同样「跟着当前
+ * 表格走」——表都换了，旧列名上的筛选条件只会把新表筛成空，所以一起清。
  */
 function resetHistory() {
     undoHistory = [];
     redoHistory = [];
+    if (typeof resetFilter === 'function') resetFilter();
     updateUndoButtons();
 }
 
