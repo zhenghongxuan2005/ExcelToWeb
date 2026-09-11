@@ -1,0 +1,27 @@
+# ExcelToWeb 统一编辑器配置（IDE 级约束；机器可执行守门在 tests/check_constraints.py）
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# 前端
+[*.{js,html,css,json}]
+indent_size = 4
+
+[*.yml]
+indent_size = 2
+
+# Markdown：行尾空白有意义（换行），不去除
+[*.md]
+trim_trailing_whitespace = false
+
+# C# 保持 .NET 惯例
+[*.cs]
+csharp_style_namespace_declarations = file_scoped:error
+dotnet_style_require_accessibility_modifiers = always
+csharp_prefer_braces = when_multiline:error

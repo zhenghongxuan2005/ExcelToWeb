@@ -113,11 +113,11 @@ function promptRename(tableId) {
 
     const name = input.trim();
     if (name.length === 0) {
-        alert('表格名称不能为空');
+        showToast('表格名称不能为空', 'error');
         return;
     }
     if (name.length > 100) {
-        alert('表格名称不能超过 100 个字符');
+        showToast('表格名称不能超过 100 个字符', 'error');
         return;
     }
     if (name === t.tableName) return;               // 没变化就不打扰后端

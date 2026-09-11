@@ -92,8 +92,18 @@ def _run_script(cmd, label):
 
 
 def main():
+    # 第 0 项：代码约束守门（不起服务，秒级；约束内容见 CODE_STANDARDS.md）
+    rc = _run_script([sys.executable, str(TESTS / "check_constraints.py")], "[guard] check_constraints.py")
+    if rc != 0:
+        print("\n[run.py] 代码约束未通过，跳过后续测试（先修约束再跑回归）")
+        return rc
+    results = [("[guard] check_constraints.py", rc)]
+
     own_server = None
-    if _port_listening(HOST_PORT):
+    any_tests = (not os.environ.get("SKIP_BACKEND")) or (not os.environ.get("SKIP_FRONTEND"))
+    if not any_tests:
+        print("[run.py] backend/frontend 均已跳过，不启动服务")
+    elif _port_listening(HOST_PORT):
         print("[run.py] 检测到已有服务运行在 %d 端口，不另起" % HOST_PORT)
     else:
         own_server = _start_server()
@@ -103,13 +113,13 @@ def main():
                 own_server.terminate()
             return 1
 
-    results = []
-
     if not os.environ.get("SKIP_BACKEND"):
         for f in sorted((TESTS / "backend").glob("*.py")):
             label = "[backend] %s" % f.name
             rc = _run_script([sys.executable, str(f), ], label)
             results.append((label, rc))
+            if rc != 0:
+                break  # 后端一挂，后续用例都是噪音，先修再跑
 
     if not os.environ.get("SKIP_FRONTEND"):
         node = os.environ.get("NODE_BIN", "node")
