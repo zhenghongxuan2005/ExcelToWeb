@@ -20,6 +20,12 @@ public interface IExcelService
     /// <summary>列结构维护：增 / 删 / 改 / 移。一次请求完成，重命名保留数据。</summary>
     Task<ApiResponse> UpdateHeadersAsync(int tableId, int userId, UpdateHeadersRequest request);
 
+    /// <summary>读取列视图元数据（列名 -> 列宽 / 是否隐藏）</summary>
+    Task<Dictionary<string, ColumnMetaDto>> GetColumnMetaAsync(int tableId, int userId);
+
+    /// <summary>整表保存列视图元数据；只接受当前表头中存在的列名</summary>
+    Task<ApiResponse> SaveColumnMetaAsync(int tableId, int userId, SaveColumnMetaRequest request);
+
     // 颜色规则
     Task<List<ColorRule>> GetColorRulesAsync(int userId, string? columnName = null);
     Task<ApiResponse> SaveColorRulesAsync(int userId, List<ColorRule> rules);

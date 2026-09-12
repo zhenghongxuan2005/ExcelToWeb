@@ -112,6 +112,31 @@ public class ExcelController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// 列视图元数据（列宽 / 是否隐藏）。GET 单表读取；PUT 整表覆盖保存，
+    /// 只接受当前表头里存在的列名，未知列名静默丢弃（列可能刚被删掉）。
+    /// </summary>
+    [HttpGet("column-meta")]
+    public async Task<IActionResult> GetColumnMeta(int tableId)
+    {
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
+
+        var meta = await _service.GetColumnMetaAsync(tableId, userId);
+        return Ok(ApiResponse<Dictionary<string, ColumnMetaDto>>.Ok(meta));
+    }
+
+    [HttpPut("column-meta")]
+    public async Task<IActionResult> SaveColumnMeta([FromBody] SaveColumnMetaRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
+
+        var result = await _service.SaveColumnMetaAsync(request.TableId, userId, request);
+        if (!result.Success) return BadRequest(result);
+        return Ok(result);
+    }
+
     // ================================================================
     // 导出 Excel
     // ================================================================

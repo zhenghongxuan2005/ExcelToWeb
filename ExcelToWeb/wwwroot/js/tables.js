@@ -62,6 +62,8 @@ function getTableName(tableId) {
 }
 
 function loadTableData(tableId) {
+    // 先取消上一张表遗留的「列设置自动保存」——否则它会把旧表的偏好写到新表上
+    resetColumnMeta();
     setStatus('加载中...');
     showTableSkeleton(currentHeaders.length);
     queryTableData(tableId)
@@ -71,6 +73,10 @@ function loadTableData(tableId) {
                 currentHeaders = data.headers;
                 currentRows = data.rows;
                 resetSort();
+                // 列宽 / 隐藏列跟随这张表上次保存的偏好（随数据一起下发，不用额外请求）
+                applyColumnMeta(data.columnMeta);
+                // 列下拉里的勾选状态与列宽输入框也要跟着刷新
+                renderColumnMenu();
                 // 加载新数据源，旧表格的撤销快照必须作废
                 resetHistory();
                 loadColorRules().then(() => renderTable());
@@ -104,6 +110,8 @@ function switchTable() {
         setStatus('请选择表格');
         return;
     }
+    // 切表前把本表最后一次列设置改动提交掉，防抖窗口内切表就不会丢
+    flushColumnMeta();
     currentTableId = tableId;
     loadTableData(tableId);
 }

@@ -59,6 +59,24 @@ public class TableRepository
             .Select(t => t.TableName)
             .ToListAsync();
 
+    /// <summary>生成副本名，形如「销售表 - 副本」「销售表 - 副本(2)」，避免与现有表格重名</summary>
+    public async Task<string> BuildCopyNameAsync(string sourceName, int userId)
+    {
+        var existing = await GetTableNamesAsync(userId);
+
+        var baseName = $"{sourceName} - 副本";
+        if (!existing.Contains(baseName)) return baseName;
+
+        for (int i = 2; i <= 999; i++)
+        {
+            var candidate = $"{baseName}({i})";
+            if (!existing.Contains(candidate)) return candidate;
+        }
+
+        // 极端情况下兜底：加时间戳，保证一定能插入
+        return $"{baseName}({DateTime.Now:HHmmss})";
+    }
+
     public async Task AddTableAsync(DynamicTable table)
     {
         await _db.DynamicTables.AddAsync(table);
@@ -124,6 +142,16 @@ public class TableRepository
     public async Task DeleteTableAsync(DynamicTable table)
     {
         _db.DynamicTables.Remove(table);
+        await _db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// 保存列视图元数据（JSON，null 表示清空）。
+    /// 刻意不刷新 UpdatedAt：调列宽/隐藏列是视图偏好，不该让表格在列表里跳到最前。
+    /// </summary>
+    public async Task SaveColumnMetaAsync(DynamicTable table, string? metaJson)
+    {
+        table.ColumnMetaJson = metaJson;
         await _db.SaveChangesAsync();
     }
 

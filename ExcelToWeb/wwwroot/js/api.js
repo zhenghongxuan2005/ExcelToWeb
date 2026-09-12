@@ -128,6 +128,20 @@ function updateHeaders(tableId, headers, renames) {
     });
 }
 
+/** 读取列视图元数据（列名 -> { width, hidden }） */
+function fetchColumnMeta(tableId) {
+    return request('/excel/column-meta?tableId=' + tableId);
+}
+
+/** 整表保存列视图元数据（列宽 / 是否隐藏） */
+function saveColumnMeta(tableId, meta) {
+    return request('/excel/column-meta', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableId, meta })
+    });
+}
+
 // ================================================================
 // 导出（返回 blob，不走统一 JSON 解析）
 // ================================================================

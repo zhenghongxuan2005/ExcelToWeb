@@ -111,5 +111,7 @@ Object.assign(window, {
     // 视图：搜索 / 分页 / 列
     onSearchInput, clearSearch, gotoPage, setPageSize,
     toggleColumn, setColumnWidth, showAllColumns,
+    // 列视图偏好（列宽 / 隐藏列）的持久化
+    applyColumnMeta, collectColumnMeta, scheduleMetaSave, flushColumnMeta, resetColumnMeta,
     updateSelectionStats
 });

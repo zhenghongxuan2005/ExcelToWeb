@@ -253,6 +253,7 @@ function toggleColumn(name) {
     else hiddenColumns.splice(i, 1);
     renderColumnMenu();
     renderTable();
+    scheduleMetaSave();
 }
 
 /** 全部列恢复显示 */
@@ -260,9 +261,10 @@ function showAllColumns() {
     hiddenColumns = [];
     renderColumnMenu();
     renderTable();
+    scheduleMetaSave();
 }
 
-/** 设置列宽（80~600 之间，留空表示自动） */
+/** 设置列宽（60~600 之间，留空表示自动） */
 function setColumnWidth(name, px) {
     const n = parseInt(px);
     if (!px || isNaN(n)) {
@@ -271,6 +273,7 @@ function setColumnWidth(name, px) {
         columnWidths[name] = Math.min(600, Math.max(60, n));
     }
     renderTable();
+    scheduleMetaSave();
 }
 
 /** 取某列的宽度样式（无设置时返回空串，保持原样） */

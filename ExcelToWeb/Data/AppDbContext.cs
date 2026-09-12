@@ -33,6 +33,11 @@ public class AppDbContext : DbContext
             .Property(t => t.Headers)
             .HasColumnType("nvarchar(max)");
 
+        // 列视图元数据（列名 -> 列宽 / 是否隐藏），可空：未调整过列的表格为 null
+        modelBuilder.Entity<DynamicTable>()
+            .Property(t => t.ColumnMetaJson)
+            .HasColumnType("nvarchar(max)");
+
         modelBuilder.Entity<DynamicTable>()
             .HasIndex(t => t.UserId);
 

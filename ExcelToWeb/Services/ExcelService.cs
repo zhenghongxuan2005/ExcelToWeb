@@ -1,10 +1,8 @@
 using System.Text.Json;
-using ExcelToWeb.Data;
 using ExcelToWeb.DTOs;
 using ExcelToWeb.Models;
 using ExcelToWeb.Services.Excel;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 
 namespace ExcelToWeb.Services;
 
@@ -15,10 +13,6 @@ namespace ExcelToWeb.Services;
 /// </summary>
 public class ExcelService : IExcelService
 {
-    /// <summary>用于识别「哪一列是日期列」的候选列名，供按日期筛选使用</summary>
-    private static readonly string[] DateColumnCandidates =
-        { "日期", "成交日期", "创建时间", "更新时间", "Date", "date" };
-
     private readonly ILogger<ExcelService> _logger;
     private readonly ExcelSheetReader _reader;
     private readonly ExcelExportService _exporter;
@@ -26,6 +20,7 @@ public class ExcelService : IExcelService
     private readonly TableRepository _repository;
     private readonly RuleService _rules;
     private readonly ColumnStructureService _columns;
+    private readonly ColumnMetaService _columnMeta;
 
     public ExcelService(
         ILogger<ExcelService> logger,
@@ -34,7 +29,8 @@ public class ExcelService : IExcelService
         RowValidator validator,
         TableRepository repository,
         RuleService rules,
-        ColumnStructureService columns)
+        ColumnStructureService columns,
+        ColumnMetaService columnMeta)
     {
         _logger = logger;
         _reader = reader;
@@ -43,6 +39,7 @@ public class ExcelService : IExcelService
         _repository = repository;
         _rules = rules;
         _columns = columns;
+        _columnMeta = columnMeta;
     }
 
     // ================================================================
@@ -113,9 +110,10 @@ public class ExcelService : IExcelService
 
         var dataRows = await _repository.GetRowDataAsync(tableId);
 
+        // 按日期过滤（日期列的识别与匹配见 RowDateFilter）
         if (!string.IsNullOrEmpty(date))
         {
-            dataRows = dataRows.Where(row => MatchesDate(row, date)).ToList();
+            dataRows = dataRows.Where(row => RowDateFilter.Matches(row, date)).ToList();
         }
 
         return ApiResponse<TableDataDto>.Ok(new TableDataDto
@@ -123,19 +121,10 @@ public class ExcelService : IExcelService
             TableId = table.Id,
             TableName = table.TableName,
             Headers = table.Headers,
-            Rows = dataRows
+            Rows = dataRows,
+            // 列视图偏好随数据一起下发，前端不必再多发一次请求
+            ColumnMeta = ColumnMetaService.Parse(table.ColumnMetaJson)
         });
-    }
-
-    private static bool MatchesDate(Dictionary<string, object> row, string date)
-    {
-        foreach (var key in DateColumnCandidates)
-        {
-            if (!row.ContainsKey(key)) continue;
-            var value = row[key]?.ToString() ?? string.Empty;
-            return value.StartsWith(date, StringComparison.Ordinal);
-        }
-        return false;
     }
 
     // ================================================================
@@ -219,7 +208,7 @@ public class ExcelService : IExcelService
 
             var rows = await _repository.GetRowDataAsync(tableId);
 
-            var copyName = await BuildCopyNameAsync(table.TableName, userId);
+            var copyName = await _repository.BuildCopyNameAsync(table.TableName, userId);
             var copy = await _repository.CloneTableAsync(table, copyName);
             await _repository.BulkInsertRowsAsync(copy.Id, rows);
 
@@ -241,32 +230,12 @@ public class ExcelService : IExcelService
         }
     }
 
-    /// <summary>生成副本名，形如「销售表 - 副本」「销售表 - 副本(2)」，避免与现有表格重名</summary>
-    private async Task<string> BuildCopyNameAsync(string sourceName, int userId)
-    {
-        var existing = await _repository.GetTableNamesAsync(userId);
-
-        var baseName = $"{sourceName} - 副本";
-        if (!existing.Contains(baseName)) return baseName;
-
-        for (int i = 2; i <= 999; i++)
-        {
-            var candidate = $"{baseName}({i})";
-            if (!existing.Contains(candidate)) return candidate;
-        }
-
-        // 极端情况下兜底：加时间戳，保证一定能插入
-        return $"{baseName}({DateTime.Now:HHmmss})";
-    }
-
     // ================================================================
-    // 列结构维护（增 / 删 / 改 / 移）
+    // 列结构维护（增 / 删 / 改 / 移）+ 列视图元数据
     // ----------------------------------------------------------------
-    // 实现整体在 Services/Excel/ColumnStructureService.cs：
-    //   headers  - 最终列名（顺序即新顺序）
-    //   renames  - 把数据从 oldName 拷到 newName（避免 drop+add 丢数据）
-    //   服务端做集合差推出 dropped/added，事务内完成行数据迁移与规则清理
-    // 门面只保留异常日志与对外语义。
+    // 实现分别在 Services/Excel/ColumnStructureService.cs 与 ColumnMetaService.cs。
+    // 读取列元数据不走这里 —— GetTableDataAsync 已把 meta 随数据一起下发，
+    // 省掉一次往返；GetColumnMetaAsync 只供需要单独刷新的场景使用。
     // ================================================================
     public async Task<ApiResponse> UpdateHeadersAsync(int tableId, int userId, UpdateHeadersRequest request)
     {
@@ -278,6 +247,22 @@ public class ExcelService : IExcelService
         {
             _logger.LogError(ex.InnerException, "更新表格 {TableId} 列结构失败", ex.TableId);
             return ApiResponse.Fail("更新列结构失败，请稍后重试");
+        }
+    }
+
+    public Task<Dictionary<string, ColumnMetaDto>> GetColumnMetaAsync(int tableId, int userId) =>
+        _columnMeta.GetAsync(tableId, userId);
+
+    public async Task<ApiResponse> SaveColumnMetaAsync(int tableId, int userId, SaveColumnMetaRequest request)
+    {
+        try
+        {
+            return await _columnMeta.SaveAsync(tableId, userId, request);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "保存表格 {TableId} 列元数据失败", tableId);
+            return ApiResponse.Fail("保存列设置失败，请稍后重试");
         }
     }
 

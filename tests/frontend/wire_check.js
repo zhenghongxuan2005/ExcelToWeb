@@ -69,7 +69,8 @@ const EXPOSED = ['addRow','deleteSelectedRows','batchEdit','confirmBatchEdit','c
  'onSearchInput','clearSearch','gotoPage','setPageSize',
  'toggleColumn','setColumnWidth','showAllColumns',
  'updateSelectionStats',
- 'copyRangeSelection','clearRangeContent','clearRange'];
+ 'copyRangeSelection','clearRangeContent','clearRange',
+ 'applyColumnMeta','collectColumnMeta','scheduleMetaSave','flushColumnMeta','resetColumnMeta'];
 
 const bundle = order
     .map(src => '\n/* ==== ' + src + ' ==== */\n' + fs.readFileSync(path.join(ROOT, src), 'utf8'))

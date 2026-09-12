@@ -61,6 +61,29 @@ public class TableDataDto
     public string TableName { get; set; } = string.Empty;
     public List<string> Headers { get; set; } = new();
     public List<Dictionary<string, object>> Rows { get; set; } = new();
+
+    /// <summary>列视图元数据（列名 -> { width, hidden }），随数据一起返回，前端少一次请求</summary>
+    public Dictionary<string, ColumnMetaDto> ColumnMeta { get; set; } = new();
+}
+
+/// <summary>
+/// 单列的视图元数据。只保存用户显式调整过的偏好（列宽 / 是否隐藏）。
+/// 列的数据类型（数字 / 日期 / 文本）在导出时按数据实时推断，不落库。
+/// </summary>
+public class ColumnMetaDto
+{
+    /// <summary>列宽（px）。null 表示自动</summary>
+    public int? Width { get; set; }
+
+    /// <summary>是否隐藏该列</summary>
+    public bool Hidden { get; set; }
+}
+
+/// <summary>整表列元数据保存请求：列名 -> 元数据</summary>
+public class SaveColumnMetaRequest
+{
+    public int TableId { get; set; }
+    public Dictionary<string, ColumnMetaDto> Meta { get; set; } = new();
 }
 
 public class RenameTableRequest

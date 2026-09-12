@@ -57,6 +57,7 @@ builder.Services.AddSingleton<RowValidator>();
 builder.Services.AddScoped<TableRepository>();
 builder.Services.AddScoped<RuleService>();
 builder.Services.AddScoped<ColumnStructureService>();
+builder.Services.AddScoped<ColumnMetaService>();
 builder.Services.AddScoped<ExcelExportService>();
 
 builder.Services.AddScoped<IExcelService, ExcelService>();
@@ -144,6 +145,12 @@ using (var scope = app.Services.CreateScope())
             CreatedAt DATETIME2 NOT NULL,
             UpdatedAt DATETIME2 NOT NULL
         );
+
+        -- DynamicTables.ColumnMetaJson（列宽 / 隐藏列的视图偏好）。
+        -- EnsureCreated 只建缺失的表，不会给已存在的表补列，所以这里手动幂等补上；
+        -- SQL Server 没有 ADD COLUMN IF NOT EXISTS，用 COL_LENGTH 判断。
+        IF COL_LENGTH('DynamicTables', 'ColumnMetaJson') IS NULL
+            ALTER TABLE DynamicTables ADD ColumnMetaJson NVARCHAR(MAX) NULL;
     ");
 }
 

@@ -118,9 +118,16 @@ public class ColumnStructureService
             }
             await _db.SaveChangesAsync();
 
-            // 更新 Headers
+            // 更新 Headers，并同步修剪列元数据（rename 迁键、dropped 删键）。
+            // 传完整的 dropped（含 rename 源列）：PruneForColumns 内部先迁后删，
+            // 这样改名的列能保住列宽/隐藏状态。
             table.Headers = newHeaders;
             table.UpdatedAt = DateTime.Now;
+
+            var prunedMeta = ColumnMetaService.PruneForColumns(
+                ColumnMetaService.Parse(table.ColumnMetaJson), renames, dropped);
+            table.ColumnMetaJson = prunedMeta.Count == 0 ? null : JsonSerializer.Serialize(prunedMeta);
+
             await _db.SaveChangesAsync();
 
             // 同步清理 / 改名 规则。
