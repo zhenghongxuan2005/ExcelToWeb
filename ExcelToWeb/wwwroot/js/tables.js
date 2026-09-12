@@ -70,8 +70,7 @@ function loadTableData(tableId) {
             if (data && data.headers && data.rows) {
                 currentHeaders = data.headers;
                 currentRows = data.rows;
-                sortField = null;
-                sortOrder = 1;
+                resetSort();
                 // 加载新数据源，旧表格的撤销快照必须作废
                 resetHistory();
                 loadColorRules().then(() => renderTable());
@@ -153,8 +152,7 @@ function refreshData() {
             if (data && data.headers && data.rows) {
                 currentHeaders = data.headers;
                 currentRows = data.rows;
-                sortField = null;
-                sortOrder = 1;
+                resetSort();
                 loadColorRules().then(() => renderTable());
                 showToast('✅ 已刷新', 'success');
                 setStatus(`已刷新 (${data.rows.length}行)`);

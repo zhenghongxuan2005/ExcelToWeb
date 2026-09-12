@@ -34,7 +34,8 @@ const RANGE_DRAG_THRESHOLD = 4;   // 位移超过 4px 才算拖拽，否则仍�
 /** 视图签名：换表 / 搜索 / 排序 / 翻页 / 改列 / 行数变化都会让它变 */
 function rangeSignature() {
     return [
-        currentTableId, searchKeyword, sortField, sortOrder,
+        currentTableId, searchKeyword,
+        sortKeys.map(k => k.field + ':' + k.order).join(','),
         currentPage, pageSize, currentRows.length,
         getVisibleHeaders().join('\u0001')
     ].join('\u0002');
@@ -153,6 +154,9 @@ function paintSelection() {
 
 /** 选区提示条：告诉用户选了几行几列、能按哪些键 */
 function updateRangeHint() {
+    // 填充柄跟着选区走：每次刷新提示条时同步重建（fill-handle.js 未加载时跳过）
+    if (typeof updateFillHandle === 'function') updateFillHandle();
+
     const host = document.getElementById('rangeInfo');
     if (!host) return;
     const b = rangeBounds();

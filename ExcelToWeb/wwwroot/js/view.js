@@ -4,7 +4,7 @@
 // 职责：根据 currentRows 与用户当前的视图设置，算出「这一屏到底显示哪些行、哪些列、第几页」。
 // 说明：currentRows 始终是唯一的数据源（保存/编辑都基于它），
 //       本文件只做「显示层」的裁剪，不修改数据。
-// 依赖：state.js（currentRows / currentHeaders / sortField / sortOrder）
+// 依赖：state.js（currentRows / currentHeaders / sortKeys）
 // ================================================================
 
 /** 某行是否命中搜索关键词（跨所有列，大小写不敏感） */
@@ -83,21 +83,49 @@ function getVisibleHeaders() {
     return visible.length > 0 ? visible : currentHeaders;
 }
 
-/** 排序比较器（数值优先，其次按中文语序） */
-function compareRows(a, b, field) {
-    const va = a[field] !== undefined ? a[field] : '';
-    const vb = b[field] !== undefined ? b[field] : '';
-    const na = parseFloat(va);
-    const nb = parseFloat(vb);
-    if (!isNaN(na) && !isNaN(nb)) return (na - nb) * sortOrder;
-    return String(va).localeCompare(String(vb), 'zh-CN') * sortOrder;
+/** 单列比较：数值优先，其次按中文语序。只返回方向，升降由排序键决定 */
+function compareValues(va, vb) {
+    const a = va === undefined || va === null ? '' : va;
+    const b = vb === undefined || vb === null ? '' : vb;
+    const na = parseFloat(a);
+    const nb = parseFloat(b);
+    if (!isNaN(na) && !isNaN(nb)) return na === nb ? 0 : (na < nb ? -1 : 1);
+    return String(a).localeCompare(String(b), 'zh-CN');
 }
 
-/** 当前要展示的全部行（搜索 + 列筛选 + 排序，尚未分页） */
+/**
+ * 按排序键数组依次比较：前一个键分出胜负就结束，全相等再比下一个 ——
+ * 这就是「多列排序」的全部实现，数组顺序即优先级。
+ */
+function compareByKeys(a, b, keys) {
+    for (const k of keys) {
+        const r = compareValues(a[k.field], b[k.field]);
+        if (r !== 0) return r * k.order;
+    }
+    return 0;
+}
+
+/** 当前要展示的全部行（搜索 + 列筛选 + 多列排序，尚未分页） */
 function buildDisplayRows() {
     const rows = getFilteredRows().slice();
-    if (sortField) rows.sort((a, b) => compareRows(a, b, sortField));
+    if (sortKeys.length > 0) rows.sort((a, b) => compareByKeys(a, b, sortKeys));
     return rows;
+}
+
+/** 清空排序。纯视图状态，不碰 currentRows（换了数据源 / 增删行时调用） */
+function resetSort() {
+    sortKeys = [];
+}
+
+/** 某列的排序方向：1 升序 / -1 降序 / 0 表示该列未参与排序 */
+function sortOrderOf(field) {
+    const k = sortKeys.find(x => x.field === field);
+    return k ? k.order : 0;
+}
+
+/** 排序状态的可读摘要：数量 ↓ → 销售员 ↑ */
+function sortSummaryText() {
+    return sortKeys.map(k => `${k.field} ${k.order === 1 ? '↑' : '↓'}`).join(' → ');
 }
 
 /** 总页数（pageSize <= 0 表示不分页） */

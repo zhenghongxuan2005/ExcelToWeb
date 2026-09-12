@@ -64,7 +64,8 @@ vm.runInContext(
     + '\n;globalThis.setStatus = function (s) { __status.push(s); };'
     + '\n;globalThis.__api = { isFilterActive, rowPassesColumnFilter, getFilteredRows, buildDisplayRows,'
     + ' filterDistinctValues, filterSummaryText, resetFilter, guessDateColumn,'
-    + ' applyFilter, clearFilter, applyDateFilter, setFilterMode, sortBy };',
+    + ' applyFilter, clearFilter, applyDateFilter, setFilterMode,'
+    + ' sortBy, removeSortKey, clearSort, sortOrderOf, sortSummaryText };',
     ctx, { filename: 'bundle.js' }
 );
 const api = sandbox.__api;
@@ -98,8 +99,7 @@ function setState(rows, headers, extra) {
         currentPage = 1;
         hiddenColumns = [];
         columnWidths = {};
-        sortField = null;
-        sortOrder = 1;
+        sortKeys = [];
         filterColumn = null;
         filterMode = 'values';
         filterValues = null;
@@ -198,11 +198,56 @@ setState(ROWS, HEADERS, { filterColumn: '数量', filterMode: 'values', filterVa
 check('只满足其一时为空', api.getFilteredRows().length === 0);
 
 console.log('\n[6] 与排序叠加');
-setState(ROWS, HEADERS, { filterColumn: '销售员', filterMode: 'values', filterValues: ['张三'], sortField: '数量', sortOrder: 1 });
+setState(ROWS, HEADERS, { filterColumn: '销售员', filterMode: 'values', filterValues: ['张三'], sortKeys: [{ field: '数量', order: 1 }] });
 check('先筛选后排序', api.buildDisplayRows().map(r => r['数量']).join(',') === '10,25',
     api.buildDisplayRows().map(r => r['数量']).join(','));
-set("sortOrder = -1;");
+set("sortKeys = [{ field: '数量', order: -1 }];");
 check('降序', api.buildDisplayRows().map(r => r['数量']).join(',') === '25,10');
+
+console.log('\n[6b] 多列排序交互（sortBy / removeSortKey / clearSort）');
+setState(ROWS, HEADERS);
+api.sortBy('销售员');
+check('单击 → 升序，且成为唯一排序键',
+    api.sortSummaryText() === '销售员 ↑' && read('sortKeys').length === 1, api.sortSummaryText());
+api.sortBy('销售员');
+check('再单击 → 转降序', api.sortSummaryText() === '销售员 ↓', api.sortSummaryText());
+api.sortBy('销售员');
+check('第三次单击 → 取消该列排序', read('sortKeys').length === 0, JSON.stringify(read('sortKeys')));
+
+setState(ROWS, HEADERS);
+api.sortBy('销售员');
+api.sortBy('数量', true);
+check('Shift+点击 → 追加为次级排序键',
+    api.sortSummaryText() === '销售员 ↑ → 数量 ↑', api.sortSummaryText());
+api.sortBy('数量', true);
+check('Shift+再点击 → 该键转降序', api.sortSummaryText() === '销售员 ↑ → 数量 ↓', api.sortSummaryText());
+api.sortBy('数量', true);
+check('Shift+第三次点击 → 移除该键，主键保留', api.sortSummaryText() === '销售员 ↑', api.sortSummaryText());
+api.sortBy('数量', true);
+api.sortBy('数量', true);
+api.sortBy('数量', true);
+check('反复追加 / 移除后仍只有主键', api.sortSummaryText() === '销售员 ↑', api.sortSummaryText());
+
+setState(ROWS, HEADERS);
+api.sortBy('数量');
+check('sortOrderOf：参与排序给方向，未参与给 0',
+    api.sortOrderOf('数量') === 1 && api.sortOrderOf('销售员') === 0,
+    api.sortOrderOf('数量') + '/' + api.sortOrderOf('销售员'));
+
+setState(ROWS, HEADERS);
+api.sortBy('销售员');
+api.sortBy('数量', true);
+api.removeSortKey('数量');
+check('removeSortKey 只摘掉指定键', api.sortSummaryText() === '销售员 ↑', api.sortSummaryText());
+api.clearSort();
+check('clearSort 清空全部排序', read('sortKeys').length === 0 && api.buildDisplayRows().length === 5);
+
+setState(ROWS, HEADERS, { sortKeys: [{ field: '数量', order: 1 }] });
+api.getFilteredRows();
+api.buildDisplayRows();
+check('排序不改动 currentRows（数据安全）',
+    read('currentRows').length === 5 && read('currentRows')[0]['数量'] === '10',
+    read('currentRows')[0]['数量']);
 
 console.log('\n[7] resetFilter / 清除筛选');
 setState(ROWS, HEADERS, { filterColumn: '销售员', filterMode: 'values', filterValues: ['张三'] });

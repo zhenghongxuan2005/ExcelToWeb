@@ -63,6 +63,9 @@ function buildTable(headers, rows, onFocus) {
             };
             const td = {
                 classList: makeClassList(),
+                _children: [],
+                // fill-handle.js 会往选区的右下角单元格里挂填充柄，这里要有 appendChild
+                appendChild(child) { td._children.push(child); child.parentElement = td; return child; },
                 querySelector(sel) { return sel === '.cell-input' ? input : null; }
             };
             // isCellInput() 靠这个类名判断，缺了会让键盘 / 选区的分支全部走偏
@@ -99,6 +102,30 @@ function createHarness(opts) {
 
     const rangeInfoHost = { innerHTML: '' };
 
+    // 极简元素：满足 fill-handle.js 创建填充柄所需的接口（classList / appendChild / remove）
+    const createdEls = [];
+    function makeElement(tag) {
+        const el = {
+            tagName: String(tag || 'div').toUpperCase(),
+            style: {}, dataset: {}, className: '', title: '',
+            classList: makeClassList(),
+            _children: [],
+            _removed: false,
+            appendChild(c) { el._children.push(c); c.parentElement = el; return c; },
+            remove() {
+                el._removed = true;
+                const parent = el.parentElement;
+                if (parent && parent._children) {
+                    const i = parent._children.indexOf(el);
+                    if (i !== -1) parent._children.splice(i, 1);
+                }
+            },
+            addEventListener() {}, setAttribute() {}, getAttribute() { return null; }
+        };
+        createdEls.push(el);
+        return el;
+    }
+
     const documentStub = {
         addEventListener() {},
         getElementById(id) {
@@ -107,8 +134,13 @@ function createHarness(opts) {
             return null;
         },
         querySelectorAll() { return []; },
-        querySelector() { return null; },
-        createElement() { return {}; },
+        querySelector(sel) {
+            if (sel === '.range-fill-handle') {
+                return createdEls.find(e => !e._removed && String(e.className).indexOf('range-fill-handle') !== -1) || null;
+            }
+            return null;
+        },
+        createElement(tag) { return makeElement(tag); },
         body: { classList: makeClassList() },
         get activeElement() { return activeEl; }
     };
@@ -163,8 +195,7 @@ function createHarness(opts) {
             currentPage = 1;
             hiddenColumns = __hidden;
             columnWidths = {};
-            sortField = null;
-            sortOrder = 1;
+            sortKeys = [];
             rangeAnchor = null;
             rangeFocus = null;
             _rangeSig = null;

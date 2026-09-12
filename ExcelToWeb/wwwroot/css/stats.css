@@ -291,6 +291,11 @@
         background: var(--primary-soft);
     }
 
+/* ===== 生效中的排序提示（与筛选标签同款，用虚线边框区分「排序 vs 筛选」） ===== */
+.sort-chip {
+    border-style: dashed;
+}
+
 /* ===== 筛选弹窗：值清单（modal.css 已接近行数上限，这块放这里） ===== */
 .filter-mode {
     display: flex;

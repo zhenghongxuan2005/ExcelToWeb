@@ -55,9 +55,9 @@ sandbox.globalThis = sandbox;
 
 const STATE_PROBE = ['currentRows', 'currentHeaders', 'allTables', 'undoHistory', 'ruleColumnName',
  'searchKeyword', 'pageSize', 'currentPage', 'hiddenColumns', 'columnWidths', 'rangeAnchor',
- 'filterColumn', 'filterMode', 'filterValues'];
+ 'filterColumn', 'filterMode', 'filterValues', 'sortKeys'];
 const EXPOSED = ['addRow','deleteSelectedRows','batchEdit','confirmBatchEdit','closeBatchModal',
- 'clearAll','sortBy','applyDateFilter','clearDateFilter',
+ 'clearAll','sortBy','removeSortKey','clearSort','applyDateFilter','clearDateFilter',
  'openFilter','closeFilter','applyFilter','clearFilter',
  'setFilterMode','filterSelectAll','onFilterValueSearch','updateFilterValueCount',
  'openRuleModal','closeRuleModal','addRuleRow','removeRule','moveRuleUp','moveRuleDown','saveRules',

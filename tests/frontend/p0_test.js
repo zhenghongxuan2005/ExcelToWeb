@@ -77,7 +77,7 @@ console.log('\n=== A. 汇总行（aggregate.js） ===');
 setVar("currentHeaders = ['name','amount','code']");
 setVar('hiddenColumns = []');
 setVar('searchKeyword = ""');
-setVar('sortField = null');
+setVar('sortKeys = []');
 setRows([
     { name: 'apple', amount: '10', code: '1' },
     { name: 'banana', amount: '20', code: '2' },
@@ -225,7 +225,7 @@ setVar("currentHeaders = ['name']");
 setVar('pageSize = 0');
 setVar('currentPage = 1');
 setVar('searchKeyword = ""');
-setVar('sortField = null');
+setVar('sortKeys = []');
 setRows([{ name: 'A' }, { name: 'B' }, { name: 'C' }, { name: 'D' }, { name: 'E' }]);
 
 selectRows([2]);

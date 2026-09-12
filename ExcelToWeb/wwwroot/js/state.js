@@ -14,8 +14,11 @@ let allTables = [];
 let currentTableId = null;
 let currentHeaders = [];
 let currentRows = [];
-let sortField = null;
-let sortOrder = 1;
+
+// 排序键（唯一真源）：[{ field, order }]，order: 1 升序 / -1 降序。
+// 数组顺序即优先级 —— 第 1 个键是主排序，其后依次为次级排序。
+// 与筛选一样只影响显示（buildDisplayRows），绝不改写 currentRows。
+let sortKeys = [];
 
 let colorRulesCache = [];
 let ruleColumnName = '数量';

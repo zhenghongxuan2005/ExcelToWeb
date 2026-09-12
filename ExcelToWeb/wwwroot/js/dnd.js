@@ -30,8 +30,7 @@ function uploadFile(file) {
             currentTableId = data.tableId;
             currentHeaders = data.headers;
             currentRows = data.rows;
-            sortField = null;
-            sortOrder = 1;
+            resetSort();
             // 刚导入的是全新数据源，撤销栈从零开始
             resetHistory();
             // 换了数据源，搜索与分页都要回到初始状态

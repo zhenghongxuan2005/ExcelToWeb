@@ -217,10 +217,7 @@ function pasteTsv(text) {
     }
 
     // 补了行就得取消排序：否则新行会被排到中间，刚算好的选区随之错位
-    if (extraRows > 0 && sortField) {
-        sortField = null;
-        sortOrder = 1;
-    }
+    if (extraRows > 0) resetSort();
 
     // 选区扩到「刚粘贴的区域」并保持选中
     rangeAnchor = { rowPos: b.r1, colPos: b.c1 };

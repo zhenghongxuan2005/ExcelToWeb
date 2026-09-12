@@ -15,8 +15,7 @@ function addRow() {
     }
     currentRows.push(newRow);
 
-    sortField = null;
-    sortOrder = 1;
+    resetSort();
     renderTable();
 
     const container = document.getElementById('tableContainer');
@@ -52,8 +51,7 @@ function deleteSelectedRows() {
         currentRows.splice(idx, 1);
     }
 
-    sortField = null;
-    sortOrder = 1;
+    resetSort();
     renderTable();
 
     showToast(`✅ 已删除 ${indices.length} 行`, 'success');
@@ -69,8 +67,7 @@ function clearAll() {
 
     pushHistory();
     currentRows = [];
-    sortField = null;
-    sortOrder = 1;
+    resetSort();
     renderTable();
 
     showToast('已清空', 'info');
@@ -181,8 +178,7 @@ function insertRowsAbove() {
     pushHistory();
     currentRows.splice(at, 0, ...blanks);
 
-    sortField = null;
-    sortOrder = 1;
+    resetSort();
     renderTable();
 
     showToast(`✅ 已在第 ${at + 1} 行上方插入 ${blanks.length} 行`, 'success');
@@ -237,8 +233,7 @@ function moveSelectedRows(dir) {
     rest.splice(at, 0, ...group);
     currentRows = rest;
 
-    sortField = null;
-    sortOrder = 1;
+    resetSort();
     renderTable();
 
     showToast(dir < 0 ? `✅ 已上移 ${group.length} 行` : `✅ 已下移 ${group.length} 行`, 'success');

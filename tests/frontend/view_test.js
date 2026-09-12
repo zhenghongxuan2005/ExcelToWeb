@@ -1,4 +1,4 @@
-// 针对新增「视图管线」的纯逻辑单测：搜索 / 分页 / 列可见性 / CSV 转义
+// 针对新增「视图管线」的纯逻辑单测：搜索 / 多列排序 / 分页 / 列可见性 / CSV 转义
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
@@ -29,7 +29,8 @@ vm.runInContext(
     FILES.map(f => '\n/* ' + f + ' */\n' + fs.readFileSync(path.join(ROOT, f), 'utf8')).join('\n;\n')
     // 渲染依赖 DOM，这里只需验证数据管线，直接打桩
     + '\n;function renderTable() {}'
-    + '\n;globalThis.__api = { getFilteredRows, buildDisplayRows, getPagedRows, getTotalPages, getVisibleHeaders, cellMatchesSearch, csvCell, formatNumber, columnWidthStyle };',
+    + '\n;globalThis.__api = { getFilteredRows, buildDisplayRows, getPagedRows, getTotalPages, getVisibleHeaders,'
+    + ' cellMatchesSearch, csvCell, formatNumber, columnWidthStyle, sortOrderOf, sortSummaryText, resetSort };',
     ctx, { filename: 'bundle.js' }
 );
 const api = sandbox.__api;
@@ -53,8 +54,7 @@ function setState(rows, headers, extra) {
         currentPage = 1;
         hiddenColumns = [];
         columnWidths = {};
-        sortField = null;
-        sortOrder = 1;
+        sortKeys = [];
     `, ctx);
     // 用显式赋值逐项覆盖，避免拼错变量名被静默忽略
     Object.keys(extra || {}).forEach(k => {
@@ -93,17 +93,50 @@ setState(ROWS, HEADERS);
 check('无关键词时不高亮', api.cellMatchesSearch('销售员', '张三') === false);
 check('空值不高亮', api.cellMatchesSearch('销售员', null) === false);
 
-console.log('[3] 排序 + 搜索组合');
-setState(ROWS, HEADERS, { sortField: '数量', sortOrder: 1 });
+console.log('[3] 排序（单列）+ 搜索组合');
+setState(ROWS, HEADERS, { sortKeys: [{ field: '数量', order: 1 }] });
 const asc = api.buildDisplayRows().map(r => r['数量']);
 check('数值升序', asc.join(',') === '3,8,10,25', asc.join(','));
-setState(ROWS, HEADERS, { sortField: '数量', sortOrder: -1 });
+setState(ROWS, HEADERS, { sortKeys: [{ field: '数量', order: -1 }] });
 const desc = api.buildDisplayRows().map(r => r['数量']);
 check('数值降序', desc.join(',') === '25,10,8,3', desc.join(','));
-setState(ROWS, HEADERS, { sortField: '数量', sortOrder: 1, searchKeyword: '张三' });
+setState(ROWS, HEADERS, { sortKeys: [{ field: '数量', order: 1 }], searchKeyword: '张三' });
 const both = api.buildDisplayRows();
 check('先搜索后排序：只含命中行且有序', both.length === 2 && both[0]['数量'] === '10' && both[1]['数量'] === '25',
     JSON.stringify(both.map(r => r['数量'])));
+setState(ROWS, HEADERS, { sortKeys: [{ field: '销售员', order: 1 }] });
+check('文本列按中文语序（拼音 li/wang/zhang/zhang）',
+    api.buildDisplayRows().map(r => r['销售员']).join(',') === '李四,王五,张三,张三',
+    api.buildDisplayRows().map(r => r['销售员']).join(','));
+
+console.log('[3b] 多列排序（sortKeys 数组顺序即优先级）');
+const MROWS = [
+    { '组': 'B', '值': '2' },
+    { '组': 'A', '值': '2' },
+    { '组': 'B', '值': '1' },
+    { '组': 'A', '值': '1' }
+];
+const MHEADERS = ['组', '值'];
+const keys = (a, b) => api.buildDisplayRows().map(r => r['组'] + r['值']).join(',');
+setState(MROWS, MHEADERS, { sortKeys: [{ field: '组', order: 1 }, { field: '值', order: 1 }] });
+check('先按组升序、组内再按值升序', keys() === 'A1,A2,B1,B2', keys());
+setState(MROWS, MHEADERS, { sortKeys: [{ field: '组', order: 1 }, { field: '值', order: -1 }] });
+check('次级键降序生效', keys() === 'A2,A1,B2,B1', keys());
+setState(MROWS, MHEADERS, { sortKeys: [{ field: '组', order: -1 }, { field: '值', order: 1 }] });
+check('主键降序 + 次键升序', keys() === 'B1,B2,A1,A2', keys());
+setState(MROWS, MHEADERS, { sortKeys: [{ field: '值', order: 1 }, { field: '组', order: 1 }] });
+check('交换优先级会改变结果', keys() === 'A1,B1,A2,B2', keys());
+setState(MROWS, MHEADERS, { sortKeys: [{ field: '组', order: 1 }] });
+check('sortOrderOf：参与排序为方向值，未参与为 0',
+    api.sortOrderOf('组') === 1 && api.sortOrderOf('值') === 0,
+    api.sortOrderOf('组') + '/' + api.sortOrderOf('值'));
+check('单键摘要', api.sortSummaryText() === '组 ↑', api.sortSummaryText());
+setState(MROWS, MHEADERS, { sortKeys: [{ field: '组', order: 1 }, { field: '值', order: -1 }] });
+check('多键摘要按优先级拼接', api.sortSummaryText() === '组 ↑ → 值 ↓', api.sortSummaryText());
+setState(MROWS, MHEADERS, { sortKeys: [{ field: '组', order: 1 }, { field: '值', order: -1 }] });
+api.resetSort();
+check('resetSort 清空排序', read('sortKeys').length === 0 && api.getFilteredRows().length === 4);
+check('排序不改动 currentRows 的顺序（数据安全）', read('currentRows')[0]['组'] === 'B', read('currentRows')[0]['组']);
 
 console.log('[4] 分页');
 setState(ROWS, HEADERS, { pageSize: 2, currentPage: 1 });

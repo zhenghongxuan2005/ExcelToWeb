@@ -323,7 +323,54 @@ td.editable-cell.is-range-focus {
 }
 
 /* 拖拽选取期间禁止选中文本，否则会连带选中一大片单元格文字 */
-body.is-range-dragging {
+body.is-range-dragging,
+body.is-fill-dragging {
     user-select: none;
     -webkit-user-select: none;
+}
+
+/* ================================================================
+   填充柄（fill-handle.js）
+   ----------------------------------------------------------------
+   贴在选区右下角的小方块，拖拽可复制单元格或延续序列。
+   宿主是 td.editable-cell（已 position: relative），因此随表格滚动自然跟随，
+   不需要额外的定位计算。
+   ================================================================ */
+.range-fill-handle {
+    position: absolute;
+    right: -3px;
+    bottom: -3px;
+    width: 8px;
+    height: 8px;
+    background: var(--primary);
+    border: 1px solid var(--bg-card);
+    border-radius: 2px;
+    cursor: crosshair;
+    z-index: 20;
+}
+
+/* 拖拽填充时，高亮「将被写入」的目标区域 */
+td.editable-cell.is-fill-target {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 48%, transparent);
+}
+
+    td.editable-cell.is-fill-target .cell-input {
+        background: color-mix(in srgb, var(--primary) 8%, var(--bg-card));
+    }
+
+/* 多列排序时，表头上的优先级序号 */
+.th-sort-rank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 14px;
+    height: 14px;
+    margin-left: 3px;
+    padding: 0 3px;
+    border-radius: 999px;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-size: 10px;
+    font-weight: 700;
+    vertical-align: middle;
 }

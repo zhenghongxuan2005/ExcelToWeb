@@ -105,10 +105,16 @@ function renderTable() {
     html += '<th class="cell-center col-pin col-pin-1" style="width:36px; min-width:36px;"><input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes()" /></th>';
     html += '<th class="cell-center col-pin col-pin-2" style="width:44px; min-width:44px;">#</th>';
     for (const h of visibleHeaders) {
-        const arrow = sortField === h ? (sortOrder === 1 ? ' ▲' : ' ▼') : ' ⇅';
+        const order = sortOrderOf(h);
+        const arrow = order === 1 ? ' ▲' : (order === -1 ? ' ▼' : ' ⇅');
+        // 多列排序时给参与排序的列标出优先级序号（1 = 主排序键）
+        const rank = (order !== 0 && sortKeys.length > 1)
+            ? `<span class="th-sort-rank">${sortKeys.findIndex(k => k.field === h) + 1}</span>`
+            : '';
         html += `<th${columnWidthStyle(h)}>`;
         html += '<div class="th-inner">';
-        html += `<span class="th-sort" onclick="sortBy('${escapeHtml(h)}')">${escapeHtml(h)}${arrow}</span>`;
+        html += `<span class="th-sort" title="点击排序：升序 → 降序 → 取消；按住 Shift 点击可追加为次级排序键" `
+            + `onclick="sortBy('${escapeHtml(h)}', event.shiftKey)">${escapeHtml(h)}${arrow}${rank}</span>`;
         html += `<button class="th-filter" title="筛选该列" onclick="openFilter('${escapeHtml(h)}')"><svg class="icon icon-sm"><use href="#i-filter"/></svg></button>`;
         html += '</div></th>';
     }
@@ -163,8 +169,15 @@ function renderTable() {
         html += '<button class="filter-chip-x" title="清除筛选" onclick="clearFilter()"><svg class="icon icon-sm"><use href="#i-x"/></svg></button>';
         html += '</span>';
     }
+    // 排序同样是「隐形」的视图状态：有排序时必须看得见，否则用户会以为行序莫名变了
+    if (sortKeys.length > 0) {
+        html += '<span class="filter-chip sort-chip">';
+        html += `<span>排序：${escapeHtml(sortSummaryText())}</span>`;
+        html += '<button class="filter-chip-x" title="清除排序" onclick="clearSort()"><svg class="icon icon-sm"><use href="#i-x"/></svg></button>';
+        html += '</span>';
+    }
     html += `<span><strong>${visibleHeaders.length}</strong> 列</span>`;
-    html += '<span class="stat-hint">拖拽 / Shift+方向键选区 · Ctrl+C·V 与 Excel 互通 · 勾选行→删除 · 编辑后点击"保存"</span>';
+    html += '<span class="stat-hint">拖拽 / Shift+方向键选区 · 表头点击排序（Shift+点击多列）· Ctrl+C·V 与 Excel 互通 · 编辑后点击"保存"</span>';
     html += '</div>';
 
     // 分页条

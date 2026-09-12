@@ -165,7 +165,7 @@ check('搜索关键词变化 -> 选区作废', api.isRangeActive() === false);
 setTable(HEADERS, ROWS);
 api.setRange({ rowPos: 0, colPos: 0 }, { rowPos: 1, colPos: 1 });
 api.paintSelection();
-vmSet('sortField = "数量"; sortOrder = 1;');
+vmSet('sortKeys = [{ field: "数量", order: 1 }];');
 api.paintSelection();
 check('排序变化 -> 选区作废', api.isRangeActive() === false);
 setTable(HEADERS, ROWS);

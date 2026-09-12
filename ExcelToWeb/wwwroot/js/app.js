@@ -20,6 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 单元格区域选择 + 复制 / 粘贴
     initRangeSelection();
 
+    // 选区填充柄（拖拽复制 / 延续序列）
+    initFillHandle();
+
     // 列显示 / 列宽菜单
     renderColumnMenu();
 
@@ -86,7 +89,7 @@ Object.assign(window, {
     addRow, deleteSelectedRows, batchEdit, confirmBatchEdit, closeBatchModal,
     // 行结构操作
     insertRowsAbove, moveSelectedRows,
-    clearAll, sortBy, applyDateFilter, clearDateFilter,
+    clearAll, sortBy, removeSortKey, clearSort, applyDateFilter, clearDateFilter,
     openFilter, closeFilter, applyFilter, clearFilter,
     // 列筛选：值清单 / 模式切换
     setFilterMode, filterSelectAll, onFilterValueSearch, updateFilterValueCount,

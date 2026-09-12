@@ -18,18 +18,52 @@
 // ================================================================
 
 // ================================================================
-// 排序
+// 排序（多列）
+// ----------------------------------------------------------------
+// sortKeys 是唯一真源：[{ field, order }]，数组顺序即优先级。
+// 表头点击沿用 Excel 手感：
+//   单击        升序 → 降序 → 取消该列排序（第三次点击移除）
+//   Shift+单击  追加为次级排序键；重复 Shift+点击在 升 → 降 → 移除 之间循环
+// 有 2 个以上排序键时，表头会显示优先级序号（见 render.js）。
 // ================================================================
 
-function sortBy(field) {
+function sortBy(field, append) {
     if (!field) return;
-    if (sortField === field) {
-        sortOrder = -sortOrder;
+
+    const idx = sortKeys.findIndex(k => k.field === field);
+
+    if (append) {
+        if (idx === -1) {
+            sortKeys = sortKeys.concat([{ field: field, order: 1 }]);
+        } else if (sortKeys[idx].order === 1) {
+            sortKeys = sortKeys.map((k, i) => (i === idx ? { field: k.field, order: -1 } : k));
+        } else {
+            sortKeys = sortKeys.filter((_, i) => i !== idx);   // 升 → 降 → 移除
+        }
+    } else if (idx === 0 && sortKeys.length === 1) {
+        // 本列已是唯一排序键：升 → 降 → 取消
+        sortKeys = sortKeys[0].order === 1 ? [{ field: field, order: -1 }] : [];
     } else {
-        sortField = field;
-        sortOrder = 1;
+        // 其它情况下，本列直接成为唯一的主排序键
+        sortKeys = [{ field: field, order: 1 }];
     }
+
     renderTable();
+    setStatus(sortKeys.length ? '排序：' + sortSummaryText() : '已取消排序');
+}
+
+/** 移除单个排序键（统计栏排序标签上的 ✕） */
+function removeSortKey(field) {
+    sortKeys = sortKeys.filter(k => k.field !== field);
+    renderTable();
+}
+
+/** 清空排序（统计栏「清除排序」按钮） */
+function clearSort() {
+    resetSort();
+    renderTable();
+    showToast('已取消排序', 'info');
+    setStatus('已取消排序');
 }
 
 // ================================================================
