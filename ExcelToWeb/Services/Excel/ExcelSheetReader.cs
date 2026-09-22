@@ -78,15 +78,57 @@ public class ExcelSheetReader
         };
     }
 
+    /// <summary>列名长度上限，与 ColumnStructureService 的校验保持一致</summary>
+    private const int MaxHeaderLength = 100;
+
     private static List<string> ReadHeaders(ExcelWorksheet worksheet, int colCount)
     {
         var headers = new List<string>(colCount);
+        var used = new HashSet<string>(StringComparer.Ordinal);
+
         for (int c = 1; c <= colCount; c++)
         {
             var raw = worksheet.Cells[1, c]?.Text?.Trim();
-            headers.Add(string.IsNullOrEmpty(raw) ? $"列{c}" : ExcelHelper.CleanString(raw));
+            var name = string.IsNullOrEmpty(raw) ? $"列{c}" : ExcelHelper.CleanString(raw);
+            headers.Add(TakeUniqueName(name, used));
         }
         return headers;
+    }
+
+    /// <summary>
+    /// 取一个当前未被占用的列名：先按 100 字符上限截断，重名时追加 _2 / _3 …
+    /// 后缀按「去掉尾部数字的基名」累加，因此 A / A / A_2 得到 A / A_2 / A_3，
+    /// 而不是 A / A_2 / A_2_2。加后缀前先把基名截短，保证结果仍不超长。
+    /// </summary>
+    private static string TakeUniqueName(string name, HashSet<string> used)
+    {
+        var trimmed = Truncate(name, MaxHeaderLength);
+        if (used.Add(trimmed)) return trimmed;
+
+        var baseName = StripNumericSuffix(trimmed);
+        for (int i = 2; ; i++)
+        {
+            var suffix = "_" + i;
+            var candidate = Truncate(baseName, MaxHeaderLength - suffix.Length) + suffix;
+            if (used.Add(candidate)) return candidate;
+        }
+    }
+
+    private static string Truncate(string text, int max) =>
+        text.Length <= max ? text : text.Substring(0, max);
+
+    /// <summary>去掉形如 _2 / _13 的尾部序号（_02 这类前导零不算，避免误改普通列名）</summary>
+    private static string StripNumericSuffix(string name)
+    {
+        var idx = name.LastIndexOf('_');
+        if (idx <= 0 || idx == name.Length - 1) return name;
+
+        var tail = name.Substring(idx + 1);
+        if (tail[0] == '0') return name;
+        foreach (var ch in tail)
+            if (ch < '0' || ch > '9') return name;
+
+        return name.Substring(0, idx);
     }
 
     private static void ReadRows(
