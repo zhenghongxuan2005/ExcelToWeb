@@ -1,0 +1,116 @@
+/* ================================================================
+   透视汇总弹窗：字段表单 + 预览表格
+   ----------------------------------------------------------------
+   表格通常又宽又长，所以行标签列与表头都做 sticky ——
+   横向滚到第 8 列时还得知道自己在看哪一行。
+   颜色只用 tokens.css 的变量，暗色模式自动跟随。
+   ================================================================ */
+
+/* ===== 字段表单（窄屏自动折行） ===== */
+.pivot-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-3);
+}
+
+    .pivot-form .field {
+        margin-bottom: 0;
+    }
+
+.pivot-hint {
+    margin: 0 0 var(--space-3);
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-3);
+}
+
+    .pivot-hint.is-error {
+        color: var(--danger);
+    }
+
+/* ===== 预览区 ===== */
+.pivot-preview {
+    min-height: 140px;
+    max-height: 46vh;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+}
+
+.pivot-placeholder {
+    margin: 0;
+    padding: 46px 16px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-4);
+}
+
+.pivot-table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+}
+
+    .pivot-table th,
+    .pivot-table td {
+        padding: 7px 12px;
+        border-right: 1px solid var(--border-light);
+        border-bottom: 1px solid var(--border-light);
+        white-space: nowrap;
+    }
+
+    .pivot-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: var(--bg-head);
+        color: var(--text-2);
+        font-weight: 600;
+        text-align: center;
+    }
+
+    /* 行标签列冻结在左侧：无论滚到哪一列，都能看到这一行是哪个分组 */
+    .pivot-table tbody th,
+    .pivot-table thead th.pivot-corner {
+        position: sticky;
+        left: 0;
+        z-index: 3;
+        background: var(--bg-head);
+        color: var(--text-1);
+        text-align: left;
+        font-weight: 600;
+    }
+
+    .pivot-table thead th.pivot-corner {
+        z-index: 4;
+    }
+
+/* 等宽数字：一列数字的小数点能对齐，才看得出大小 */
+.pivot-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 「这个组合没有数据」—— 不是 0，所以弱化显示而不是写个 0 */
+.pivot-empty {
+    color: var(--text-4);
+}
+
+.pivot-total {
+    background: var(--bg-soft);
+    font-weight: 600;
+}
+
+.pivot-grand {
+    background: var(--primary-soft);
+    font-weight: 700;
+}
+
+.pivot-totals-row th,
+.pivot-totals-row td {
+    border-top: 1px solid var(--border-strong);
+}

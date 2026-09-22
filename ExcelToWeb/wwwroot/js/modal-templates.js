@@ -268,6 +268,55 @@
             </div>
         </div>
     </div>
+    <!-- ===== 透视汇总弹窗 ===== -->
+    <div id="pivotModal" class="modal">
+        <div class="modal-card modal-wide">
+            <button class="modal-close" aria-label="关闭弹窗" onclick="closePivotModal()"><svg class="icon"><use href="#i-x"/></svg></button>
+            <h3 class="modal-title">透视汇总</h3>
+            <p class="modal-sub">
+                选一个「行」字段分组、一个「列」字段展开，再选要汇总的列。生成预览确认数字没问题后再导出，
+                导出的文件里会连原始数据表一起给出，方便核对每个格子是怎么来的。
+                <br>透视基于<strong>已保存</strong>的数据计算，有未保存的修改请先点「保存」。
+            </p>
+
+            <div class="pivot-form">
+                <div class="field">
+                    <label class="field-label">行（分组）</label>
+                    <select id="pivotRowField" class="select"></select>
+                </div>
+                <div class="field">
+                    <label class="field-label">列（展开）</label>
+                    <select id="pivotColField" class="select"></select>
+                </div>
+                <div class="field">
+                    <label class="field-label">汇总列</label>
+                    <select id="pivotValueField" class="select"></select>
+                </div>
+                <div class="field">
+                    <label class="field-label">汇总方式</label>
+                    <select id="pivotAgg" class="select">
+                        <option value="sum">求和</option>
+                        <option value="count">计数</option>
+                        <option value="avg">平均</option>
+                        <option value="max">最大值</option>
+                        <option value="min">最小值</option>
+                    </select>
+                </div>
+            </div>
+
+            <p class="pivot-hint" id="pivotHint">选好行 / 列 / 值字段后点「生成预览」。</p>
+
+            <div id="pivotPreview" class="pivot-preview">
+                <p class="pivot-placeholder">还没有预览结果</p>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closePivotModal()">关闭</button>
+                <button class="btn btn-primary" onclick="runPivot()"><svg class="icon"><use href="#i-refresh"/></svg>生成预览</button>
+                <button class="btn btn-success" onclick="exportPivot()"><svg class="icon"><use href="#i-download"/></svg>导出 Excel</button>
+            </div>
+        </div>
+    </div>
 `;
 
     document.body.insertAdjacentHTML('beforeend', html);

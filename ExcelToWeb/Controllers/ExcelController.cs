@@ -169,6 +169,40 @@ public class ExcelController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// 透视汇总（预览）：按行字段分组、列字段展开，对值字段做聚合。
+    /// 行列顺序与每个格子的数字全部由服务端算好 —— 预览和导出必须一致，
+    /// 而一致的唯一保证是两边共用同一份计算。
+    /// </summary>
+    [HttpPost("pivot")]
+    public async Task<IActionResult> BuildPivot([FromBody] PivotRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
+
+        var result = await _service.BuildPivotAsync(request.TableId, userId, request);
+        if (!result.Success) return BadRequest(result);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// 透视导出：在原始数据工作表之外，再写一张「透视」工作表。
+    /// 校验没过（值字段混了文字、取值过多等）返回 400 + 可读原因，成功才给文件。
+    /// </summary>
+    [HttpPost("pivot-export")]
+    public async Task<IActionResult> ExportPivot([FromBody] PivotRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
+
+        var result = await _service.ExportPivotAsync(request.TableId, userId, request);
+        if (!result.Success || result.Data == null) return BadRequest(result);
+
+        return File(result.Data,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            $"透视_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
+    }
+
     // ================================================================
     // 导出 Excel
     // ================================================================

@@ -168,6 +168,39 @@ function saveFormula(tableId, columnName, formula) {
 }
 
 // ================================================================
+// 透视汇总
+// ----------------------------------------------------------------
+// 预览与导出走同一份服务端计算，所以两个函数放在一起，免得日后改一个忘一个。
+// ================================================================
+
+/** 透视汇总预览：按行字段分组、列字段展开，对值字段做 agg 聚合 */
+function buildPivot(payload) {
+    return request('/excel/pivot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+}
+
+/**
+ * 透视导出（blob）：数据表 + 「透视」工作表两张。
+ * 校验失败时后端回的是 400 + JSON，得把里面的 message 取出来当错误提示 ——
+ * 一律说「导出失败」的话，用户根本不知道自己哪里填错了。
+ */
+function exportPivotBlob(payload) {
+    return fetch(API_BASE + '/excel/pivot-export', {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(payload)
+    }).then(res => {
+        if (res.ok) return res.blob();
+        return res.json()
+            .catch(() => null)
+            .then(body => { throw new Error((body && body.message) || '导出失败'); });
+    });
+}
+
+// ================================================================
 // 导出（返回 blob，不走统一 JSON 解析）
 // ================================================================
 function exportExcelBlob(tableId) {

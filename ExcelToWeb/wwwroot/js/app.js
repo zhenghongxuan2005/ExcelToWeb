@@ -66,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
             closeFindModal();
             closeHistoryModal();
             closeSheetPicker();
+            closePivotModal();
         }
     });
 });
@@ -120,6 +121,8 @@ Object.assign(window, {
     setAggregateMode, toggleAggregateRow,
     // 多工作表导入（选择框里的每个工作表按钮）
     pickSheet, closeSheetPicker,
+    // 透视汇总（预览 / 导出）
+    openPivotModal, closePivotModal, runPivot, exportPivot,
     // 视图：搜索 / 分页 / 列
     onSearchInput, clearSearch, gotoPage, setPageSize,
     toggleColumn, setColumnWidth, showAllColumns,

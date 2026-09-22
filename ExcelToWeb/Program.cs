@@ -60,6 +60,9 @@ builder.Services.AddScoped<ColumnStructureService>();
 builder.Services.AddScoped<ColumnMetaService>();
 builder.Services.AddScoped<ComputedColumnService>();
 builder.Services.AddScoped<ExcelExportService>();
+// 透视：PivotService 是唯一一份计算，PivotExportService 只做排版（依赖上者 + ExcelExportService）
+builder.Services.AddScoped<PivotService>();
+builder.Services.AddScoped<PivotExportService>();
 builder.Services.AddScoped<AuditService>();
 builder.Services.AddScoped<TableImportService>();
 

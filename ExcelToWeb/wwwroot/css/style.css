@@ -24,3 +24,4 @@
 @import url("cards.css");    /* 表格管理页卡片网格 */
 @import url("doc.css");      /* 帮助页文档排版 */
 @import url("console.css");  /* 二级页面其余：页头附加区、设置面板、偏好与响应式 */
+@import url("pivot.css");    /* 透视汇总弹窗：字段表单 + 预览表格 */

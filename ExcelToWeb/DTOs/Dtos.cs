@@ -125,6 +125,54 @@ public class SaveFormulaRequest
     public string Formula { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// 透视汇总请求：按 RowField 分组、ColField 展开，对 ValueField 做 Agg 聚合。
+/// 两个维度字段都可以留空（留空 = 该维度不分组，只有一行 / 一列）。
+/// </summary>
+public class PivotRequest
+{
+    public int TableId { get; set; }
+
+    /// <summary>行维度字段（列名）</summary>
+    public string RowField { get; set; } = string.Empty;
+
+    /// <summary>列维度字段（列名）；留空表示只有「合计」一列</summary>
+    public string ColField { get; set; } = string.Empty;
+
+    /// <summary>值字段（列名）</summary>
+    public string ValueField { get; set; } = string.Empty;
+
+    /// <summary>聚合方式：sum / count / avg / max / min</summary>
+    public string Agg { get; set; } = "sum";
+}
+
+/// <summary>
+/// 透视汇总结果。行 / 列 / 格全部是字符串，前端拿到直接渲染，不再二次计算 ——
+/// 预览与导出的数字必须一模一样，唯一的办法就是只有一份计算（服务端这份）。
+/// </summary>
+public class PivotResultDto
+{
+    public List<string> RowKeys { get; set; } = new();
+    public List<string> ColKeys { get; set; } = new();
+
+    /// <summary>Cells[rowIndex][colIndex]，空串表示该组合没有数据（不是 0）</summary>
+    public List<List<string>> Cells { get; set; } = new();
+
+    /// <summary>每行的合计（该行所有列加总 / 该行原始数据的聚合）</summary>
+    public List<string> RowTotals { get; set; } = new();
+
+    /// <summary>每列的合计</summary>
+    public List<string> ColTotals { get; set; } = new();
+
+    /// <summary>总计</summary>
+    public string GrandTotal { get; set; } = string.Empty;
+
+    /// <summary>参与统计的原始行数（前端用来显示「基于全部 N 行」）</summary>
+    public int SourceRows { get; set; }
+
+    /// <summary>结果表头用的展示文案，例如「求和(数量)」</summary>
+    public string ValueLabel { get; set; } = string.Empty;
+}
 /// <summary>整表列元数据保存请求：列名 -> 元数据</summary>
 public class SaveColumnMetaRequest
 {

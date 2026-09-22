@@ -20,6 +20,8 @@ public class ExcelService : IExcelService
     private readonly ColumnStructureService _columns;
     private readonly ColumnMetaService _columnMeta;
     private readonly ComputedColumnService _computed;
+    private readonly PivotService _pivot;
+    private readonly PivotExportService _pivotExport;
     private readonly AuditService _audit;
 
     public ExcelService(
@@ -31,6 +33,8 @@ public class ExcelService : IExcelService
         ColumnStructureService columns,
         ColumnMetaService columnMeta,
         ComputedColumnService computed,
+        PivotService pivot,
+        PivotExportService pivotExport,
         AuditService audit)
     {
         _logger = logger;
@@ -41,6 +45,8 @@ public class ExcelService : IExcelService
         _columns = columns;
         _columnMeta = columnMeta;
         _computed = computed;
+        _pivot = pivot;
+        _pivotExport = pivotExport;
         _audit = audit;
     }
 
@@ -257,6 +263,28 @@ public class ExcelService : IExcelService
             _logger.LogError(ex, "设置表格 {TableId} 计算列公式失败", tableId);
             return ApiResponse.Fail("保存公式失败，请稍后重试");
         }
+    }
+
+    // ================================================================
+    // 透视汇总（计算见 Services/Excel/PivotService.cs，导出排版见 PivotExportService.cs）
+    // ----------------------------------------------------------------
+    // 导出前先自己跑一遍 BuildAsync，而不是把请求直接丢给导出：
+    // 校验只有一份，预览能过什么、导出就能过什么，不会出现「预览好好的、导出报错」。
+    // ================================================================
+    public Task<ApiResponse<PivotResultDto>> BuildPivotAsync(int tableId, int userId, PivotRequest request) =>
+        _pivot.BuildAsync(tableId, userId, request);
+
+    public async Task<ApiResponse<byte[]>> ExportPivotAsync(int tableId, int userId, PivotRequest request)
+    {
+        var built = await _pivot.BuildAsync(tableId, userId, request);
+        if (!built.Success || built.Data == null) return ApiResponse<byte[]>.Fail(built.Message);
+
+        var bytes = await _pivotExport.RenderAsync(tableId, userId, built.Data, request);
+        if (bytes == null) return ApiResponse<byte[]>.Fail("表格不存在");
+
+        _logger.LogInformation("用户 {UserId} 导出表格 {TableId} 的透视表：{ValueLabel}",
+            userId, tableId, built.Data.ValueLabel);
+        return ApiResponse<byte[]>.Ok(bytes, "导出成功");
     }
 
     // ================================================================

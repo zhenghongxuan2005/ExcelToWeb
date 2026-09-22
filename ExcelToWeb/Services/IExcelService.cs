@@ -33,6 +33,16 @@ public interface IExcelService
     /// <summary>设置 / 清空某列的计算公式（公式为空表示退回普通可编辑列）</summary>
     Task<ApiResponse> SaveFormulaAsync(int tableId, int userId, SaveFormulaRequest request);
 
+    /// <summary>透视汇总预览。行列顺序与数字都在服务端算好，前端只负责画</summary>
+    Task<ApiResponse<PivotResultDto>> BuildPivotAsync(int tableId, int userId, PivotRequest request);
+
+    /// <summary>
+    /// 透视导出（数据表 + 「透视」工作表）。失败时 Message 是可以直接给用户看的原因，
+    /// 所以返回 ApiResponse&lt;byte[]&gt; 而不是裸 byte[] —— 调用方要能区分
+    /// 「表格不存在 / 校验没过」和「导出成功但字节为空」。
+    /// </summary>
+    Task<ApiResponse<byte[]>> ExportPivotAsync(int tableId, int userId, PivotRequest request);
+
     // 颜色规则
     Task<List<ColorRule>> GetColorRulesAsync(int userId, string? columnName = null);
     Task<ApiResponse> SaveColorRulesAsync(int userId, List<ColorRule> rules);
