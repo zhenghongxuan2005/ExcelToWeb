@@ -84,9 +84,11 @@ function buildTable(headers, rows, onFocus) {
 }
 
 /**
- * @param {{files: string[], api: string[]}} opts
+ * @param {{files: string[], api: string[], keep?: string[], stubs?: string[]}} opts
  *   files - 需要按序拼接的 wwwroot/js 模块名
  *   api   - 需要从 bundle 里导出的标识符
+ *   keep  - 不要被默认桩覆盖的标识符（例如加载了真实 render.js 时传 ['renderTable']）
+ *   stubs - 额外用空函数替换的标识符（补齐当前用例不关心的依赖）
  */
 function createHarness(opts) {
     let activeEl = null;
@@ -159,9 +161,14 @@ function createHarness(opts) {
     sandbox.globalThis = sandbox;
 
     const ctx = vm.createContext(sandbox);
+    // keep 里的标识符保留模块自身的真实实现；stubs 里的补齐本用例不关心的依赖
+    const keep = opts.keep || [];
+    const stubCode = STUB_GLOBALS
+        .filter(line => !keep.some(n => line.indexOf('globalThis.' + n + ' =') === 0))
+        .concat((opts.stubs || []).map(n => 'globalThis.' + n + ' = function () {};'));
     vm.runInContext(
         opts.files.map(f => '\n/* ' + f + ' */\n' + fs.readFileSync(path.join(JS_ROOT, f), 'utf8')).join('\n;\n')
-        + '\n;' + STUB_GLOBALS.join('\n;')
+        + '\n;' + stubCode.join('\n;')
         + '\n;globalThis.__api = { ' + opts.api.join(', ') + ' };',
         ctx, { filename: 'bundle.js' }
     );

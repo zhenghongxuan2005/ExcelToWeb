@@ -29,6 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 应用「设置」页保存的偏好（默认每页行数、字号）
     applySavedPreferences();
 
+    // 恢复上次的汇总行方式（只改状态不渲染，首屏渲染时自然带上）
+    initAggregatePref();
+
     // 检查登录状态
     checkLogin();
 

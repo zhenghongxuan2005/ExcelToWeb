@@ -158,7 +158,10 @@ function renderTable() {
         }
         html += '</tr>';
     }
-    html += '</tbody></table>';
+    html += '</tbody>';
+    // 汇总行（Excel 式总计行）：贴在表底部，只统计当前可见的数据；关闭时返回空串
+    html += buildAggregateRowHtml(visibleHeaders);
+    html += '</table>';
 
     // 统计栏：区分「全量」与「被视图裁剪后」的行数，避免用户误以为数据变少了；
     // 生效中的筛选必须一直看得见（筛选是隐形状态，看不见就会以为数据丢了）

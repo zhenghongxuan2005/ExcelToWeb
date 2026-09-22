@@ -18,8 +18,7 @@ const AGG_MODES = {
 
 const AGG_PREF_KEY = 'prefAggregate';
 
-/** 当前汇总方式：'off' 表示不显示汇总行 */
-let aggregateMode = 'off';
+// 当前汇总方式 aggregateMode 声明在 state.js（与其余视图状态同归口）
 
 /** 读取本地偏好（不触发渲染，供页面初始化时调用） */
 function initAggregatePref() {
