@@ -180,3 +180,47 @@
     color: var(--text-4);
     font-size: 14px;
 }
+
+/* ===== 工作表选择（一个 Excel 文件里有多个工作表时） ===== */
+.sheet-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 320px;
+    overflow-y: auto;
+    margin-top: 4px;
+}
+
+.sheet-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+}
+
+.sheet-item:hover {
+    border-color: var(--primary);
+    background: var(--bg-soft);
+}
+
+/* 没有数据行的工作表仍然列出，但明确弱化、点进去也导不出东西 */
+.sheet-item.is-empty {
+    opacity: .55;
+}
+
+.sheet-name {
+    font-weight: 600;
+}
+
+.sheet-meta {
+    font-size: 12px;
+    color: var(--text-4);
+}

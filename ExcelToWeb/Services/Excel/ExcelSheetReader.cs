@@ -22,6 +22,29 @@ public sealed class SheetData
 
     /// <summary>工作表实际列数</summary>
     public int SourceColumnCount { get; init; }
+
+    /// <summary>工作表名（多工作表文件导入时用于拼接表名）</summary>
+    public string SheetName { get; init; } = string.Empty;
+
+    /// <summary>工作簿内工作表总数（大于 1 时表名要带上工作表名，否则列表里分不清来自哪张表）</summary>
+    public int SheetCount { get; init; }
+}
+
+/// <summary>一张工作表的概要，供「多工作表时选一张导入」展示</summary>
+public sealed class SheetInfo
+{
+    /// <summary>0 基序号，读取时原样传回</summary>
+    public int Index { get; init; }
+
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>工作表实际行数（含表头行）</summary>
+    public int RowCount { get; init; }
+
+    public int ColumnCount { get; init; }
+
+    /// <summary>是否有可导入的数据（至少 1 行表头 + 1 行数据）</summary>
+    public bool HasData { get; init; }
 }
 
 /// <summary>
@@ -42,23 +65,45 @@ public sealed class ExcelReadException : Exception
 /// </summary>
 public class ExcelSheetReader
 {
-    /// <summary>读取上传文件的第一个工作表</summary>
-    public async Task<SheetData> ReadAsync(IFormFile file)
+    /// <summary>读取上传文件的工作表（默认第一张）</summary>
+    public async Task<SheetData> ReadAsync(IFormFile file, int sheetIndex = 0)
     {
         using var stream = new MemoryStream();
         await file.CopyToAsync(stream);
         stream.Position = 0;
-        return Read(stream);
+        return Read(stream, sheetIndex);
     }
 
-    /// <summary>从流中读取第一个工作表</summary>
-    public SheetData Read(Stream stream)
+    /// <summary>列出上传文件里的全部工作表（只读结构，不解数据行）</summary>
+    public async Task<List<SheetInfo>> ListSheetsAsync(IFormFile file)
+    {
+        using var stream = new MemoryStream();
+        await file.CopyToAsync(stream);
+        stream.Position = 0;
+        return ListSheets(stream);
+    }
+
+    /// <summary>列出流里的全部工作表</summary>
+    public List<SheetInfo> ListSheets(Stream stream)
     {
         using var package = new ExcelPackage(stream);
-        var worksheet = package.Workbook.Worksheets.Count > 0 ? package.Workbook.Worksheets[0] : null;
+        return DescribeSheets(package);
+    }
 
-        if (worksheet?.Dimension == null)
+    /// <summary>从流中读取指定序号的工作表</summary>
+    public SheetData Read(Stream stream, int sheetIndex = 0)
+    {
+        using var package = new ExcelPackage(stream);
+        var sheets = package.Workbook.Worksheets;
+
+        if (sheets.Count == 0)
             throw new ExcelReadException("无法读取 Excel 文件");
+        if (sheetIndex < 0 || sheetIndex >= sheets.Count)
+            throw new ExcelReadException($"工作表序号 {sheetIndex + 1} 超出范围（文件里共 {sheets.Count} 张工作表）");
+
+        var worksheet = sheets[sheetIndex];
+        if (worksheet.Dimension == null)
+            throw new ExcelReadException($"工作表「{worksheet.Name}」是空的，没有可导入的数据");
 
         var rowCount = worksheet.Dimension.Rows;
         var colCount = worksheet.Dimension.Columns;
@@ -74,8 +119,36 @@ public class ExcelSheetReader
             Rows = rows,
             RowNumbers = rowNumbers,
             SourceRowCount = rowCount,
-            SourceColumnCount = colCount
+            SourceColumnCount = colCount,
+            SheetName = worksheet.Name,
+            SheetCount = sheets.Count
         };
+    }
+
+    /// <summary>工作表名 + 维度，不触碰单元格数据</summary>
+    private static List<SheetInfo> DescribeSheets(ExcelPackage package)
+    {
+        var result = new List<SheetInfo>();
+        var sheets = package.Workbook.Worksheets;
+
+        for (int i = 0; i < sheets.Count; i++)
+        {
+            var sheet = sheets[i];
+            var dimension = sheet.Dimension;
+            var rows = dimension?.Rows ?? 0;
+            var cols = dimension?.Columns ?? 0;
+
+            result.Add(new SheetInfo
+            {
+                Index = i,
+                Name = sheet.Name,
+                RowCount = rows,
+                ColumnCount = cols,
+                // 第 1 行是表头，至少要再有一行数据才值得导入
+                HasData = rows >= 2 && cols >= 1
+            });
+        }
+        return result;
     }
 
     /// <summary>列名长度上限，与 ColumnStructureService 的校验保持一致</summary>

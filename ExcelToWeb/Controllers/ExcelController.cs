@@ -29,12 +29,27 @@ public class ExcelController : ControllerBase
     // ================================================================
 
     [HttpPost("upload")]
-    public async Task<IActionResult> Upload(IFormFile file)
+    public async Task<IActionResult> Upload(IFormFile file, [FromQuery] int? sheetIndex = null)
     {
         var userId = GetUserId();
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
-        var result = await _service.UploadExcelAsync(file, userId);
+        var result = await _service.UploadExcelAsync(file, userId, sheetIndex ?? 0);
+        if (!result.Success) return BadRequest(result);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// 列出文件里的工作表。前端拿到多张时先弹选择框、选好带 sheetIndex 再调 upload；
+    /// 只有一张时不弹框直接导入，避免给绝大多数单表文件平白多加一次往返。
+    /// </summary>
+    [HttpPost("sheets")]
+    public async Task<IActionResult> ListSheets(IFormFile file)
+    {
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
+
+        var result = await _service.ListSheetsAsync(file);
         if (!result.Success) return BadRequest(result);
         return Ok(result);
     }

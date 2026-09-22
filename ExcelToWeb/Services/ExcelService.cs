@@ -44,8 +44,12 @@ public class ExcelService : IExcelService
     // ================================================================
     // 上传 Excel（编排见 Services/Excel/TableImportService.cs）
     // ================================================================
-    public Task<ApiResponse<UploadResult>> UploadExcelAsync(IFormFile file, int userId) =>
-        _imports.ImportAsync(file, userId);
+    public Task<ApiResponse<UploadResult>> UploadExcelAsync(IFormFile file, int userId, int sheetIndex = 0) =>
+        _imports.ImportAsync(file, userId, sheetIndex);
+
+    /// <summary>列出文件里的工作表（多工作表导入时让用户选一张）</summary>
+    public Task<ApiResponse<List<SheetInfoDto>>> ListSheetsAsync(IFormFile file) =>
+        _imports.ListSheetsAsync(file);
 
     // ================================================================
     // 查询数据

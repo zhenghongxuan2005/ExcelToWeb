@@ -11,10 +11,13 @@ function isAcceptedExcelFile(file) {
 }
 
 /**
- * 走与「上传 Excel」按钮完全相同的导入流程。
- * 抽成公共函数，避免拖拽与点击两条路径各写一份、行为逐渐不一致。
+ * 真正执行导入：把整个文件（或指定的那张工作表）上传为新表。
+ * 这里不是入口 —— 点击上传与拖拽统一走 sheet-picker.js 的 startImport，
+ * 由它决定用哪张工作表（单表直接调过来，多表先弹选择框）。
+ * @param {File} file
+ * @param {number} [sheetIndex] 用文件里的哪张工作表（0 基）
  */
-function uploadFile(file) {
+function uploadFile(file, sheetIndex) {
     if (!file) return;
 
     if (!isAcceptedExcelFile(file)) {
@@ -24,7 +27,7 @@ function uploadFile(file) {
 
     setStatus('上传中...');
     showTableSkeleton(currentHeaders.length);
-    uploadExcel(file)
+    uploadExcel(file, sheetIndex)
         .then(data => {
             hideTableSkeleton();
             currentTableId = data.tableId;
@@ -87,6 +90,6 @@ function initDragAndDrop() {
         const files = e.dataTransfer && e.dataTransfer.files;
         if (!files || files.length === 0) return;
         if (files.length > 1) showToast('一次只能上传一个文件，已取第一个', 'info');
-        uploadFile(files[0]);
+        startImport(files[0]);
     });
 }

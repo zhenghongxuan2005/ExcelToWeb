@@ -73,10 +73,23 @@ function changePassword(oldPassword, newPassword, confirmPassword) {
 // ================================================================
 // Excel 表格
 // ================================================================
-function uploadExcel(file) {
+/**
+ * 上传 Excel 导入为新表。
+ * @param {File} file
+ * @param {number} [sheetIndex] 用文件里的哪张工作表（0 基）；不传即第一张
+ */
+function uploadExcel(file, sheetIndex) {
     const formData = new FormData();
     formData.append('file', file);
-    return request('/excel/upload', { method: 'POST', body: formData });
+    const query = (sheetIndex === undefined || sheetIndex === null) ? '' : '?sheetIndex=' + sheetIndex;
+    return request('/excel/upload' + query, { method: 'POST', body: formData });
+}
+
+/** 列出 Excel 文件里的工作表（多工作表时让用户选一张再导入） */
+function listSheets(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return request('/excel/sheets', { method: 'POST', body: formData });
 }
 
 function queryTableData(tableId, date) {

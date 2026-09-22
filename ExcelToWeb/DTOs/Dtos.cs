@@ -44,6 +44,26 @@ public class UploadResult
     public string TableName { get; set; } = string.Empty;
     public List<string> Headers { get; set; } = new();
     public List<Dictionary<string, object>> Rows { get; set; } = new();
+
+    /// <summary>数据来源的工作表名（多工作表文件导入时告知用户用的是哪张）</summary>
+    public string SheetName { get; set; } = string.Empty;
+}
+
+/// <summary>工作表概要，供「多工作表时选一张导入」的弹窗展示</summary>
+public class SheetInfoDto
+{
+    /// <summary>0 基序号，导入时原样回传</summary>
+    public int Index { get; set; }
+
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>工作表实际行数（含表头行）</summary>
+    public int RowCount { get; set; }
+
+    public int ColumnCount { get; set; }
+
+    /// <summary>是否有可导入的数据（至少 1 行表头 + 1 行数据）</summary>
+    public bool HasData { get; set; }
 }
 
 public class TableInfoDto

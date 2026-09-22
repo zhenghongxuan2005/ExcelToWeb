@@ -3,13 +3,14 @@
 // ================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 文件上传监听（导入流程统一走 dnd.js 的 uploadFile，避免两条路径行为不一致）
+    // 文件上传监听（导入统一走 sheet-picker.js 的 startImport：由它决定用哪张工作表，
+    // 再调 dnd.js 的 uploadFile 真正导入，两条路径行为一致）
     const fileInput = document.getElementById('fileInput');
     if (fileInput) {
         fileInput.addEventListener('change', e => {
             const file = e.target.files[0];
             if (!file) return;
-            uploadFile(file);
+            startImport(file);
             e.target.value = '';
         });
     }
@@ -63,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
             closeColumnModal();
             closeFindModal();
             closeHistoryModal();
+            closeSheetPicker();
         }
     });
 });
@@ -112,6 +114,8 @@ Object.assign(window, {
     copyRangeSelection, clearRangeContent, clearRange,
     // 汇总行
     setAggregateMode, toggleAggregateRow,
+    // 多工作表导入（选择框里的每个工作表按钮）
+    pickSheet, closeSheetPicker,
     // 视图：搜索 / 分页 / 列
     onSearchInput, clearSearch, gotoPage, setPageSize,
     toggleColumn, setColumnWidth, showAllColumns,

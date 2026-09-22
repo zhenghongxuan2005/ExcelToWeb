@@ -6,7 +6,11 @@ namespace ExcelToWeb.Services;
 
 public interface IExcelService
 {
-    Task<ApiResponse<UploadResult>> UploadExcelAsync(IFormFile file, int userId);
+    /// <summary>上传 Excel 导入为新表；sheetIndex 指定用文件里的哪张工作表（0 基）</summary>
+    Task<ApiResponse<UploadResult>> UploadExcelAsync(IFormFile file, int userId, int sheetIndex = 0);
+
+    /// <summary>列出文件里的工作表，供「多工作表时选一张导入」使用</summary>
+    Task<ApiResponse<List<SheetInfoDto>>> ListSheetsAsync(IFormFile file);
     Task<ApiResponse<TableDataDto>> GetTableDataAsync(int tableId, int userId, string? date = null);
     Task<ApiResponse> SaveTableDataAsync(int tableId, int userId, List<Dictionary<string, object>> rows, string? userName = null);
     Task<byte[]?> ExportExcelAsync(int tableId, int userId);

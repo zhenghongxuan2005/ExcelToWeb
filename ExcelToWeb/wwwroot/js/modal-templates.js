@@ -219,6 +219,23 @@
             </div>
         </div>
     </div>
+
+    <!-- ===== 工作表选择弹窗（文件里有多张工作表时才出现） ===== -->
+    <div id="sheetPickerModal" class="modal">
+        <div class="modal-card">
+            <button class="modal-close" aria-label="关闭弹窗" onclick="closeSheetPicker()"><svg class="icon"><use href="#i-x"/></svg></button>
+            <h3 class="modal-title">选择工作表</h3>
+            <p class="modal-sub">这个文件里有多个工作表，请选择要导入的一张。每次导入一张，导入后会成为一个新表格。</p>
+
+            <div id="sheetPickerList" class="sheet-list">
+                <!-- 工作表按钮由 sheet-picker.js 生成 -->
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeSheetPicker()">取消</button>
+            </div>
+        </div>
+    </div>
 `;
 
     document.body.insertAdjacentHTML('beforeend', html);

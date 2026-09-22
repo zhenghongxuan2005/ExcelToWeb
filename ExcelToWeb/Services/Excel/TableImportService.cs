@@ -34,19 +34,19 @@ public class TableImportService
         _rules = rules;
     }
 
-    /// <summary>上传 Excel：解析第一个工作表，建表并批量写入数据行</summary>
-    public async Task<ApiResponse<UploadResult>> ImportAsync(IFormFile file, int userId)
+    /// <summary>
+    /// 上传 Excel：解析指定工作表，建表并批量写入数据行。
+    /// sheetIndex 是 0 基序号 —— 单工作表文件固定传 0；多工作表由前端选好后回传。
+    /// </summary>
+    public async Task<ApiResponse<UploadResult>> ImportAsync(IFormFile file, int userId, int sheetIndex = 0)
     {
-        if (file == null || file.Length == 0)
-            return ApiResponse<UploadResult>.Fail("请选择文件");
-
-        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-        if (ext != ".xlsx" && ext != ".xls")
-            return ApiResponse<UploadResult>.Fail("请上传 .xlsx 或 .xls 格式的文件");
+        var invalid = ValidateFile(file);
+        if (invalid != null)
+            return ApiResponse<UploadResult>.Fail(invalid);
 
         try
         {
-            var sheet = await _reader.ReadAsync(file);
+            var sheet = await _reader.ReadAsync(file, sheetIndex);
 
             if (sheet.SourceRowCount < 2)
                 return ApiResponse<UploadResult>.Fail("Excel 文件没有数据行");
@@ -56,7 +56,7 @@ public class TableImportService
 
             var table = new DynamicTable
             {
-                TableName = Path.GetFileNameWithoutExtension(file.FileName),
+                TableName = BuildTableName(file.FileName, sheet),
                 Headers = sheet.Headers,
                 UserId = userId,
                 CreatedAt = DateTime.Now,
@@ -65,15 +65,16 @@ public class TableImportService
             await _repository.AddTableAsync(table);
             await _repository.BulkInsertRowsAsync(table.Id, sheet.Rows);
 
-            _logger.LogInformation("用户 {UserId} 上传表格 {TableName}，共 {RowCount} 行",
-                userId, table.TableName, sheet.Rows.Count);
+            _logger.LogInformation("用户 {UserId} 上传表格 {TableName}（工作表 {SheetName}），共 {RowCount} 行",
+                userId, table.TableName, sheet.SheetName, sheet.Rows.Count);
 
             return ApiResponse<UploadResult>.Ok(new UploadResult
             {
                 TableId = table.Id,
                 TableName = table.TableName,
                 Headers = sheet.Headers,
-                Rows = sheet.Rows
+                Rows = sheet.Rows,
+                SheetName = sheet.SheetName
             }, $"成功导入 {sheet.Rows.Count} 条数据");
         }
         catch (ExcelReadException ex)
@@ -87,6 +88,62 @@ public class TableImportService
             _logger.LogError(ex, "上传 Excel 失败：用户 {UserId}", userId);
             return ApiResponse<UploadResult>.Fail("文件解析失败，请确认上传的是有效的 .xlsx / .xls 文件");
         }
+    }
+
+    /// <summary>列出文件里的工作表，供「多工作表时选一张导入」使用</summary>
+    public async Task<ApiResponse<List<SheetInfoDto>>> ListSheetsAsync(IFormFile file)
+    {
+        var invalid = ValidateFile(file);
+        if (invalid != null)
+            return ApiResponse<List<SheetInfoDto>>.Fail(invalid);
+
+        try
+        {
+            var sheets = await _reader.ListSheetsAsync(file);
+            if (sheets.Count == 0)
+                return ApiResponse<List<SheetInfoDto>>.Fail("文件里没有工作表");
+
+            var result = sheets.Select(s => new SheetInfoDto
+            {
+                Index = s.Index,
+                Name = s.Name,
+                RowCount = s.RowCount,
+                ColumnCount = s.ColumnCount,
+                HasData = s.HasData
+            }).ToList();
+
+            return ApiResponse<List<SheetInfoDto>>.Ok(result);
+        }
+        catch (ExcelReadException ex)
+        {
+            return ApiResponse<List<SheetInfoDto>>.Fail(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "读取工作表列表失败");
+            return ApiResponse<List<SheetInfoDto>>.Fail("文件解析失败，请确认上传的是有效的 .xlsx / .xls 文件");
+        }
+    }
+
+    /// <summary>
+    /// 表名：单工作表文件沿用文件名；多工作表时附上工作表名 —— 否则同一个文件分几次
+    /// 导入不同工作表后，表格列表里会出现一串同名表格，根本分不清哪张来自哪张。
+    /// </summary>
+    private static string BuildTableName(string fileName, SheetData sheet)
+    {
+        var baseName = Path.GetFileNameWithoutExtension(fileName);
+        if (string.IsNullOrWhiteSpace(baseName)) baseName = "未命名表格";
+        return sheet.SheetCount > 1 ? $"{baseName} - {sheet.SheetName}" : baseName;
+    }
+
+    /// <summary>文件是否可接受；不可接受时给出面向用户的原因</summary>
+    private static string? ValidateFile(IFormFile? file)
+    {
+        if (file == null || file.Length == 0) return "请选择文件";
+
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (ext != ".xlsx" && ext != ".xls") return "请上传 .xlsx 或 .xls 格式的文件";
+        return null;
     }
 
     /// <summary>
