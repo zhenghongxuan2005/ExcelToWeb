@@ -103,8 +103,18 @@ console.log('state.js 全局绑定探针（' + STATE_PROBE.length + ' 项）：'
 const badFn = EXPOSED.filter(n => fn[n] !== 'function');
 console.log('app.js 暴露名单（' + EXPOSED.length + ' 项）：' + (badFn.length ? '缺失 -> ' + badFn.join(', ') : '全部为函数'));
 
+// 内联处理器可能写在 HTML 里，也可能写在「注入 HTML 模板」的 JS 模块里
+// （index.html 的弹窗已外置到 modal-templates.js）。两处都要扫 ——
+// 只扫 HTML 会让弹窗那批接线静默漏检。
+const handlerSources = [html];
+const templateFiles = order.filter(src => fs.readFileSync(path.join(ROOT, src), 'utf8').includes('insertAdjacentHTML'));
+for (const src of templateFiles) handlerSources.push(fs.readFileSync(path.join(ROOT, src), 'utf8'));
+console.log('内联处理器扫描源：index.html' + templateFiles.map(s => ' + ' + s).join(''));
+
 const handlers = new Set();
-for (const m of html.matchAll(/\bon(?:click|change|input|keyup|keydown|blur|focus)="\s*([A-Za-z_$][\w$]*)\s*\(/g)) handlers.add(m[1]);
+for (const src of handlerSources) {
+    for (const m of src.matchAll(/\bon(?:click|change|input|keyup|keydown|blur|focus)="\s*([A-Za-z_$][\w$]*)\s*\(/g)) handlers.add(m[1]);
+}
 const missing = [...handlers].filter(h => typeof sandbox[h] !== 'function').sort();
 console.log('index.html 内联处理器（' + handlers.size + ' 个）：' + (missing.length ? '未挂载 -> ' + missing.join(', ') : '全部已挂载'));
 

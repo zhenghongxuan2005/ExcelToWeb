@@ -100,10 +100,19 @@ for (const page of PAGES) {
         totalFail++;
     }
 
-    // 内联事件处理器接线
+    // 内联事件处理器接线。处理器可能写在 HTML 里，也可能写在「注入 HTML 模板」的
+    // JS 模块里（弹窗已外置到 modal-templates.js），只扫 HTML 会静默漏检。
+    const handlerSources = [html];
+    for (const src of externals) {
+        const text = fs.readFileSync(path.join(ROOT, src), 'utf8');
+        if (text.includes('insertAdjacentHTML')) handlerSources.push(text);
+    }
+
     const handlers = new Set();
-    for (const m of html.matchAll(/\bon(?:click|change|input|keyup|keydown|blur|focus|submit)="\s*([A-Za-z_$][\w$]*)\s*\(/g)) {
-        handlers.add(m[1]);
+    for (const src of handlerSources) {
+        for (const m of src.matchAll(/\bon(?:click|change|input|keyup|keydown|blur|focus|submit)="\s*([A-Za-z_$][\w$]*)\s*\(/g)) {
+            handlers.add(m[1]);
+        }
     }
     const missing = [...handlers].filter(h => typeof sandbox[h] !== 'function').sort();
     console.log('  内联处理器（' + handlers.size + ' 个）：' + (missing.length ? '未挂载 -> ' + missing.join(', ') : '全部已挂载'));
