@@ -59,24 +59,33 @@ public class ExcelExportService
         var data = rows.Select(r => TableRepository.DeserializeRow(r.DataJson)).ToList();
         var kinds = headers.Select(h => InferColumnKind(data, h)).ToList();
 
+        // 合并区域：列名对不上、或行数与导入时不一致的区域都会被丢弃，只还原还对得上的
+        var merges = MergeRangeCodec.Resolve(
+            MergeRangeCodec.Parse(table.MergeRangesJson), headers, data.Count);
+        var covered = CoveredCells(merges);
+
         using var package = new ExcelPackage();
         var worksheet = package.Workbook.Worksheets.Add(
             string.IsNullOrEmpty(table.TableName) ? "数据" : table.TableName);
 
         for (int c = 0; c < headers.Count; c++)
         {
+            // 落在表头行上的合并区域，同样只能留左上角那一格写值
+            if (covered.Contains((1, c + 1))) continue;
+
             var cell = worksheet.Cells[1, c + 1];
             cell.Value = headers[c];
-            cell.Style.Font.Bold = true;
-            cell.Style.Fill.PatternType = ExcelFillStyle.Solid;
-            cell.Style.Fill.BackgroundColor.SetColor(DrawingColor.FromArgb(0xF0, 0xF2, 0xF5));
-            cell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+            ApplyHeaderStyle(cell);
         }
 
         for (int r = 0; r < data.Count; r++)
         {
             for (int c = 0; c < headers.Count; c++)
             {
+                // 被合并吃掉的格子必须留空：铺平后区域内每格都有值，直接写进去的话
+                // Excel 打开会判定「合并单元格只能保留左上角」并提示文件已修复
+                if (covered.Contains((r + 2, c + 1))) continue;
+
                 var key = headers[c];
                 var raw = data[r].TryGetValue(key, out var v) ? v?.ToString() ?? string.Empty : string.Empty;
                 var cell = worksheet.Cells[r + 2, c + 1];
@@ -90,6 +99,8 @@ public class ExcelExportService
 
         // 冻结首行：长表格滚动时表头始终可见
         worksheet.View.FreezePanes(2, 1);
+
+        ApplyMerges(worksheet, merges);
 
         return package.GetAsByteArray();
     }
@@ -239,6 +250,57 @@ public class ExcelExportService
             }
 
             if (setting?.Hidden == true) column.Hidden = true;
+        }
+    }
+
+    /// <summary>表头样式：加粗 + 浅灰底 + 居中。首次写入与合并后重施共用这一份定义</summary>
+    private static void ApplyHeaderStyle(ExcelRange cell)
+    {
+        cell.Style.Font.Bold = true;
+        cell.Style.Fill.PatternType = ExcelFillStyle.Solid;
+        cell.Style.Fill.BackgroundColor.SetColor(DrawingColor.FromArgb(0xF0, 0xF2, 0xF5));
+        cell.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+    }
+
+    /// <summary>
+    /// 被合并区域「吃掉」的单元格（不含左上角）。这些格子必须留空 —— 铺平后区域内
+    /// 每格都有值，写了的话 Excel 会认为合并区域里残留了不该有的值并提示修复文件。
+    /// </summary>
+    private static HashSet<(int Row, int Col)> CoveredCells(List<MergeArea> merges)
+    {
+        var covered = new HashSet<(int Row, int Col)>();
+
+        foreach (var area in merges)
+        {
+            for (int r = area.R1; r <= area.R2; r++)
+            {
+                for (int c = area.C1; c <= area.C2; c++)
+                {
+                    if (r == area.R1 && c == area.C1) continue;
+                    covered.Add((r, c));
+                }
+            }
+        }
+
+        return covered;
+    }
+
+    /// <summary>
+    /// 按导入时记录的区域重新合并。
+    /// 合并会把区域内所有格的样式压成「左上角那一份」，所以落在表头行上的合并必须在
+    /// 合并之后把表头样式重新铺一遍，否则表头会掉底色和加粗。
+    /// </summary>
+    private static void ApplyMerges(ExcelWorksheet worksheet, List<MergeArea> merges)
+    {
+        if (merges.Count == 0) return;
+
+        foreach (var area in merges)
+            worksheet.Cells[area.R1, area.C1, area.R2, area.C2].Merge = true;
+
+        foreach (var area in merges.Where(a => a.R1 == 1))
+        {
+            for (int c = area.C1; c <= area.C2; c++)
+                ApplyHeaderStyle(worksheet.Cells[1, c]);
         }
     }
 
