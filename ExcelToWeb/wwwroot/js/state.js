@@ -41,6 +41,10 @@ let filterKeyword = '';
 let currentValidationRules = [];
 let currentRules = [];
 
+// 跨表引用的取值字典：列名 -> 引用表该列的去重值数组。
+// 由 tables.js 在加载表格时随校验规则一起拉取；render.js 用它替换单元格建议列表。
+let refValueMap = {};
+
 // ----- 视图设置（只影响显示，不改动 currentRows） -----
 let searchKeyword = '';      // 全局搜索关键词
 let pageSize = 0;            // 每页行数，0 表示「全部」（不分页）

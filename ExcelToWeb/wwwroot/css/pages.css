@@ -4,7 +4,7 @@
    ================================================================ */
 
 /* ================================================================
-   登录页
+   登录页：极光渐变背景 + 点阵纹理 + 悬浮玻璃卡片
    ================================================================ */
 .auth-page {
     min-height: 100vh;
@@ -12,48 +12,95 @@
     justify-content: center;
     align-items: center;
     padding: 20px;
+    position: relative;
+    overflow: hidden;
     background:
-        radial-gradient(ellipse 80% 50% at 20% -10%, rgba(26, 92, 255, 0.12), transparent),
-        radial-gradient(ellipse 60% 50% at 90% 110%, rgba(107, 75, 191, 0.10), transparent),
+        radial-gradient(ellipse 70% 55% at 15% -5%, color-mix(in srgb, var(--primary) 22%, transparent), transparent 65%),
+        radial-gradient(ellipse 55% 50% at 90% 105%, color-mix(in srgb, var(--purple) 20%, transparent), transparent 65%),
+        radial-gradient(ellipse 40% 40% at 85% 10%, color-mix(in srgb, var(--info) 10%, transparent), transparent 70%),
         var(--bg-page);
 }
 
+    /* 点阵纹理层，增加空间纵深感 */
+    .auth-page::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(color-mix(in srgb, var(--text-1) 14%, transparent) 1px, transparent 1px);
+        background-size: 26px 26px;
+        mask-image: radial-gradient(ellipse 70% 65% at 50% 42%, transparent 30%, #000 100%);
+        -webkit-mask-image: radial-gradient(ellipse 70% 65% at 50% 42%, transparent 30%, #000 100%);
+        pointer-events: none;
+    }
+
 .auth-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-light);
-    border-radius: 20px;
-    padding: 44px 40px;
-    max-width: 420px;
+    position: relative;
+    background: color-mix(in srgb, var(--bg-card) 88%, transparent);
+    backdrop-filter: blur(18px) saturate(1.4);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+    border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+    border-radius: 24px;
+    padding: 46px 42px;
+    max-width: 424px;
     width: 100%;
-    box-shadow: var(--shadow-card);
+    box-shadow: 0 2px 6px rgba(10, 26, 51, 0.05), 0 30px 80px rgba(10, 26, 51, 0.14);
+    animation: authIn 0.55s var(--ease-spring);
+}
+
+    /* 卡片顶部品牌渐变发丝线 */
+    .auth-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 12%;
+        right: 12%;
+        height: 3px;
+        border-radius: 0 0 var(--radius-full) var(--radius-full);
+        background: var(--grad-brand);
+        opacity: 0.9;
+    }
+
+@keyframes authIn {
+    from {
+        opacity: 0;
+        transform: translateY(22px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .auth-brand {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 22px;
+    margin-bottom: 24px;
 }
 
     .auth-brand .brand-icon {
-        width: 38px;
-        height: 38px;
-        border-radius: 11px;
-        background: linear-gradient(135deg, var(--primary), #6b4bbf);
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: var(--grad-brand);
         display: flex;
         align-items: center;
         justify-content: center;
         color: #fff;
+        box-shadow: 0 4px 14px color-mix(in srgb, var(--primary) 40%, transparent),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.3);
     }
 
     .auth-brand .brand-name {
-        font-size: 15px;
+        font-size: 16px;
         font-weight: 700;
         color: var(--text-1);
+        letter-spacing: 0.2px;
     }
 
 .auth-title {
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 700;
     color: var(--text-1);
     margin-bottom: 6px;
@@ -62,7 +109,7 @@
 .auth-sub {
     color: var(--text-3);
     font-size: 14px;
-    margin-bottom: 26px;
+    margin-bottom: 28px;
 }
 
 .auth-status {
@@ -124,35 +171,71 @@
    ================================================================ */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
     gap: 16px;
     margin-bottom: 22px;
 }
 
 .stat-card {
+    position: relative;
     background: var(--bg-card);
     border: 1px solid var(--border-light);
-    padding: 18px 20px;
+    padding: 20px 22px;
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-card);
-    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    overflow: hidden;
+    transition: transform var(--transition-base) var(--ease-spring), box-shadow var(--transition-base), border-color var(--transition-base);
 }
 
+    /* 顶部渐变发丝线 + 角落光晕，让数字卡更有「仪表感」 */
+    .stat-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--grad-brand);
+        opacity: 0.85;
+    }
+
+    .stat-card::after {
+        content: "";
+        position: absolute;
+        right: -26px;
+        bottom: -30px;
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        background: var(--grad-brand-soft);
+        filter: blur(20px);
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
     .stat-card:hover {
-        transform: translateY(-2px);
+        transform: translateY(-3px);
+        border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
         box-shadow: var(--shadow-pop);
     }
 
     .stat-card .label {
         font-size: 13px;
         color: var(--text-3);
+        display: flex;
+        align-items: center;
+        gap: 6px;
     }
 
     .stat-card .value {
-        font-size: 28px;
+        font-size: 30px;
         font-weight: 700;
-        color: var(--text-1);
-        margin-top: 4px;
+        letter-spacing: -0.02em;
+        margin-top: 6px;
+        background: var(--grad-brand);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
     }
 
 .controls {
@@ -164,6 +247,7 @@
     background: var(--bg-card);
     border: 1px solid var(--border-light);
     border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
     align-items: center;
 }
 
@@ -186,7 +270,17 @@
         color: var(--text-1);
         outline: none;
         cursor: pointer;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
+
+        .controls select:hover {
+            border-color: var(--border-strong);
+        }
+
+        .controls select:focus {
+            border-color: var(--primary);
+            box-shadow: var(--focus-ring);
+        }
 
 #chartContainer {
     width: 100%;
@@ -194,6 +288,7 @@
     background: var(--bg-card);
     border-radius: var(--radius-md);
     border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-card);
     padding: 16px;
     margin-bottom: 22px;
 }
@@ -202,6 +297,7 @@
     background: var(--bg-card);
     border-radius: var(--radius-md);
     border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-card);
     overflow: hidden;
 }
 

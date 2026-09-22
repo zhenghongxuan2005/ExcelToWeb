@@ -15,7 +15,17 @@ function loadManageList() {
     const host = document.getElementById('tableGrid');
     if (!host) return;
 
-    host.innerHTML = '<div class="empty-state"><p>加载中...</p></div>';
+    // 骨架卡片占位：避免「白屏 → 卡片突然出现」的跳动（样式见 table.css 骨架屏段）
+    let sk = '';
+    for (let i = 0; i < 3; i++) {
+        sk += '<div class="table-card skeleton-card" aria-hidden="true">'
+            + '<div class="skeleton-block" style="height:20px; width:55%;"></div>'
+            + '<div class="skeleton-block" style="height:12px; width:90%;"></div>'
+            + '<div class="skeleton-block" style="height:12px; width:72%;"></div>'
+            + '<div class="skeleton-block" style="height:30px; width:100%;"></div>'
+            + '</div>';
+    }
+    host.innerHTML = sk;
 
     fetchTableList()
         .then(tables => {

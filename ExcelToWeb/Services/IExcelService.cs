@@ -8,7 +8,7 @@ public interface IExcelService
 {
     Task<ApiResponse<UploadResult>> UploadExcelAsync(IFormFile file, int userId);
     Task<ApiResponse<TableDataDto>> GetTableDataAsync(int tableId, int userId, string? date = null);
-    Task<ApiResponse> SaveTableDataAsync(int tableId, int userId, List<Dictionary<string, object>> rows);
+    Task<ApiResponse> SaveTableDataAsync(int tableId, int userId, List<Dictionary<string, object>> rows, string? userName = null);
     Task<byte[]?> ExportExcelAsync(int tableId, int userId);
     Task<byte[]?> ExportCsvAsync(int tableId, int userId);
     Task<byte[]?> DownloadTemplateAsync(int tableId, int userId);
@@ -36,4 +36,10 @@ public interface IExcelService
 
     // 带校验的上传
     Task<ApiResponse<ValidationResult>> UploadWithValidationAsync(IFormFile file, int tableId, int userId);
+
+    /// <summary>取某列的去重值（上限 500），供「跨表引用」下拉与校验使用</summary>
+    Task<List<string>> GetColumnValuesAsync(int tableId, int userId, string columnName);
+
+    /// <summary>查询变更历史（按时间倒序，最多 100 条）；rowIndex 传值时只看该行</summary>
+    Task<List<AuditLog>> GetAuditLogsAsync(int tableId, int userId, int? rowIndex);
 }

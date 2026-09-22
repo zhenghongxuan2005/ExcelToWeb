@@ -11,7 +11,7 @@ const EXCLUDED_METRICS = ['序号', 'id', 'ID', '编号', '行号', 'No', 'NO', 
 const EXCLUDED_DIMENSIONS = ['序号', 'id', 'ID', '编号', '行号', 'No', 'NO', 'no'];
 
 function fetchDashboardData() {
-    showEmptyState('加载中...');
+    showDashboardSkeleton();
     fetchTableList()
         .then(tables => {
             if (!tables || tables.length === 0) {
@@ -42,6 +42,22 @@ function loadData(id) {
             showEmptyState('加载数据失败：' + err.message);
             console.error('loadData 错误:', err);
         });
+}
+
+/** 看板加载骨架：统计卡 + 图表区的占位轮廓（样式见 table.css 骨架屏段） */
+function showDashboardSkeleton() {
+    const container = document.getElementById('dashboardContent');
+    if (!container) return;
+    let html = '<div class="stats-grid">';
+    for (let i = 0; i < 4; i++) {
+        html += '<div class="stat-card skeleton-card" aria-hidden="true">'
+            + '<div class="skeleton-block" style="height:12px; width:45%;"></div>'
+            + '<div class="skeleton-block" style="height:28px; width:65%;"></div>'
+            + '</div>';
+    }
+    html += '</div>';
+    html += '<div class="skeleton-block" style="height:340px; margin-top:16px;" aria-hidden="true"></div>';
+    container.innerHTML = html;
 }
 
 function showEmptyState(msg) {

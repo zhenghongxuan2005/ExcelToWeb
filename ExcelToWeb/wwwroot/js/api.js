@@ -204,6 +204,18 @@ function saveValidationRulesApi(rules) {
     });
 }
 
+/** 取某列的去重值（上限 500），供「跨表引用」下拉与保存校验使用 */
+function fetchColumnValues(tableId, columnName) {
+    return request('/excel/column-values?tableId=' + tableId + '&columnName=' + encodeURIComponent(columnName));
+}
+
+/** 查询变更历史（按时间倒序，最多 100 条）；rowIndex 可选，传值时只看该行 */
+function fetchAuditLogs(tableId, rowIndex) {
+    let url = '/excel/audit-logs?tableId=' + tableId;
+    if (rowIndex) url += '&rowIndex=' + rowIndex;
+    return request(url);
+}
+
 // ================================================================
 // 带校验的上传
 // ================================================================

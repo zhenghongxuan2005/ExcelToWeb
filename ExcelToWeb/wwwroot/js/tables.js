@@ -61,6 +61,26 @@ function getTableName(tableId) {
     return t ? t.tableName : '未知表格';
 }
 
+/**
+ * 加载「跨表引用」下拉数据源：读当前表的校验规则，凡配置了引用表 + 列的，
+ * 拉取该列去重值填入 refValueMap；renderTable 的单元格建议列表优先使用它。
+ * 失败静默降级（只是没有下拉建议，不影响表格加载主流程）。
+ */
+function loadRefValues() {
+    refValueMap = {};
+    if (!currentTableId) return Promise.resolve();
+    return fetchValidationRules(currentTableId)
+        .then(rules => {
+            const refs = (rules || []).filter(r => r.refTableId && r.refColumnName);
+            return Promise.all(refs.map(r =>
+                fetchColumnValues(r.refTableId, r.refColumnName)
+                    .then(values => { refValueMap[r.columnName] = values || []; })
+                    .catch(() => { /* 单列失败不阻断其它列 */ })
+            ));
+        })
+        .catch(() => { /* 无规则或请求失败：保持空表 */ });
+}
+
 function loadTableData(tableId) {
     // 先取消上一张表遗留的「列设置自动保存」——否则它会把旧表的偏好写到新表上
     resetColumnMeta();
@@ -79,7 +99,7 @@ function loadTableData(tableId) {
                 renderColumnMenu();
                 // 加载新数据源，旧表格的撤销快照必须作废
                 resetHistory();
-                loadColorRules().then(() => renderTable());
+                Promise.all([loadColorRules(), loadRefValues()]).then(() => renderTable());
                 setStatus(`已加载: ${getTableName(tableId)} (${currentRows.length}行)`);
                 showToast('✅ 已切换到: ' + getTableName(tableId), 'success');
             } else {
@@ -161,7 +181,7 @@ function refreshData() {
                 currentHeaders = data.headers;
                 currentRows = data.rows;
                 resetSort();
-                loadColorRules().then(() => renderTable());
+                Promise.all([loadColorRules(), loadRefValues()]).then(() => renderTable());
                 showToast('✅ 已刷新', 'success');
                 setStatus(`已刷新 (${data.rows.length}行)`);
             }

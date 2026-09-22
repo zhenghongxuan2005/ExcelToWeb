@@ -54,6 +54,35 @@ function saveData() {
                     if (rowValid) validRows.push(row);
                     else errors.push(`第 ${r + 1} 行：${rowErrors.join('；')}`);
                 });
+
+                // 唯一性（跨行）：启用「唯一」的列不允许出现重复值
+                for (const rule of rules) {
+                    if (!rule.unique) continue;
+                    const seen = {};
+                    currentRows.forEach((row, r) => {
+                        const v = row[rule.columnName] !== undefined ? String(row[rule.columnName]) : '';
+                        if (!v) return;
+                        if (seen[v] !== undefined) {
+                            errors.push(`第 ${r + 1} 行：${rule.columnName} 的值「${v}」与第 ${seen[v] + 1} 行重复`);
+                        } else {
+                            seen[v] = r;
+                        }
+                    });
+                }
+
+                // 跨表引用：取值必须来自引用列（引用值列表由 loadRefValues 预取）
+                for (const rule of rules) {
+                    if (!rule.refTableId || !rule.refColumnName) continue;
+                    const refList = refValueMap[rule.columnName] || [];
+                    if (refList.length === 0) continue;   // 引用表为空时不阻断保存
+                    const allowed = new Set(refList);
+                    currentRows.forEach((row, r) => {
+                        const v = row[rule.columnName] !== undefined ? String(row[rule.columnName]) : '';
+                        if (v && !allowed.has(v)) {
+                            errors.push(`第 ${r + 1} 行：${rule.columnName} 的值「${v}」不在引用表「${getTableName(rule.refTableId)}」的 ${rule.refColumnName} 列中`);
+                        }
+                    });
+                }
             } else {
                 validRows.push(...currentRows);
             }

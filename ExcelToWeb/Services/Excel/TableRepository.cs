@@ -198,4 +198,23 @@ public class TableRepository
 
     public static Dictionary<string, object> DeserializeRow(string json) =>
         JsonSerializer.Deserialize<Dictionary<string, object>>(json) ?? new Dictionary<string, object>();
+
+    /// <summary>
+    /// 取某列的全部去重值（升序，上限 500 个）——供「跨表引用」校验与前端下拉使用。
+    /// JSON 存在 DataJson 里，只能读出后内存去重；500 的上限防止把整列大文本灌给前端。
+    /// </summary>
+    public async Task<List<string>> GetDistinctColumnValuesAsync(int tableId, string columnName)
+    {
+        var rows = await GetRowsAsync(tableId);
+        var values = new SortedSet<string>(StringComparer.Ordinal);
+        foreach (var r in rows)
+        {
+            var row = DeserializeRow(r.DataJson);
+            if (!row.TryGetValue(columnName, out var v)) continue;
+            var s = v?.ToString() ?? string.Empty;
+            if (s.Length > 0) values.Add(s);
+            if (values.Count >= 500) break;
+        }
+        return values.ToList();
+    }
 }

@@ -58,9 +58,15 @@ function renderTable() {
         return;
     }
 
-    // 提取每列去重值作为建议列表（基于全量数据，搜索不应改变候选值）
+    // 提取每列去重值作为建议列表（基于全量数据，搜索不应改变候选值）；
+    // 配置了「跨表引用」的列例外：建议列表直接取自引用表该列的去重值
     const suggestionsMap = {};
     for (const colName of currentHeaders) {
+        const refList = refValueMap[colName];
+        if (refList && refList.length > 0) {
+            suggestionsMap[colName] = refList;
+            continue;
+        }
         const uniqueValues = {};
         for (const row of currentRows) {
             const val = row[colName];
@@ -131,7 +137,8 @@ function renderTable() {
         const actualIndex = rowIndexMap.get(row);
         html += '<tr>';
         html += `<td class="cell-center"><input type="checkbox" class="row-checkbox" data-index="${actualIndex}" onchange="updateSelectionStats()" /></td>`;
-        html += `<td class="cell-center row-index">${(currentPage - 1) * (pageSize > 0 ? pageSize : 0) + r + 1}</td>`;
+        html += `<td class="cell-center row-index">${(currentPage - 1) * (pageSize > 0 ? pageSize : 0) + r + 1}`
+            + `<button type="button" class="row-hist-btn" title="本行变更历史" onclick="openRowHistory(${actualIndex}, event)"><svg class="icon icon-sm"><use href="#i-clock"/></svg></button></td>`;
         for (const key of visibleHeaders) {
             const val = row[key] !== undefined && row[key] !== null ? row[key] : '';
             const suggestions = suggestionsMap[key] || [];

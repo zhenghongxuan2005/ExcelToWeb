@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<ColorRule> ColorRules => Set<ColorRule>();
     public DbSet<ValidationRule> ValidationRules => Set<ValidationRule>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -65,5 +66,9 @@ public class AppDbContext : DbContext
             .HasPrecision(18, 2);
         modelBuilder.Entity<ValidationRule>()
             .HasIndex(r => r.TableId);
+
+        // AuditLog：按表 + 时间倒序查询是主路径
+        modelBuilder.Entity<AuditLog>()
+            .HasIndex(a => new { a.TableId, a.CreatedAt });
     }
 }

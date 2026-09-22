@@ -12,7 +12,7 @@
     justify-content: center;
     gap: 6px;
     padding: 8px 14px;
-    border: 1px solid transparent;
+    border: 1px solid var(--border);
     border-radius: 10px;
     font-size: 13px;
     font-weight: 500;
@@ -20,18 +20,23 @@
     cursor: pointer;
     transition: background var(--transition-fast), color var(--transition-fast),
                 border-color var(--transition-fast), box-shadow var(--transition-fast),
-                transform var(--transition-fast);
-    background: var(--bg-soft);
+                transform var(--transition-fast), filter var(--transition-fast);
+    background: var(--bg-card);
     color: var(--text-2);
     white-space: nowrap;
+    box-shadow: var(--shadow-xs);
 }
 
     .btn:hover {
         transform: translateY(-1px);
+        border-color: var(--border-strong);
+        color: var(--text-1);
+        box-shadow: 0 3px 10px rgba(10, 26, 51, 0.09);
     }
 
     .btn:active {
-        transform: translateY(0) scale(0.985);
+        transform: translateY(0) scale(0.97);
+        box-shadow: var(--shadow-xs);
     }
 
     .btn:focus-visible {
@@ -55,56 +60,75 @@
 
 .btn-primary {
     background: var(--grad-brand);
+    border-color: transparent;
     color: #fff;
-    box-shadow: 0 2px 10px color-mix(in srgb, var(--primary) 28%, transparent);
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--primary) 32%, transparent),
+                inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
     .btn-primary:hover {
-        filter: brightness(1.07);
-        box-shadow: 0 5px 16px color-mix(in srgb, var(--primary) 36%, transparent);
+        border-color: transparent;
+        color: #fff;
+        filter: brightness(1.08);
+        box-shadow: 0 6px 18px color-mix(in srgb, var(--primary) 40%, transparent),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.22);
     }
 
 .btn-success {
-    background: var(--success);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--success) 88%, #fff), var(--success));
+    border-color: transparent;
     color: #fff;
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--success) 24%, transparent);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--success) 26%, transparent),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
     .btn-success:hover {
         background: var(--success-hover);
-        box-shadow: 0 5px 16px color-mix(in srgb, var(--success) 32%, transparent);
+        border-color: transparent;
+        color: #fff;
+        box-shadow: 0 6px 16px color-mix(in srgb, var(--success) 34%, transparent);
     }
 
 .btn-danger {
     background: var(--danger-soft);
     color: var(--danger);
-    border-color: transparent;
+    border-color: color-mix(in srgb, var(--danger) 18%, transparent);
 }
 
     .btn-danger:hover {
         background: var(--danger);
+        border-color: transparent;
         color: #fff;
+        box-shadow: 0 5px 14px color-mix(in srgb, var(--danger) 32%, transparent);
     }
 
 .btn-purple {
-    background: var(--purple);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--purple) 90%, #fff), var(--purple));
+    border-color: transparent;
     color: #fff;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--purple) 26%, transparent),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
     .btn-purple:hover {
-        filter: brightness(1.07);
+        border-color: transparent;
+        color: #fff;
+        filter: brightness(1.08);
+        box-shadow: 0 6px 16px color-mix(in srgb, var(--purple) 34%, transparent);
     }
 
 .btn-outline {
     background: transparent;
     border-color: var(--border);
     color: var(--text-2);
+    box-shadow: none;
 }
 
     .btn-outline:hover {
         background: var(--bg-soft);
         border-color: var(--border-strong);
         color: var(--text-1);
+        box-shadow: none;
     }
 
 .btn-sm {
@@ -216,7 +240,7 @@
     position: absolute;
     top: calc(100% + 6px);
     left: 0;
-    min-width: 168px;
+    min-width: 176px;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
@@ -225,15 +249,16 @@
     z-index: 80;
     opacity: 0;
     visibility: hidden;
-    transform: translateY(6px);
-    transition: all 0.18s ease;
+    transform: translateY(8px) scale(0.98);
+    transform-origin: top left;
+    transition: opacity 0.18s ease, transform 0.22s var(--ease-spring), visibility 0.18s;
 }
 
     .dropdown:hover .dropdown-menu,
     .dropdown:focus-within .dropdown-menu {
         opacity: 1;
         visibility: visible;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
     }
 
 .dropdown-item {
@@ -254,9 +279,13 @@
 }
 
     .dropdown-item:hover {
-        background: var(--bg-soft);
-        color: var(--text-1);
+        background: var(--primary-soft);
+        color: var(--primary);
     }
+
+        .dropdown-item:hover .icon {
+            color: var(--primary);
+        }
 
 /* ===== 表格选择器 ===== */
 .table-select {

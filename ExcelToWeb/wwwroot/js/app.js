@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
             closeBatchModal();
             closeColumnModal();
             closeFindModal();
+            closeHistoryModal();
         }
     });
 });
@@ -113,5 +114,7 @@ Object.assign(window, {
     toggleColumn, setColumnWidth, showAllColumns,
     // 列视图偏好（列宽 / 隐藏列）的持久化
     applyColumnMeta, collectColumnMeta, scheduleMetaSave, flushColumnMeta, resetColumnMeta,
-    updateSelectionStats
+    updateSelectionStats,
+    // 变更历史
+    openHistoryModal, closeHistoryModal, openRowHistory, clearHistoryFilter
 });

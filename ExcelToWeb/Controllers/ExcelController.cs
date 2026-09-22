@@ -56,7 +56,8 @@ public class ExcelController : ControllerBase
         var userId = GetUserId();
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
-        var result = await _service.SaveTableDataAsync(request.TableId, userId, request.Rows);
+        // 用户名随 JWT 下发（ClaimTypes.Name），用于变更历史署名
+        var result = await _service.SaveTableDataAsync(request.TableId, userId, request.Rows, User.Identity?.Name);
         if (!result.Success) return BadRequest(result);
         return Ok(result);
     }
@@ -256,5 +257,31 @@ public class ExcelController : ControllerBase
         var result = await _service.UploadWithValidationAsync(file, tableId, userId);
         if (!result.Success) return BadRequest(result);
         return Ok(result);
+    }
+
+    // ================================================================
+    // 列去重值（跨表引用下拉）+ 变更历史
+    // ================================================================
+
+    /// <summary>取某表某列的去重值（上限 500），供前端「跨表引用」下拉使用</summary>
+    [HttpGet("column-values")]
+    public async Task<IActionResult> GetColumnValues(int tableId, string columnName)
+    {
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
+
+        var values = await _service.GetColumnValuesAsync(tableId, userId, columnName ?? string.Empty);
+        return Ok(ApiResponse<List<string>>.Ok(values));
+    }
+
+    /// <summary>查询变更历史（按时间倒序，最多 100 条）；rowIndex 传值时只看该行</summary>
+    [HttpGet("audit-logs")]
+    public async Task<IActionResult> GetAuditLogs(int tableId, int? rowIndex = null)
+    {
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
+
+        var logs = await _service.GetAuditLogsAsync(tableId, userId, rowIndex);
+        return Ok(ApiResponse<List<AuditLog>>.Ok(logs));
     }
 }

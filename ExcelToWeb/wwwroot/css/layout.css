@@ -29,19 +29,29 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 4px 8px 20px;
+    padding: 4px 8px 22px;
 }
 
     .sidebar-brand .brand-icon {
-        width: 34px;
-        height: 34px;
-        border-radius: 10px;
-        background: linear-gradient(135deg, var(--primary), #6b4bbf);
+        width: 36px;
+        height: 36px;
+        border-radius: 11px;
+        background: var(--grad-brand);
         display: flex;
         align-items: center;
         justify-content: center;
         color: #fff;
         flex-shrink: 0;
+        box-shadow: 0 3px 10px color-mix(in srgb, var(--primary) 38%, transparent),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+        transition: transform var(--transition-base) var(--ease-spring),
+                    box-shadow var(--transition-base);
+    }
+
+    .sidebar-brand:hover .brand-icon {
+        transform: translateY(-1px) rotate(-3deg);
+        box-shadow: 0 6px 16px color-mix(in srgb, var(--primary) 44%, transparent),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.28);
     }
 
     .sidebar-brand .brand-name {
@@ -58,7 +68,9 @@
     flex: 1;
 }
 
+/* 导航项：激活态为「滑入的品牌色胶囊 + 左侧指示条」 */
 .nav-link {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -71,16 +83,41 @@
     transition: background 0.15s ease, color 0.15s ease;
 }
 
+    .nav-link .icon {
+        transition: transform var(--transition-fast) var(--ease-spring);
+    }
+
     .nav-link:hover {
         background: var(--bg-soft);
         color: var(--text-1);
     }
 
+        .nav-link:hover .icon {
+            transform: scale(1.08);
+        }
+
+    .nav-link::before {
+        content: "";
+        position: absolute;
+        left: -14px;
+        top: 50%;
+        width: 3.5px;
+        height: 0;
+        border-radius: var(--radius-full);
+        background: var(--grad-brand);
+        transform: translateY(-50%);
+        transition: height var(--transition-base) var(--ease-spring);
+    }
+
     .nav-link.active {
-        background: var(--primary-soft);
+        background: linear-gradient(90deg, var(--primary-soft), color-mix(in srgb, var(--primary-soft) 55%, transparent));
         color: var(--primary);
         font-weight: 600;
     }
+
+        .nav-link.active::before {
+            height: 20px;
+        }
 
 .sidebar-bottom {
     display: flex;
@@ -97,11 +134,16 @@
     padding: 8px 10px;
     border-radius: var(--radius-sm);
     background: var(--bg-soft);
+    border: 1px solid var(--border-light);
     font-size: 13px;
     font-weight: 500;
     color: var(--text-2);
     overflow: hidden;
 }
+
+    .user-box .icon {
+        color: var(--primary);
+    }
 
     .user-box span {
         overflow: hidden;
@@ -146,15 +188,30 @@
 }
 
     .page-header h1 {
-        font-size: 20px;
+        font-size: 21px;
         font-weight: 700;
         color: var(--text-1);
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
     }
 
+        /* 页头图标统一做成品牌渐变徽章，六个页面观感一致 */
+        .page-header h1 > .icon {
+            width: 34px;
+            height: 34px;
+            padding: 7px;
+            border-radius: 10px;
+            background: var(--grad-brand);
+            color: #fff;
+            box-shadow: 0 3px 10px color-mix(in srgb, var(--primary) 30%, transparent),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+        }
+
 .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     font-size: 12px;
     font-weight: 500;
     color: var(--text-2);
@@ -166,6 +223,29 @@
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
+    box-shadow: var(--shadow-xs);
+}
+
+/* 主表格页的状态胶囊带「呼吸灯」圆点，一眼看出系统处于就绪/工作状态 */
+#statusText::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 18%, transparent);
+    animation: statusPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 18%, transparent);
+    }
+
+    50% {
+        box-shadow: 0 0 0 5px color-mix(in srgb, var(--success) 8%, transparent);
+    }
 }
 
 /* ================================================================
@@ -193,6 +273,11 @@
 .app-shell.sidebar-collapsed .brand-name,
 .app-shell.sidebar-collapsed .collapse-hide,
 .app-shell.sidebar-collapsed .user-box span {
+    display: none;
+}
+
+/* 折叠态下指示条会超出收窄的侧栏，隐藏 */
+.app-shell.sidebar-collapsed .nav-link::before {
     display: none;
 }
 

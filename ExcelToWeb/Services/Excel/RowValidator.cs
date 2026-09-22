@@ -36,6 +36,41 @@ public class RowValidator
         return errors;
     }
 
+    /// <summary>
+    /// 跨行唯一性校验：检查 rows 里启用 Unique 约束的列是否存在重复值。
+    /// 逐行校验（ValidateRow）看不到其它行，所以唯一性必须在整批数据上做；
+    /// 错误直接归并到 perRowErrors（与 ValidateRow 的输出同一载体），由调用方统一汇总。
+    /// </summary>
+    /// <param name="rows">本批数据（导入的新行 或 保存时的整表）</param>
+    /// <param name="rules">该表全部校验规则（只取 Unique = true 的）</param>
+    /// <param name="rowNumbers">与 rows 对齐的行号（用于报错定位）；null 时用 1..N</param>
+    /// <param name="perRowErrors">每行错误的收集器（长度须等于 rows.Count）</param>
+    public void ValidateUniqueness(
+        List<Dictionary<string, object>> rows, IEnumerable<ValidationRule> rules,
+        IReadOnlyList<int>? rowNumbers, List<string>[] perRowErrors)
+    {
+        foreach (var rule in rules.Where(r => r.Unique))
+        {
+            var seen = new Dictionary<string, int>(StringComparer.Ordinal);
+            for (int i = 0; i < rows.Count; i++)
+            {
+                if (!rows[i].TryGetValue(rule.ColumnName, out var raw)) continue;
+                var value = raw?.ToString() ?? string.Empty;
+                if (value == string.Empty) continue;   // 空值不参与唯一性（由 Required 管）
+
+                if (seen.TryGetValue(value, out var firstAt))
+                {
+                    var firstRowNo = rowNumbers != null && firstAt < rowNumbers.Count ? rowNumbers[firstAt] : firstAt + 1;
+                    perRowErrors[i].Add($"{rule.ColumnName} 的值「{value}」与第 {firstRowNo} 行重复");
+                }
+                else
+                {
+                    seen[value] = i;
+                }
+            }
+        }
+    }
+
     private static void ValidateValue(ValidationRule rule, string columnName, string value, List<string> errors)
     {
         switch (rule.DataType)
