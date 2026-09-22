@@ -35,8 +35,8 @@ function buildSelectionStatsHtml() {
             if (raw === undefined || raw === null) continue;
             const s = String(raw).trim();
             if (s === '') continue;
-            const n = Number(s);
-            if (isNaN(n)) { nums.length = 0; break; }
+            const n = parseSafeNumber(s);
+            if (n === null) { nums.length = 0; break; }
             nums.push(n);
         }
         if (nums.length === 0 || nums.length < rows.length) continue;

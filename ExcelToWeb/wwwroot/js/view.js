@@ -87,9 +87,10 @@ function getVisibleHeaders() {
 function compareValues(va, vb) {
     const a = va === undefined || va === null ? '' : va;
     const b = vb === undefined || vb === null ? '' : vb;
-    const na = parseFloat(a);
-    const nb = parseFloat(b);
-    if (!isNaN(na) && !isNaN(nb)) return na === nb ? 0 : (na < nb ? -1 : 1);
+    // 与导出口径一致：parseFloat("1,000") 得到 1，会把 1,000 排到 999 前面
+    const na = parseSafeNumber(a);
+    const nb = parseSafeNumber(b);
+    if (na !== null && nb !== null) return na === nb ? 0 : (na < nb ? -1 : 1);
     return String(a).localeCompare(String(b), 'zh-CN');
 }
 

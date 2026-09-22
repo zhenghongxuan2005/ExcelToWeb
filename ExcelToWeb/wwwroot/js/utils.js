@@ -66,7 +66,48 @@ function isDateColumnName(name) {
     return keywords.some(k => name.indexOf(k) !== -1);
 }
 
-/** 判定某列是否为数值列：抽样非空值必须全部可解析为数字（用于颜色规则选列、统计栏） */
+/**
+ * 单元格文本 → 数字；不能安全数值化时返回 null。
+ *
+ * 注意这是「能否安全地当成数值」而不是「是不是数字」：前导零的编号（"007"）也是数字，
+ * 但它不该被写成 Excel 数值（零会丢），所以这里按 null 处理。
+ *
+ * 口径逐条对齐后端 ExcelExportService.TryParseNumber —— 那里决定导出时写成数值还是
+ * 文本，这里决定界面上算不算一个数（汇总行 / 选中统计 / 填充柄 / 排序 / 数值列判定）。
+ * 两边一旦不一致，就会出现「界面上算得出数、导出的 Excel 里却是文本」这种自相矛盾。
+ * 样例表在 tests/backend/number_export_test.py 与 tests/frontend/number_test.js，需同步维护。
+ *
+ * 与 Number() / parseFloat() 的差别（都是真会踩到的）：
+ *   "007"   → null   前导零是编号 / 区号，数值化会丢零（后端同样拒绝）
+ *   "1,000" → 1000   后端认千分位，而 Number("1,000") 是 NaN
+ *   "1e3"   → null   后端不认科学计数法，而 Number("1e3") 是 1000
+ *   "0x10"  → null   而 Number("0x10") 是 16
+ *   18 位身份证号 → null   超过 Excel 的 15 位有效数字，会被写成科学计数法
+ */
+function parseSafeNumber(text) {
+    if (text === null || text === undefined) return null;
+    const s = String(text).trim();
+    if (s === '') return null;
+
+    // 可选符号 + 十进制数字（可带千分位）+ 小数点；不接受指数 / 十六进制 / Infinity
+    if (!/^[+-]?(?:\.\d+|\d+(?:\.\d*)?|\d{1,3}(?:,\d{3})+(?:\.\d*)?)$/.test(s)) return null;
+
+    const digits = s.replace(/^[+-]/, '');
+    // 前导零："007" / "00.5"（第二位是小数点时才算正常小数，如 "0.5"）
+    if (digits.length > 1 && digits[0] === '0' && digits[1] !== '.') return null;
+    // Excel 只有 15 位有效数字，更长的整数会被写成科学计数法
+    if (digits.split('.')[0].replace(/,/g, '').length > 15) return null;
+
+    const n = Number(s.replace(/,/g, ''));
+    return isFinite(n) ? n : null;
+}
+
+/** 该值能否安全地当成数字（判定细节见 parseSafeNumber） */
+function isSafeNumber(text) {
+    return parseSafeNumber(text) !== null;
+}
+
+/** 判定某列是否为数值列：抽样非空值必须全部可安全数值化（用于颜色规则选列、统计栏） */
 function isNumericColumn(name) {
     if (!name || currentRows.length === 0) return false;
     let checked = 0;
@@ -77,7 +118,7 @@ function isNumericColumn(name) {
         const val = String(raw).trim();
         if (val === '') continue;
         checked++;
-        if (isNaN(Number(val))) return false;
+        if (!isSafeNumber(val)) return false;
     }
     return checked > 0;
 }

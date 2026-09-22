@@ -104,8 +104,8 @@ function loadColorRules() {
 
 function getColorForValue(columnName, value) {
     if (!value || colorRulesCache.length === 0) return null;
-    const numValue = parseFloat(value);
-    if (isNaN(numValue)) return null;
+    const numValue = parseSafeNumber(value);
+    if (numValue === null) return null;
     for (const rule of colorRulesCache) {
         if (rule.columnName !== columnName) continue;
         const { minValue: min, maxValue: max } = rule;

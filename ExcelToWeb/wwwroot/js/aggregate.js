@@ -37,8 +37,8 @@ function collectNumericValues(key, rows) {
         if (raw === undefined || raw === null) continue;
         const s = String(raw).trim();
         if (s === '') continue;
-        const n = Number(s);
-        if (isNaN(n)) return null;
+        const n = parseSafeNumber(s);
+        if (n === null) return null;
         nums.push(n);
     }
     return nums;

@@ -35,8 +35,8 @@ let _fillDrag = null;   // 拖拽填充中的临时状态 { source, target }
 function fillNumber(v) {
     const s = v === null || v === undefined ? '' : String(v).trim();
     if (s === '') return null;
-    const n = Number(s);
-    return isFinite(n) ? n : null;
+    // 与导出口径一致：Number("1,000") 得到 NaN，会让千分位数列白白退化成文本循环
+    return parseSafeNumber(s);
 }
 
 /** 去掉浮点误差，避免填出 0.30000000000000004 这种值 */
