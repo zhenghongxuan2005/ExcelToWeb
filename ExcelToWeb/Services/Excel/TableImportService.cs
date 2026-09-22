@@ -58,6 +58,9 @@ public class TableImportService
             {
                 TableName = BuildTableName(file.FileName, sheet),
                 Headers = sheet.Headers,
+                // 数据本身已按左上角值铺平入库，这里记的只是「原来是怎样合并的」，
+                // 供导出时还原排版
+                MergeRangesJson = MergeRangeCodec.Serialize(sheet.MergedRanges),
                 UserId = userId,
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now
@@ -74,7 +77,8 @@ public class TableImportService
                 TableName = table.TableName,
                 Headers = sheet.Headers,
                 Rows = sheet.Rows,
-                SheetName = sheet.SheetName
+                SheetName = sheet.SheetName,
+                MergeCount = sheet.MergedRanges.Count
             }, $"成功导入 {sheet.Rows.Count} 条数据");
         }
         catch (ExcelReadException ex)

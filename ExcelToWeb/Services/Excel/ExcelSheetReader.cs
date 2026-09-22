@@ -28,6 +28,12 @@ public sealed class SheetData
 
     /// <summary>工作簿内工作表总数（大于 1 时表名要带上工作表名，否则列表里分不清来自哪张表）</summary>
     public int SheetCount { get; init; }
+
+    /// <summary>
+    /// 工作表里的合并区域（已按左上角值铺平），留待导出时还原。
+    /// 数据本身是铺平后才入库的，所以这里丢掉的只是「怎么合并」这一层排版信息。
+    /// </summary>
+    public List<MergeRange> MergedRanges { get; init; } = new();
 }
 
 /// <summary>一张工作表的概要，供「多工作表时选一张导入」展示</summary>
@@ -108,10 +114,14 @@ public class ExcelSheetReader
         var rowCount = worksheet.Dimension.Rows;
         var colCount = worksheet.Dimension.Columns;
 
-        var headers = ReadHeaders(worksheet, colCount);
+        // 先取值矩阵并按合并区域铺平 —— 必须在读表头之前：A1:B1 合并成「销售额」大标题时
+        // B1 本身是空的，不铺值表头就会退化成「列2」。
+        var (grid, areas) = SheetGrid.Build(worksheet, rowCount, colCount);
+
+        var headers = ReadHeaders(grid, colCount);
         var rows = new List<Dictionary<string, object>>();
         var rowNumbers = new List<int>();
-        ReadRows(worksheet, rowCount, colCount, headers, rows, rowNumbers);
+        ReadRows(grid, rowCount, colCount, headers, rows, rowNumbers);
 
         return new SheetData
         {
@@ -121,8 +131,36 @@ public class ExcelSheetReader
             SourceRowCount = rowCount,
             SourceColumnCount = colCount,
             SheetName = worksheet.Name,
-            SheetCount = sheets.Count
+            SheetCount = sheets.Count,
+            MergedRanges = BuildMergeRanges(areas, headers, rows.Count)
         };
+    }
+
+    /// <summary>
+    /// 把生效的合并区域转成可持久化的记录：列存「列名」而不是下标（用户之后可能改名 /
+    /// 移列），行数记的是实际入库的数据行数 —— 空行会被跳过，与工作表行数并不相等。
+    /// </summary>
+    private static List<MergeRange> BuildMergeRanges(List<MergeArea> areas, List<string> headers, int dataRowCount)
+    {
+        var result = new List<MergeRange>(areas.Count);
+
+        foreach (var area in areas)
+        {
+            var cols = new List<string>(area.C2 - area.C1 + 1);
+            for (int c = area.C1; c <= area.C2; c++) cols.Add(headers[c - 1]);
+
+            result.Add(new MergeRange
+            {
+                R1 = area.R1,
+                C1 = area.C1,
+                R2 = area.R2,
+                C2 = area.C2,
+                Cols = cols,
+                RowCount = dataRowCount
+            });
+        }
+
+        return result;
     }
 
     /// <summary>工作表名 + 维度，不触碰单元格数据</summary>
@@ -154,14 +192,14 @@ public class ExcelSheetReader
     /// <summary>列名长度上限，与 ColumnStructureService 的校验保持一致</summary>
     private const int MaxHeaderLength = 100;
 
-    private static List<string> ReadHeaders(ExcelWorksheet worksheet, int colCount)
+    private static List<string> ReadHeaders(string[,] grid, int colCount)
     {
         var headers = new List<string>(colCount);
         var used = new HashSet<string>(StringComparer.Ordinal);
 
         for (int c = 1; c <= colCount; c++)
         {
-            var raw = worksheet.Cells[1, c]?.Text?.Trim();
+            var raw = grid[0, c - 1]?.Trim();
             var name = string.IsNullOrEmpty(raw) ? $"列{c}" : ExcelHelper.CleanString(raw);
             headers.Add(TakeUniqueName(name, used));
         }
@@ -205,7 +243,7 @@ public class ExcelSheetReader
     }
 
     private static void ReadRows(
-        ExcelWorksheet worksheet,
+        string[,] grid,
         int rowCount,
         int colCount,
         List<string> headers,
@@ -220,7 +258,7 @@ public class ExcelSheetReader
             for (int c = 1; c <= colCount; c++)
             {
                 var columnName = headers[c - 1];
-                var value = worksheet.Cells[r, c]?.Text?.Trim() ?? string.Empty;
+                var value = grid[r - 1, c - 1]?.Trim() ?? string.Empty;
 
                 if (string.IsNullOrEmpty(value))
                 {

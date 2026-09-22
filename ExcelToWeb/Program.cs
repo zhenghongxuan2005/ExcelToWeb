@@ -154,6 +154,10 @@ using (var scope = app.Services.CreateScope())
         IF COL_LENGTH('DynamicTables', 'ColumnMetaJson') IS NULL
             ALTER TABLE DynamicTables ADD ColumnMetaJson NVARCHAR(MAX) NULL;
 
+        -- DynamicTables.MergeRangesJson（导入时记录的合并区域，导出时按原样还原）
+        IF COL_LENGTH('DynamicTables', 'MergeRangesJson') IS NULL
+            ALTER TABLE DynamicTables ADD MergeRangesJson NVARCHAR(MAX) NULL;
+
         -- ValidationRules 增强：唯一性约束 + 跨表引用（表 + 列）
         IF COL_LENGTH('ValidationRules', 'Unique') IS NULL
             ALTER TABLE ValidationRules ADD [Unique] BIT NOT NULL CONSTRAINT DF_ValidationRules_Unique DEFAULT 0;

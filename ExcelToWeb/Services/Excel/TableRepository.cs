@@ -98,6 +98,10 @@ public class TableRepository
         {
             TableName = newName,
             Headers = new List<string>(source.Headers),
+            // 列宽 / 隐藏列与合并区域都属于「这张表长什么样」，一起复制，
+            // 否则复制出来的表和原表长得不一样
+            ColumnMetaJson = source.ColumnMetaJson,
+            MergeRangesJson = source.MergeRangesJson,
             UserId = source.UserId,
             CreatedAt = DateTime.Now,
             UpdatedAt = DateTime.Now

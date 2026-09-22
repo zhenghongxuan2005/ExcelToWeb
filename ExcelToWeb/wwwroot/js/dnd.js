@@ -46,6 +46,11 @@ function uploadFile(file, sheetIndex) {
 
             renderTable();
             showToast('✅ 成功导入 ' + data.rows.length + ' 条数据', 'success');
+            // 合并信息是隐形的（数据已铺平入库），必须告诉用户导出时会还原，
+            // 否则用户既看不出文件里有合并、也不知道导出会变回去
+            if (data.mergeCount > 0) {
+                showToast(`已记录 ${data.mergeCount} 个合并区域，导出时会按原样还原`, 'info');
+            }
             setStatus(`已加载: ${data.tableName} (${data.rows.length}行)`);
             loadTableList();
         })

@@ -39,6 +39,11 @@ public class AppDbContext : DbContext
             .Property(t => t.ColumnMetaJson)
             .HasColumnType("nvarchar(max)");
 
+        // 导入时记录的合并区域，可空：文件里没有合并的表格为 null
+        modelBuilder.Entity<DynamicTable>()
+            .Property(t => t.MergeRangesJson)
+            .HasColumnType("nvarchar(max)");
+
         modelBuilder.Entity<DynamicTable>()
             .HasIndex(t => t.UserId);
 

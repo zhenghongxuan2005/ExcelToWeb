@@ -128,6 +128,11 @@ public class ColumnStructureService
                 ColumnMetaService.Parse(table.ColumnMetaJson), renames, dropped);
             table.ColumnMetaJson = prunedMeta.Count == 0 ? null : JsonSerializer.Serialize(prunedMeta);
 
+            // 合并区域里存的也是列名，同样要跟着列结构走 —— 否则用户改个列名，
+            // 导出时区域就找不到列而被整体丢弃，合并框凭空消失
+            table.MergeRangesJson = MergeRangeCodec.Migrate(
+                table.MergeRangesJson, renames.Select(r => (r.OldName, r.NewName)), dropped);
+
             await _db.SaveChangesAsync();
 
             // 同步清理 / 改名 规则。

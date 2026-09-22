@@ -47,6 +47,12 @@ public class UploadResult
 
     /// <summary>数据来源的工作表名（多工作表文件导入时告知用户用的是哪张）</summary>
     public string SheetName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 导入时记录下来的合并区域个数。数据已铺平入库，这个数字用来告诉用户「导出时会还原
+    /// 成什么样」—— 否则合并信息就是一层完全看不见的状态。
+    /// </summary>
+    public int MergeCount { get; set; }
 }
 
 /// <summary>工作表概要，供「多工作表时选一张导入」的弹窗展示</summary>
