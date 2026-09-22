@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
             closeFilter();
             closeBatchModal();
             closeColumnModal();
+            closeFormulaEditor();
             closeFindModal();
             closeHistoryModal();
             closeSheetPicker();
@@ -110,6 +111,9 @@ Object.assign(window, {
     // 列管理（增删改移）
     openColumnModal, closeColumnModal, addColumnRow, removeColumnRow, moveColumnRow,
     onColumnDraftInput, saveColumnStructure,
+    // 计算列（公式编辑）
+    openFormulaEditor, closeFormulaEditor, onFormulaInput, applyFormulaDraft,
+    clearFormulaDraft, insertFormulaColumn, insertFormulaFunction,
     // 单元格选区（复制 / 粘贴 / 清空）
     copyRangeSelection, clearRangeContent, clearRange,
     // 汇总行

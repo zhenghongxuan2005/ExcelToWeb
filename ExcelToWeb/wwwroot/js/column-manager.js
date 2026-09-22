@@ -20,7 +20,7 @@ function openColumnModal() {
         showToast('当前表格没有列', 'info');
         return;
     }
-    columnDraft = currentHeaders.map(h => ({ name: h, original: h }));
+    columnDraft = currentHeaders.map(h => ({ name: h, original: h, expr: formulaOf(h) }));
     renderColumnDraft();
     document.getElementById('columnModal').style.display = 'flex';
 }
@@ -42,12 +42,18 @@ function renderColumnDraft() {
         const tag = isNew ? '<span class="col-tag col-tag-new">新</span>'
             : renamed ? `<span class="col-tag col-tag-rename" title="${escapeHtml(c.original)}">${escapeHtml(c.original)}</span>`
             : '';
+        // 有公式的列在列名后标一个 fx，并把公式原文显示出来 ——
+        // 否则用户只会看到一列怎么改都改不动的格子，不知道是被公式接管了
+        const fxTag = (c.expr || '').trim()
+            ? `<span class="col-tag col-tag-fx" title="公式：${escapeHtml(c.expr)}">fx</span>`
+            : '';
         return `<div class="col-draft-row">
             <span class="col-draft-index">${i + 1}</span>
             <input type="text" class="col-draft-input" value="${escapeHtml(c.name)}"
                    placeholder="列名" oninput="onColumnDraftInput(${i}, this.value)">
-            ${tag}
+            ${tag}${fxTag}
             <span class="col-draft-ops">
+                <button type="button" class="col-op-btn" title="设置计算列公式" onclick="openFormulaEditor(${i})">fx</button>
                 <button type="button" class="col-op-btn" title="上移" onclick="moveColumnRow(${i}, -1)">↑</button>
                 <button type="button" class="col-op-btn" title="下移" onclick="moveColumnRow(${i}, 1)">↓</button>
                 <button type="button" class="col-op-btn col-op-del" title="删除列" onclick="removeColumnRow(${i})">×</button>
@@ -60,8 +66,27 @@ function onColumnDraftInput(i, value) {
     if (columnDraft[i]) columnDraft[i].name = value.trim();
 }
 
+// ----- 列草稿的对外读写口子 -----
+// 公式编辑弹窗住在 computed-column.js，它不该直接摸 columnDraft 这个内部数组
+// （CODE_STANDARDS §1：不许直接改他模块的内部变量），一律从这几个函数进出。
+
+/** 列草稿的只读快照（公式编辑器用它列出可引用的列） */
+function columnDraftSnapshot() {
+    return columnDraft.map(c => ({ name: (c.name || '').trim(), expr: (c.expr || '').trim() }));
+}
+
+function columnDraftName(i) {
+    const c = columnDraft[i];
+    return c ? (c.name || '').trim() : '';
+}
+
+function setColumnDraftExpr(i, expr) {
+    const c = columnDraft[i];
+    if (c) c.expr = (expr || '').trim();
+}
+
 function addColumnRow() {
-    columnDraft.push({ name: '', original: '' });
+    columnDraft.push({ name: '', original: '', expr: '' });
     renderColumnDraft();
     // 聚焦新输入框，方便直接输入
     const inputs = document.querySelectorAll('#columnDraftList .col-draft-input');
@@ -127,8 +152,9 @@ function saveColumnStructure() {
 
     const added = columnDraft.filter(c => !c.original).length;
     const dropped = currentHeaders.filter(h => !columnDraft.some(c => c.original === h)).length;
+    const formulaChanged = columnDraft.some(c => (c.expr || '').trim() !== formulaOf(c.original || c.name));
 
-    if (added === 0 && dropped === 0 && renames.length === 0 &&
+    if (added === 0 && dropped === 0 && renames.length === 0 && !formulaChanged &&
         columnDraft.length === currentHeaders.length &&
         columnDraft.every((c, i) => c.name === currentHeaders[i])) {
         showToast('列结构没有变化', 'info');
@@ -139,10 +165,16 @@ function saveColumnStructure() {
     if (added) warnParts.push(`新增 ${added} 列`);
     if (dropped) warnParts.push(`删除 ${dropped} 列（数据与规则一并清除）`);
     if (renames.length) warnParts.push(`重命名 ${renames.length} 列`);
+    if (formulaChanged) warnParts.push('更新计算列公式');
     if (dropped > 0 && !confirm(`确认执行：${warnParts.join('，')}？`)) return;
 
     setStatus('更新列结构中...');
     updateHeaders(currentTableId, names, renames)
+        .then(result => {
+            // 公式必须等列结构落地之后再提交：新增的列这时才在服务端存在，
+            // 公式的引用校验才有列可查（消息里补一句，避免用户以为公式没被处理）
+            return applyColumnFormulas(columnDraft).then(() => result);
+        })
         .then(result => {
             closeColumnModal();
             showToast('✅ ' + (result.message || '列结构已更新'), 'success');

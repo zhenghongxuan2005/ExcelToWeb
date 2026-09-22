@@ -117,10 +117,17 @@ function renderTable() {
         const rank = (order !== 0 && sortKeys.length > 1)
             ? `<span class="th-sort-rank">${sortKeys.findIndex(k => k.field === h) + 1}</span>`
             : '';
-        html += `<th${columnWidthStyle(h)}>`;
+        // 计算列：表头挂一个 fx 角标并把公式放进 title —— 用户必须能随时看到
+        // 「这一列的值是怎么来的」，尤其是它不受手改影响的时候
+        const computed = isComputedColumn(h);
+        const fxAttr = computed
+            ? ` class="th-computed" title="${escapeHtml(computedColumnHint(h))}"`
+            : '';
+        html += `<th${fxAttr}${columnWidthStyle(h)}>`;
         html += '<div class="th-inner">';
         html += `<span class="th-sort" title="点击排序：升序 → 降序 → 取消；按住 Shift 点击可追加为次级排序键" `
             + `onclick="sortBy('${escapeHtml(h)}', event.shiftKey)">${escapeHtml(h)}${arrow}${rank}</span>`;
+        if (computed) html += '<span class="th-fx" title="计算列">fx</span>';
         html += `<button class="th-filter" title="筛选该列" onclick="openFilter('${escapeHtml(h)}')"><svg class="icon icon-sm"><use href="#i-filter"/></svg></button>`;
         html += '</div></th>';
     }
@@ -141,12 +148,25 @@ function renderTable() {
             + `<button type="button" class="row-hist-btn" title="本行变更历史" onclick="openRowHistory(${actualIndex}, event)"><svg class="icon icon-sm"><use href="#i-clock"/></svg></button></td>`;
         for (const key of visibleHeaders) {
             const val = row[key] !== undefined && row[key] !== null ? row[key] : '';
-            const suggestions = suggestionsMap[key] || [];
             const bgColor = getColorForValue(key, val);
             const highlight = cellMatchesSearch(key, val) ? ' search-hit' : '';
             const style = bgColor ? ` style="background-color:${bgColor};"` : '';
-            html += `<td class="editable-cell${highlight}"${style}>`;
+            const computed = isComputedColumn(key);
+
+            html += `<td class="editable-cell${highlight}${computed ? ' cell-computed' : ''}"${style}>`;
+
+            // 计算列仍然渲染成 .cell-input —— 一批模块（选区 / 填充柄 / 键盘导航 /
+            // 粘贴）是按「每列一个 .cell-input」的位置关系定位的，少渲染一个就会整列错位。
+            // 用 readonly 表达不可编辑，既不破坏位置关系，也仍然可以选中与复制。
+            if (computed) {
+                html += `<input class="cell-input cell-input-locked" type="text" value="${escapeHtml(val)}" `
+                    + `data-index="${actualIndex}" data-key="${escapeHtml(key)}" title="${escapeHtml(computedColumnHint(key))}" readonly />`;
+                html += '</td>';
+                continue;
+            }
+
             html += `<input class="cell-input" type="text" value="${escapeHtml(val)}" data-index="${actualIndex}" data-key="${escapeHtml(key)}" autocomplete="off" />`;
+            const suggestions = suggestionsMap[key] || [];
             if (suggestions.length > 0) {
                 html += '<div class="suggest-list" style="display:none;">';
                 for (const s of suggestions) {
@@ -205,6 +225,10 @@ function renderTable() {
     const editOldValue = {};
 
     container.querySelectorAll('.cell-input').forEach(input => {
+        // 计算列的格子只读：不挂编辑监听，也不进撤销栈 ——
+        // 它的值来自服务端，改完也没地方存，进历史栈只会让撤销按出一堆假动作
+        if (isComputedColumn(input.dataset.key)) return;
+
         const cell = input.parentElement;
         const suggestList = cell.querySelector('.suggest-list');
 

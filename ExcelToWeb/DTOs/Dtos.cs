@@ -93,7 +93,7 @@ public class TableDataDto
 }
 
 /// <summary>
-/// 单列的视图元数据。只保存用户显式调整过的偏好（列宽 / 是否隐藏）。
+/// 单列的视图元数据。只保存用户显式调整过的偏好（列宽 / 是否隐藏），以及计算列的公式。
 /// 列的数据类型（数字 / 日期 / 文本）在导出时按数据实时推断，不落库。
 /// </summary>
 public class ColumnMetaDto
@@ -103,6 +103,26 @@ public class ColumnMetaDto
 
     /// <summary>是否隐藏该列</summary>
     public bool Hidden { get; set; }
+
+    /// <summary>
+    /// 计算列的公式原文；null / 空表示这是一列普通列。
+    /// 列的值不落库，每次读取时按这个公式实时算（见 ComputedColumnService），
+    /// 所以不存在「算好的值和源数据对不上」的可能。
+    /// </summary>
+    public string? Expr { get; set; }
+}
+
+/// <summary>
+/// 设置 / 清空某列的计算公式。formula 传空串表示把该列退回普通可编辑列。
+/// </summary>
+public class SaveFormulaRequest
+{
+    public int TableId { get; set; }
+
+    public string ColumnName { get; set; } = string.Empty;
+
+    /// <summary>表达式原文，语法见 FormulaEngine</summary>
+    public string Formula { get; set; } = string.Empty;
 }
 
 /// <summary>整表列元数据保存请求：列名 -> 元数据</summary>

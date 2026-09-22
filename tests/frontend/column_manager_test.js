@@ -5,7 +5,8 @@ const path = require('path');
 const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..', '..', 'ExcelToWeb', 'wwwroot', 'js');
-const FILES = ['state.js', 'utils.js', 'column-manager.js'];
+// computed-column.js 是 column-manager.js 的依赖（草稿要带公式），一并加载
+const FILES = ['state.js', 'utils.js', 'computed-column.js', 'column-manager.js'];
 
 function makeEl() {
     return {

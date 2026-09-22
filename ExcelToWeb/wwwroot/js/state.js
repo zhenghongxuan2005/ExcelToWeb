@@ -52,6 +52,11 @@ let currentPage = 1;
 let hiddenColumns = [];      // 被隐藏的列名
 let columnWidths = {};       // 列名 -> 列宽(px)
 
+// 计算列：列名 -> 公式原文（没有公式的列不出现在这里）。
+// 与 hiddenColumns / columnWidths 同属「随列元数据下发的列状态」，由 column-meta.js 填充。
+// 判定「这格能不能手改」一律走 computed-column.js 的 isComputedColumn()，不要各处自己查。
+let columnExprs = {};
+
 // 汇总行方式：'off' 表示不显示；其余取值见 aggregate.js 的 AGG_MODES。
 // 与其余视图状态同归口放这里，aggregate.js 只负责计算与交互。
 let aggregateMode = 'off';

@@ -49,7 +49,11 @@ function cellContains(text, kw) {
     return s.toLowerCase().indexOf(kw.toLowerCase()) !== -1;
 }
 
-/** 扫描全表，收集所有命中单元格 */
+/**
+ * 扫描全表，收集所有命中单元格。
+ * 跳过计算列：这个弹窗是「查找 + 替换」一体的，命中了却改不动只会让人困惑，
+ * 所以干脆不把它们算进结果（要查看计算列的值，直接看表格即可）。
+ */
 function collectFindMatches(kw) {
     const out = [];
     if (!kw) return out;
@@ -58,6 +62,7 @@ function collectFindMatches(kw) {
         const row = currentRows[i];
         if (!row) continue;
         for (const key of currentHeaders) {
+            if (isComputedColumn(key)) continue;
             if (cellContains(row[key], kw)) out.push({ rowIndex: i, key: key });
         }
     }
@@ -205,6 +210,12 @@ function replaceCurrent() {
         return;
     }
 
+    // 用户可能手动点到了一个计算列单元格上
+    if (isComputedColumn(key)) {
+        showToast(`「${key}」是计算列，值由公式算出，不能直接替换`, 'info');
+        return;
+    }
+
     const before = currentRows[idx][key];
     const after = replaceInText(before === undefined || before === null ? '' : before, kw, rep);
     if (String(before) === after) {
@@ -241,6 +252,7 @@ function replaceAll() {
     for (const row of currentRows) {
         if (!row) continue;
         for (const key of currentHeaders) {
+            if (isComputedColumn(key)) continue;   // 计算列只读，跳过
             const before = row[key];
             if (before === undefined || before === null) continue;
             const after = replaceInText(before, kw, rep);

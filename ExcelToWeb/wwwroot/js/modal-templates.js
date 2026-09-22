@@ -220,6 +220,38 @@
         </div>
     </div>
 
+    <!-- ===== 计算列公式弹窗 ===== -->
+    <div id="formulaModal" class="modal">
+        <div class="modal-card modal-wide">
+            <button class="modal-close" aria-label="关闭弹窗" onclick="closeFormulaEditor()"><svg class="icon"><use href="#i-x"/></svg></button>
+            <h3 class="modal-title">计算列公式</h3>
+            <p class="modal-sub">
+                列 <strong id="formulaColumnLabel"></strong> 的值由公式算出，不再手动填写。
+                公式里引用列名要用方括号（如 <code>[单价] * [数量]</code>），结果在保存列结构后由服务端计算。
+            </p>
+
+            <input type="text" id="formulaInput" class="input" placeholder="例如：[单价] * [数量]"
+                   autocomplete="off" oninput="onFormulaInput(this.value)">
+
+            <div class="formula-chips">
+                <span class="formula-chips-label">插入列</span>
+                <span id="formulaColumnChips"></span>
+            </div>
+            <div class="formula-chips">
+                <span class="formula-chips-label">插入函数</span>
+                <span id="formulaFunctionChips"></span>
+            </div>
+
+            <p class="formula-hint" id="formulaHint"></p>
+
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="clearFormulaDraft()">取消计算列</button>
+                <button class="btn btn-outline" onclick="closeFormulaEditor()">取消</button>
+                <button class="btn btn-primary" onclick="applyFormulaDraft()"><svg class="icon"><use href="#i-check"/></svg>确定</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ===== 工作表选择弹窗（文件里有多张工作表时才出现） ===== -->
     <div id="sheetPickerModal" class="modal">
         <div class="modal-card">

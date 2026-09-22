@@ -18,16 +18,6 @@ public class ExcelExportService
     /// <summary>列的数据类型。导出时按数据实时推断，不落库，避免元数据与实际数据漂移</summary>
     private enum ColumnKind { Text, Number, Date }
 
-    /// <summary>
-    /// 能被识别为日期的写法白名单。
-    /// 刻意用精确匹配而不是宽松解析：宽松解析会把 "3/4" 这类编号当日期，静默改掉用户数据。
-    /// </summary>
-    private static readonly string[] DateFormats =
-    {
-        "yyyy-MM-dd", "yyyy/M/d", "yyyy-MM-dd HH:mm:ss", "yyyy/M/d HH:mm:ss",
-        "yyyy-MM-ddTHH:mm:ss", "yyyy年M月d日"
-    };
-
     /// <summary>Excel 单列宽度上限（字符数），防止长文本列被撑到没法看</summary>
     private const double MaxColumnWidth = 50;
 
@@ -57,6 +47,10 @@ public class ExcelExportService
 
         // 只反序列化一次：类型推断与写单元格共用同一份数据
         var data = rows.Select(r => TableRepository.DeserializeRow(r.DataJson)).ToList();
+
+        // 计算列的值不落库，导出前必须现算 —— 否则导出的文件里这一列会是空的
+        ComputedColumnService.Apply(headers, meta, data);
+
         var kinds = headers.Select(h => InferColumnKind(data, h)).ToList();
 
         // 合并区域：列名对不上、或行数与导入时不一致的区域都会被丢弃，只还原还对得上的
@@ -113,18 +107,22 @@ public class ExcelExportService
 
         var rows = await _repository.GetRowsAsync(tableId);
 
+        // 与 xlsx 导出同一份口径：计算列现算再写
+        var headers = table.Headers ?? new List<string>();
+        var data = rows.Select(r => TableRepository.DeserializeRow(r.DataJson)).ToList();
+        ComputedColumnService.Apply(headers, ColumnMetaService.Parse(table.ColumnMetaJson), data);
+
         using var memoryStream = new MemoryStream();
         await memoryStream.WriteAsync(Encoding.UTF8.GetPreamble());
 
         await using var writer = new StreamWriter(memoryStream, Encoding.UTF8, leaveOpen: true);
 
-        await writer.WriteAsync(string.Join(",", table.Headers.Select(ExcelHelper.EscapeCsvValue)));
+        await writer.WriteAsync(string.Join(",", headers.Select(ExcelHelper.EscapeCsvValue)));
         await writer.WriteLineAsync();
 
-        foreach (var row in rows)
+        foreach (var rowData in data)
         {
-            var rowData = TableRepository.DeserializeRow(row.DataJson);
-            var values = table.Headers.Select(h =>
+            var values = headers.Select(h =>
                 ExcelHelper.EscapeCsvValue(rowData.ContainsKey(h) ? rowData[h]?.ToString() ?? string.Empty : string.Empty));
             await writer.WriteAsync(string.Join(",", values));
             await writer.WriteLineAsync();
@@ -332,33 +330,16 @@ public class ExcelExportService
         return ColumnKind.Text;
     }
 
-    /// <summary>精确匹配白名单里的日期写法（不用宽松解析，避免把编号误判成日期）</summary>
-    private static bool TryParseDate(string raw, out DateTime value) =>
-        DateTime.TryParseExact(raw.Trim(), DateFormats, CultureInfo.InvariantCulture,
-            DateTimeStyles.None, out value);
-
     /// <summary>
-    /// 判断能否安全地写成数值。两类值必须排除，否则导出即损坏：
-    ///   1) 前导零（"007"、"0912"）—— 数值化后零就没了，这是编号 / 区号
-    ///   2) 整数部分超过 15 位 —— Excel 只有 15 位有效数字，18 位身份证号会变成科学计数法
+    /// 日期 / 数值的判定全部转发到 ExcelNumber。
+    /// 为什么留这层转发而不直接调用：计算列求值也要判断「这串是不是数值」，
+    /// 两边一旦各写一份就会漂移（导出把 007 当文本、计算列却当 7），
+    /// 所以判定只有 ExcelNumber 一处，这里只是把名字留在原地少改调用点。
     /// </summary>
-    private static bool TryParseNumber(string raw, out decimal value)
-    {
-        value = 0;
+    private static bool TryParseDate(string raw, out DateTime value) => ExcelNumber.TryParseDate(raw, out value);
 
-        var text = raw.Trim();
-        if (text.Length == 0) return false;
-        if (!decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out value))
-            return false;
-
-        var digits = text.TrimStart('-', '+');
-        if (digits.Length > 1 && digits[0] == '0' && digits[1] != '.') return false;
-
-        var integerPart = digits.Split('.')[0].Replace(",", string.Empty);
-        if (integerPart.Length > 15) return false;
-
-        return true;
-    }
+    /// <inheritdoc cref="ExcelNumber.TryParseNumber"/>
+    private static bool TryParseNumber(string raw, out decimal value) => ExcelNumber.TryParseNumber(raw, out value);
 
     /// <summary>解析 "#rrggbb" / "rrggbb"，非法返回 null</summary>
     private static DrawingColor? ParseHexColor(string? hex)

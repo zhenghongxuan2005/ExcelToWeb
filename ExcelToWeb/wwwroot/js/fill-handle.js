@@ -210,6 +210,9 @@ function applyFill(target, source) {
         const idx = rowDataIndex(rows, w.rowPos);
         const key = keys[w.colPos];
         if (idx === null || key === undefined || !currentRows[idx]) continue;
+        // 计算列不参与填充：拖出来的值既不会被保存（服务端只认公式），
+        // 也会在下次读取时被算回去，白改一场还会让用户以为改成功了
+        if (isComputedColumn(key)) continue;
         currentRows[idx][key] = w.value;
         const inputs = rows[w.rowPos].querySelectorAll('.cell-input');
         if (inputs[w.colPos]) inputs[w.colPos].value = w.value;

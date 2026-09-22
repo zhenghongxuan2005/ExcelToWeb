@@ -58,6 +58,7 @@ builder.Services.AddScoped<TableRepository>();
 builder.Services.AddScoped<RuleService>();
 builder.Services.AddScoped<ColumnStructureService>();
 builder.Services.AddScoped<ColumnMetaService>();
+builder.Services.AddScoped<ComputedColumnService>();
 builder.Services.AddScoped<ExcelExportService>();
 builder.Services.AddScoped<AuditService>();
 builder.Services.AddScoped<TableImportService>();

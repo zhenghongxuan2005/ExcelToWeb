@@ -153,6 +153,22 @@ public class ExcelController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// 设置 / 清空某列的计算公式。Formula 传空串即把该列退回普通可编辑列。
+    /// 校验（语法 / 引用是否存在 / 不许引用别的计算列）都在服务端做，
+    /// 失败时返回的是「公式哪里写错了」，前端直接展示即可。
+    /// </summary>
+    [HttpPut("formula")]
+    public async Task<IActionResult> SaveFormula([FromBody] SaveFormulaRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
+
+        var result = await _service.SaveFormulaAsync(request.TableId, userId, request);
+        if (!result.Success) return BadRequest(result);
+        return Ok(result);
+    }
+
     // ================================================================
     // 导出 Excel
     // ================================================================

@@ -25,6 +25,7 @@ let _metaSaveFailed = false;
 function applyColumnMeta(meta) {
     hiddenColumns = [];
     columnWidths = {};
+    columnExprs = {};
 
     if (!meta) return;
 
@@ -34,6 +35,9 @@ function applyColumnMeta(meta) {
 
         const width = parseInt(item.width);
         if (!isNaN(width) && width > 0) columnWidths[name] = width;
+
+        // 计算列：公式随元数据下发，前端据此判断哪些格子只读
+        if (item.expr) columnExprs[name] = String(item.expr);
     }
 }
 
@@ -97,5 +101,6 @@ function resetColumnMeta() {
 
     hiddenColumns = [];
     columnWidths = {};
+    columnExprs = {};
     _metaSaveFailed = false;
 }

@@ -8,10 +8,11 @@ function saveData() {
         showToast('请先上传一个 Excel 文件', 'error');
         return;
     }
-    // 收集输入框中的最新值
+    // 收集输入框中的最新值（计算列的值由服务端算，收集回去只会污染 currentRows）
     document.querySelectorAll('.cell-input').forEach(input => {
         const idx = parseInt(input.dataset.index);
         const key = input.dataset.key;
+        if (isComputedColumn(key)) return;
         if (!isNaN(idx) && currentRows[idx]) {
             currentRows[idx][key] = input.value;
         }

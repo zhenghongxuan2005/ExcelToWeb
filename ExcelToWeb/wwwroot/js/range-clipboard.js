@@ -211,6 +211,8 @@ function pasteTsv(text) {
         for (let j = 0; j < cols; j++) {
             const key = keys[b.c1 + j];
             if (key === undefined) continue;
+            // 计算列不接收粘贴内容：值由公式决定，写进去也会在下次读取时被算回去
+            if (isComputedColumn(key)) continue;
             currentRows[dataIdx][key] = grid[i][j] !== undefined ? grid[i][j] : '';
             cells++;
         }
@@ -255,6 +257,8 @@ function clearRangeContent() {
             if (!input) continue;
             const idx = parseInt(input.dataset.index);
             if (isNaN(idx) || !currentRows[idx]) continue;
+            // 计算列清不掉：它的值来自公式，清了下次读取又会算出来
+            if (isComputedColumn(input.dataset.key)) continue;
             currentRows[idx][input.dataset.key] = '';
             cells++;
         }

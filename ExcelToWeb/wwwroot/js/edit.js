@@ -84,6 +84,9 @@ function batchEdit() {
     const select = document.getElementById('batchColumnSelect');
     select.innerHTML = '';
     for (const h of currentHeaders) {
+        // 计算列不进候选：选了也改不动，不如根本不给选
+        if (isComputedColumn(h)) continue;
+
         const option = document.createElement('option');
         option.value = h;
         option.textContent = h;
@@ -110,6 +113,14 @@ function confirmBatchEdit() {
     const checkboxes = document.querySelectorAll('.row-checkbox:checked');
     if (checkboxes.length === 0) {
         showToast('没有选中任何行', 'info');
+        closeBatchModal();
+        return;
+    }
+
+    // 计算列的值由公式决定，批量改它只会被下次读取打回。下拉里已经不给选，
+    // 这里再挡一道是为了「弹窗开着时那一列刚被设成计算列」这种时序
+    if (isComputedColumn(column)) {
+        showToast(`「${column}」是计算列，值由公式算出，不能批量修改`, 'info');
         closeBatchModal();
         return;
     }

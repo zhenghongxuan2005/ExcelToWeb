@@ -30,6 +30,9 @@ public interface IExcelService
     /// <summary>整表保存列视图元数据；只接受当前表头中存在的列名</summary>
     Task<ApiResponse> SaveColumnMetaAsync(int tableId, int userId, SaveColumnMetaRequest request);
 
+    /// <summary>设置 / 清空某列的计算公式（公式为空表示退回普通可编辑列）</summary>
+    Task<ApiResponse> SaveFormulaAsync(int tableId, int userId, SaveFormulaRequest request);
+
     // 颜色规则
     Task<List<ColorRule>> GetColorRulesAsync(int userId, string? columnName = null);
     Task<ApiResponse> SaveColorRulesAsync(int userId, List<ColorRule> rules);

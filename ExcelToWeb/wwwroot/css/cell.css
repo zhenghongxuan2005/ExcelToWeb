@@ -153,3 +153,37 @@ td.editable-cell.is-fill-target {
     font-weight: 700;
     vertical-align: middle;
 }
+
+/* ===== 计算列 ===== */
+
+/* 表头上的 fx 角标：一眼看出这列的值不是手填的 */
+.th-fx {
+    flex-shrink: 0;
+    margin-left: 4px;
+    padding: 0 4px;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--primary) 16%, transparent);
+    color: var(--primary);
+    font-size: 10px;
+    font-weight: 700;
+    font-style: italic;
+    line-height: 16px;
+    cursor: help;
+}
+
+/* 计算列的单元格：只用底色区分，不换字号也不换字体，
+   否则整张表会因为一列计算列而看起来歪歪扭扭 */
+td.cell-computed {
+    background: color-mix(in srgb, var(--primary) 5%, transparent);
+}
+
+/* 值由公式算出，不接收手输。鼠标样式也一并交代清楚 */
+.cell-input-locked {
+    cursor: not-allowed;
+    color: var(--text-2);
+}
+
+    .cell-input-locked:hover {
+        background: color-mix(in srgb, var(--primary) 8%, transparent);
+        border-color: transparent;
+    }

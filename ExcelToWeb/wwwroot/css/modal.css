@@ -224,3 +224,64 @@
     font-size: 12px;
     color: var(--text-4);
 }
+
+/* ===== 计算列公式弹窗 ===== */
+
+/* 公式用等宽字体：括号、方括号、乘号在等宽下更容易一眼数清楚 */
+#formulaInput {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+}
+
+.formula-chips {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.formula-chips-label {
+    flex-shrink: 0;
+    padding-top: 3px;
+    font-size: 12px;
+    color: var(--text-4);
+}
+
+.formula-chip {
+    display: inline-block;
+    margin: 0 6px 6px 0;
+    padding: 3px 9px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-soft);
+    color: var(--text-1);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+    .formula-chip:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+.formula-chip-fn {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-weight: 600;
+}
+
+.formula-empty {
+    font-size: 12px;
+    color: var(--text-4);
+}
+
+.formula-hint {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--text-4);
+    line-height: 1.6;
+}
+
+    .formula-hint.is-error {
+        color: var(--danger);
+    }
+

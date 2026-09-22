@@ -166,8 +166,18 @@ function createHarness(opts) {
     const stubCode = STUB_GLOBALS
         .filter(line => !keep.some(n => line.indexOf('globalThis.' + n + ' =') === 0))
         .concat((opts.stubs || []).map(n => 'globalThis.' + n + ' = function () {};'));
+
+    // computed-column.js 由 harness 统一补上：isComputedColumn 被 render / 填充柄 /
+    // 粘贴 / 查找替换 / 列管理共用，哪个用例忘了加载它，那些模块就会在运行期抛
+    // ReferenceError（表现是整条用例失败，而不是「少测了一件事」，很难一眼看出原因）。
+    const files = opts.files.slice();
+    if (files.indexOf('computed-column.js') === -1) {
+        const at = files.indexOf('column-meta.js');
+        files.splice(at === -1 ? files.length : at + 1, 0, 'computed-column.js');
+    }
+
     vm.runInContext(
-        opts.files.map(f => '\n/* ' + f + ' */\n' + fs.readFileSync(path.join(JS_ROOT, f), 'utf8')).join('\n;\n')
+        files.map(f => '\n/* ' + f + ' */\n' + fs.readFileSync(path.join(JS_ROOT, f), 'utf8')).join('\n;\n')
         + '\n;' + stubCode.join('\n;')
         + '\n;globalThis.__api = { ' + opts.api.join(', ') + ' };',
         ctx, { filename: 'bundle.js' }
@@ -185,14 +195,16 @@ function createHarness(opts) {
     /**
      * 重置表格 + 全局状态；DOM 的 data-index 与 currentRows 下标一一对应。
      * @param {string[]} [hidden] 隐藏列（DOM 里不渲染，与真实页面一致）
+     * @param {object}   [exprs]  计算列：列名 -> 公式；不传则视为没有计算列
      */
-    function setTable(headers, rows, hidden) {
+    function setTable(headers, rows, hidden, exprs) {
         const hiddenList = (hidden || []).slice();
         container._table = buildTable(headers.filter(h => hiddenList.indexOf(h) === -1), rows, setActive);
         setActive(null);
         sandbox.__rows = rows.map(r => Object.assign({}, r));
         sandbox.__headers = headers;
         sandbox.__hidden = hiddenList;
+        sandbox.__exprs = exprs || {};
         vm.runInContext(`
             currentRows = __rows;
             currentHeaders = __headers;
@@ -202,6 +214,7 @@ function createHarness(opts) {
             currentPage = 1;
             hiddenColumns = __hidden;
             columnWidths = {};
+            columnExprs = __exprs;
             sortKeys = [];
             rangeAnchor = null;
             rangeFocus = null;

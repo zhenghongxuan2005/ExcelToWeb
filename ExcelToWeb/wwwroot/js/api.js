@@ -155,6 +155,18 @@ function saveColumnMeta(tableId, meta) {
     });
 }
 
+/**
+ * 设置 / 清空某列的计算公式。formula 传空串表示把该列退回普通可编辑列。
+ * 公式的语法与引用校验在服务端做，失败时 err.message 就是「公式哪里写错了」。
+ */
+function saveFormula(tableId, columnName, formula) {
+    return request('/excel/formula', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableId, columnName, formula })
+    });
+}
+
 // ================================================================
 // 导出（返回 blob，不走统一 JSON 解析）
 // ================================================================

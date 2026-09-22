@@ -151,11 +151,13 @@ public class TableRepository
 
     /// <summary>
     /// 保存列视图元数据（JSON，null 表示清空）。
-    /// 刻意不刷新 UpdatedAt：调列宽/隐藏列是视图偏好，不该让表格在列表里跳到最前。
+    /// 默认不刷新 UpdatedAt：调列宽/隐藏列是视图偏好，不该让表格在列表里跳到最前。
+    /// touchUpdatedAt 只给「有实际语义变化」的写入用（目前是计算列的公式）。
     /// </summary>
-    public async Task SaveColumnMetaAsync(DynamicTable table, string? metaJson)
+    public async Task SaveColumnMetaAsync(DynamicTable table, string? metaJson, bool touchUpdatedAt = false)
     {
         table.ColumnMetaJson = metaJson;
+        if (touchUpdatedAt) table.UpdatedAt = DateTime.Now;
         await _db.SaveChangesAsync();
     }
 

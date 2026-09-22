@@ -119,3 +119,13 @@
     background: color-mix(in srgb, var(--primary) 14%, transparent);
     color: var(--primary);
 }
+
+/* 计算列角标：列名后面标一个 fx，鼠标悬停能看到公式原文 */
+.col-tag-fx {
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+    color: var(--primary);
+    font-style: italic;
+    font-weight: 700;
+    cursor: help;
+}
+

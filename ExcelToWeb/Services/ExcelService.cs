@@ -19,6 +19,7 @@ public class ExcelService : IExcelService
     private readonly RuleService _rules;
     private readonly ColumnStructureService _columns;
     private readonly ColumnMetaService _columnMeta;
+    private readonly ComputedColumnService _computed;
     private readonly AuditService _audit;
 
     public ExcelService(
@@ -29,6 +30,7 @@ public class ExcelService : IExcelService
         RuleService rules,
         ColumnStructureService columns,
         ColumnMetaService columnMeta,
+        ComputedColumnService computed,
         AuditService audit)
     {
         _logger = logger;
@@ -38,6 +40,7 @@ public class ExcelService : IExcelService
         _rules = rules;
         _columns = columns;
         _columnMeta = columnMeta;
+        _computed = computed;
         _audit = audit;
     }
 
@@ -68,14 +71,19 @@ public class ExcelService : IExcelService
             dataRows = dataRows.Where(row => RowDateFilter.Matches(row, date)).ToList();
         }
 
+        // 列视图偏好随数据一起下发，前端不必再多发一次请求
+        var meta = ColumnMetaService.Parse(table.ColumnMetaJson);
+
+        // 计算列在这里实时算出来塞进行数据：值不落库，所以永远与源列一致
+        ComputedColumnService.Apply(table.Headers, meta, dataRows);
+
         return ApiResponse<TableDataDto>.Ok(new TableDataDto
         {
             TableId = table.Id,
             TableName = table.TableName,
             Headers = table.Headers,
             Rows = dataRows,
-            // 列视图偏好随数据一起下发，前端不必再多发一次请求
-            ColumnMeta = ColumnMetaService.Parse(table.ColumnMetaJson)
+            ColumnMeta = meta
         });
     }
 
@@ -89,6 +97,12 @@ public class ExcelService : IExcelService
             var table = await _repository.FindTableAsync(tableId, userId);
             if (table == null)
                 return ApiResponse.Fail("表格不存在");
+
+            // 计算列的值是按公式算出来的，客户端回传的行里带着它们。
+            // 落库前必须抹掉：否则计算列的值会混进 DataJson，之后源列改了它就变成
+            // 一份永远不更新的陈旧数据 ——「实时算」的全部好处当场作废。
+            var meta = ColumnMetaService.Parse(table.ColumnMetaJson);
+            ComputedColumnService.Strip(meta, rows);
 
             // 保存前取旧数据，用于审计 diff（读取失败不应阻断保存，故放在 try 内但由 AuditService 自身兜底）
             var oldRows = await _repository.GetRowDataAsync(tableId);
@@ -221,6 +235,27 @@ public class ExcelService : IExcelService
         {
             _logger.LogError(ex, "保存表格 {TableId} 列元数据失败", tableId);
             return ApiResponse.Fail("保存列设置失败，请稍后重试");
+        }
+    }
+
+    /// <summary>
+    /// 设置 / 清空计算列的公式。公式的语法与引用校验全在 ComputedColumnService 里，
+    /// 校验失败返回的是「公式哪里写错了」这类可以直接给用户看的话，不是异常细节。
+    /// </summary>
+    public async Task<ApiResponse> SaveFormulaAsync(int tableId, int userId, SaveFormulaRequest request)
+    {
+        try
+        {
+            var result = await _computed.SaveFormulaAsync(tableId, userId, request);
+            if (result.Success)
+                _logger.LogInformation("用户 {UserId} 设置表格 {TableId} 的列「{Column}」公式",
+                    userId, tableId, request?.ColumnName);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "设置表格 {TableId} 计算列公式失败", tableId);
+            return ApiResponse.Fail("保存公式失败，请稍后重试");
         }
     }
 

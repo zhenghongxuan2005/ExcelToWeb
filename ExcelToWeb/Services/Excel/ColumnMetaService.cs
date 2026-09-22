@@ -33,12 +33,17 @@ public class ColumnMetaService
     }
 
     /// <summary>
-    /// 保存列元数据，语义是「整表覆盖」：
+    /// 保存列视图偏好，语义是「整表覆盖」：
     ///   - 只接受当前表头里存在的列名（列已删、前端还拿着旧列表时不会写入垃圾键）
     ///   - 列宽夹到 [MinWidth, MaxWidth]
-    ///   - 全默认（无宽度、不隐藏）的列不写，避免 JSON 随列数无意义膨胀
+    ///   - 全默认（无宽度、不隐藏、无公式）的列不写，避免 JSON 随列数无意义膨胀
     ///   - 所有列都是默认值时存 null
     /// 注意不更新 UpdatedAt：调列宽属于视图偏好，不该让表格在列表里跳到最前。
+    ///
+    /// 公式（Expr）**只认库里的那份**，请求里的 Expr 一律忽略：
+    /// 本接口只负责列宽与隐藏，公式有专门的接口（ComputedColumnService.SaveFormulaAsync）
+    /// 会做语法与引用校验。前端送来的元数据里不含公式，若在这里整表覆盖，一次调列宽
+    /// 就能把用户的公式抹掉。
     /// </summary>
     public async Task<ApiResponse> SaveAsync(int tableId, int userId, SaveColumnMetaRequest? request)
     {
@@ -48,6 +53,7 @@ public class ColumnMetaService
         if (table == null) return ApiResponse.Fail("表格不存在");
 
         var headers = new HashSet<string>(table.Headers ?? new List<string>(), StringComparer.Ordinal);
+        var stored = Parse(table.ColumnMetaJson);
         var clean = new Dictionary<string, ColumnMetaDto>(StringComparer.Ordinal);
 
         foreach (var pair in request.Meta ?? new Dictionary<string, ColumnMetaDto>())
@@ -62,13 +68,32 @@ public class ColumnMetaService
             if (width.HasValue) width = Math.Clamp(width.Value, MinWidth, MaxWidth);
             var hidden = meta?.Hidden ?? false;
 
-            if (!width.HasValue && !hidden) continue;
-            clean[name] = new ColumnMetaDto { Width = width, Hidden = hidden };
+            stored.TryGetValue(name, out var existing);
+            var expr = existing?.Expr;
+
+            if (!width.HasValue && !hidden && string.IsNullOrEmpty(expr)) continue;
+            clean[name] = new ColumnMetaDto { Width = width, Hidden = hidden, Expr = expr };
         }
 
-        await _repository.SaveColumnMetaAsync(table, clean.Count == 0 ? null : JsonSerializer.Serialize(clean));
+        // 计算列即使没调过列宽也不会出现在请求里，必须补回来 ——
+        // 否则「点开列设置再保存一次」这种动作就会顺手删掉用户的公式
+        foreach (var pair in stored)
+        {
+            if (clean.Count >= MaxEntries) break;
+            if (clean.ContainsKey(pair.Key)) continue;
+            if (string.IsNullOrEmpty(pair.Value?.Expr)) continue;
+            if (!headers.Contains(pair.Key)) continue;
+
+            clean[pair.Key] = new ColumnMetaDto { Expr = pair.Value.Expr };
+        }
+
+        await _repository.SaveColumnMetaAsync(table, Serialize(clean));
         return ApiResponse.Ok("列设置已保存");
     }
+
+    /// <summary>序列化列元数据；没有任何要保存的内容时返回 null（存 null 而不是 "{}"）</summary>
+    public static string? Serialize(Dictionary<string, ColumnMetaDto> meta) =>
+        meta.Count == 0 ? null : JsonSerializer.Serialize(meta);
 
     /// <summary>反序列化列元数据；内容损坏时退化成空字典，不让一段脏 JSON 挡住整表加载</summary>
     public static Dictionary<string, ColumnMetaDto> Parse(string? json)
@@ -91,6 +116,11 @@ public class ColumnMetaService
     /// 顺序不能反 —— rename 的源列同时也在 dropped 里（旧名不在新列表），
     /// 必须先把元数据搬到新名下再按 dropped 删，否则一改名就丢掉该列的列宽。
     /// （与 RuleService.MigrateForColumnsAsync 是同一类交叉问题，改这里时请一起看。）
+    ///
+    /// 之后还要修公式里引用的列名：公式写的是列名，列改名 / 被删了公式得跟着走。
+    /// 公式引用了被删列时整条公式作废（置 null，该列退回普通可编辑列）——
+    /// 留着一个引用不存在列的公式，只会得到一列永远算不出来的 #REF!，
+    /// 而且它还是只读的，用户除了再删一次列没有别的出路。
     /// </summary>
     public static Dictionary<string, ColumnMetaDto> PruneForColumns(
         Dictionary<string, ColumnMetaDto> meta,
@@ -99,7 +129,10 @@ public class ColumnMetaService
     {
         var result = new Dictionary<string, ColumnMetaDto>(meta, StringComparer.Ordinal);
 
-        foreach (var r in renames)
+        var renameList = renames.ToList();
+        var droppedList = dropped.ToList();
+
+        foreach (var r in renameList)
         {
             if (result.TryGetValue(r.OldName, out var moved))
             {
@@ -108,7 +141,29 @@ public class ColumnMetaService
             }
         }
 
-        foreach (var d in dropped) result.Remove(d);
+        foreach (var d in droppedList) result.Remove(d);
+
+        var renameMap = renameList
+            .GroupBy(r => r.OldName, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First().NewName, StringComparer.Ordinal);
+
+        foreach (var name in result.Keys.ToList())
+        {
+            var item = result[name];
+            if (string.IsNullOrEmpty(item?.Expr)) continue;
+
+            item.Expr = FormulaEngine.TryRenameColumns(item.Expr!, renameMap, droppedList, out var updated)
+                ? updated
+                : null;
+        }
+
+        // 公式被清掉后可能变成「全默认」条目，顺手删掉，别在 JSON 里留垃圾键
+        foreach (var name in result.Keys.ToList())
+        {
+            var item = result[name];
+            if (item == null || item.Width != null || item.Hidden || !string.IsNullOrEmpty(item.Expr)) continue;
+            result.Remove(name);
+        }
 
         return result;
     }
