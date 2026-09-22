@@ -2,14 +2,25 @@
    ExcelToWeb 样式入口
    原单文件样式已按职责拆分为下列模块，此处仅做汇总引入。
    注意：@import 必须位于文件最前；下方加载顺序即层叠顺序。
+   顺序有实际约束，不要随意重排：
+     * cell.css 必须紧跟 table.css —— 选区/焦点样式要能覆盖单元格基础样式
+     * cards.css / doc.css 必须排在 pages.css 之后、console.css 之前
+       —— console.css 末尾的响应式断点要能覆盖卡片网格与帮助页
    ================================================================ */
 
 @import url("tokens.css");   /* 设计令牌（亮/暗）+ 全局重置 */
 @import url("layout.css");   /* 应用外壳：侧边栏 + 主内容 */
 @import url("toolbar.css");  /* 按钮、工具栏、下拉菜单、表格选择器 */
 @import url("search.css");   /* 全局搜索框、列显示/列宽菜单 */
-@import url("table.css");    /* 数据表格、冻结列、表格密度、可编辑单元格 */
+@import url("table.css");    /* 数据表格、冻结列、表头、表格密度、网格线 */
+@import url("cell.css");     /* 可编辑单元格、建议列表、命中高亮、选区、填充柄 */
 @import url("stats.css");    /* 汇总行、统计栏、分页条、选中统计、空状态 */
-@import url("modal.css");    /* 弹窗、表单、规则表格、Toast */
+@import url("modal.css");    /* 弹窗外壳 + 表单控件 */
+@import url("rules.css");    /* 规则表格 + 列管理面板 */
+@import url("toast.css");    /* Toast 提示 */
+@import url("palette.css");  /* Ctrl+K 命令面板 */
+@import url("history.css");  /* 变更历史时间线 */
 @import url("pages.css");    /* 登录页、看板页、响应式断点 */
-@import url("console.css");  /* 二级页面：表格管理、设置、帮助 */
+@import url("cards.css");    /* 表格管理页卡片网格 */
+@import url("doc.css");      /* 帮助页文档排版 */
+@import url("console.css");  /* 二级页面其余：页头附加区、设置面板、偏好与响应式 */

@@ -1,6 +1,6 @@
 /* ================================================================
-   ExcelToWeb 样式模块：modal.css —— 弹窗、表单、规则表格、Toast
-   （由 style.css 拆分而来；style.css 以 @import 汇总，加载顺序即层叠顺序）
+   ExcelToWeb 样式模块：modal.css —— 弹窗外壳 + 表单控件
+   （由 style.css 以 @import 汇总，加载顺序即层叠顺序）
    ================================================================ */
 
 /* ================================================================
@@ -14,21 +14,23 @@
     z-index: 999;
     align-items: center;
     justify-content: center;
-    backdrop-filter: blur(3px);
+    backdrop-filter: blur(6px) saturate(1.15);
+    -webkit-backdrop-filter: blur(6px) saturate(1.15);
     padding: 20px;
 }
 
 .modal-card {
     position: relative;
     background: var(--bg-card);
-    border-radius: var(--radius-lg);
-    padding: 28px;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: 30px;
     max-width: 640px;
     width: 100%;
     max-height: 85vh;
     overflow-y: auto;
     box-shadow: var(--shadow-modal);
-    animation: modalIn 0.22s ease;
+    animation: modalIn 0.34s var(--ease-spring);
 }
 
     .modal-card.modal-wide {
@@ -51,6 +53,7 @@
     font-size: 13px;
     color: var(--text-3);
     margin-bottom: 18px;
+    line-height: 1.65;
 }
 
 .modal-close {
@@ -68,8 +71,9 @@
 }
 
     .modal-close:hover {
-        background: var(--bg-soft);
-        color: var(--text-1);
+        background: var(--danger-soft);
+        color: var(--danger);
+        transform: rotate(90deg);
     }
 
 .modal-footer {
@@ -99,29 +103,35 @@
     font-size: 13px;
     font-weight: 500;
     color: var(--text-2);
-    margin-bottom: 6px;
+    margin-bottom: 7px;
 }
 
 .field {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 }
 
 .input,
 .select {
     width: 100%;
-    padding: 9px 12px;
+    padding: 10px 13px;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    font-size: 13px;
+    font-size: 13.5px;
     font-family: inherit;
-    background: var(--bg-card);
+    background: var(--bg-soft);
     color: var(--text-1);
     outline: none;
-    transition: all 0.18s ease;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
+
+    .input:hover,
+    .select:hover {
+        border-color: var(--border-strong);
+    }
 
     .input:focus,
     .select:focus {
+        background: var(--bg-card);
         border-color: var(--primary);
         box-shadow: var(--focus-ring);
     }
@@ -169,202 +179,4 @@
     padding: 20px 0;
     color: var(--text-4);
     font-size: 14px;
-}
-
-/* ===== 规则表格 ===== */
-.rule-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-}
-
-    .rule-table th {
-        text-align: left;
-        padding: 8px 10px;
-        font-weight: 600;
-        color: var(--text-2);
-        border-bottom: 2px solid var(--border);
-        font-size: 12px;
-        white-space: nowrap;
-    }
-
-    .rule-table td {
-        padding: 8px 10px;
-        border-bottom: 1px solid var(--border-light);
-    }
-
-/* ===== 列管理面板 ===== */
-.col-draft-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-height: 46vh;
-    overflow-y: auto;
-    padding-right: 4px;
-}
-
-.col-draft-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.col-draft-index {
-    min-width: 22px;
-    text-align: center;
-    font-size: 12px;
-    color: var(--text-3);
-    flex-shrink: 0;
-}
-
-.col-draft-input {
-    flex: 1;
-    padding: 7px 10px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-    font-family: inherit;
-    background: var(--bg-card);
-    color: var(--text-1);
-    outline: none;
-    transition: border-color 0.15s ease;
-}
-
-    .col-draft-input:focus {
-        border-color: var(--primary);
-        box-shadow: var(--focus-ring);
-    }
-
-.col-draft-ops {
-    display: flex;
-    gap: 4px;
-    flex-shrink: 0;
-}
-
-.col-op-btn {
-    width: 28px;
-    height: 28px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--bg-card);
-    color: var(--text-2);
-    cursor: pointer;
-    font-size: 13px;
-    line-height: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s ease;
-}
-
-    .col-op-btn:hover {
-        border-color: var(--primary);
-        color: var(--primary);
-    }
-
-    .col-op-btn.col-op-del:hover {
-        border-color: var(--danger);
-        color: var(--danger);
-    }
-
-.col-tag {
-    flex-shrink: 0;
-    font-size: 11px;
-    padding: 2px 7px;
-    border-radius: 999px;
-    max-width: 110px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.col-tag-new {
-    background: color-mix(in srgb, var(--success) 14%, transparent);
-    color: var(--success);
-}
-
-.col-tag-rename {
-    background: color-mix(in srgb, var(--primary) 14%, transparent);
-    color: var(--primary);
-}
-
-/* ================================================================
-   Toast
-   ----------------------------------------------------------------
-   所有提示挂在同一个 .toast-host 里纵向排列，
-   避免原本「每个 toast 都 fixed 在同一个位置」导致多条提示互相重叠。
-   ================================================================ */
-.toast-host {
-    position: fixed;
-    top: 24px;
-    right: 24px;
-    z-index: 999;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 10px;
-    /* 容器不接收鼠标事件，避免遮挡下方内容；单个 toast 自己恢复 */
-    pointer-events: none;
-}
-
-.toast {
-    position: relative;
-    padding: 13px 20px;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    font-size: 14px;
-    box-shadow: var(--shadow-pop);
-    max-width: 400px;
-    white-space: pre-line;
-    pointer-events: auto;
-    cursor: pointer;
-    animation: toastIn var(--transition-slow);
-    transition: opacity var(--transition-base), transform var(--transition-base);
-}
-
-/* 由 utils.js 在移除前加上，做出淡出效果 */
-.toast.toast-out {
-    opacity: 0;
-    transform: translateX(24px);
-}
-
-.toast-success {
-    background: var(--success);
-    color: #fff;
-}
-
-.toast-error {
-    background: var(--danger);
-    color: #fff;
-}
-
-.toast-info {
-    background: var(--primary);
-    color: #fff;
-}
-
-@keyframes toastIn {
-    from {
-        opacity: 0;
-        transform: translateX(24px) scale(0.98);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateX(0) scale(1);
-    }
-}
-
-/* 窄屏下让提示占满可用宽度，长文本（如校验明细）更好读 */
-@media (max-width: 640px) {
-    .toast-host {
-        left: 12px;
-        right: 12px;
-        top: 12px;
-        align-items: stretch;
-    }
-
-    .toast {
-        max-width: none;
-    }
 }

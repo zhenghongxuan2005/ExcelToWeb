@@ -1,0 +1,161 @@
+/* ================================================================
+   ExcelToWeb 样式模块：doc.css —— 帮助页文档排版（章节 / 问答 / 快捷键）
+   （由 style.css 以 @import 汇总，加载顺序即层叠顺序）
+   ================================================================ */
+
+/* ================================================================
+   帮助页：文档排版
+   ================================================================ */
+.doc-section {
+    margin-bottom: 26px;
+    padding: 22px 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+}
+
+.doc-title {
+    margin: 0 0 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-1);
+}
+
+.doc-steps {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 14px;
+    line-height: 2;
+    color: var(--text-2);
+}
+
+    .doc-steps strong {
+        color: var(--text-1);
+    }
+
+.doc-section code {
+    padding: 2px 6px;
+    border-radius: 5px;
+    background: var(--bg-soft);
+    color: var(--primary);
+    font-size: 12.5px;
+    font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+}
+
+/* 折叠问答 */
+.faq {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    margin-bottom: 10px;
+    overflow: hidden;
+    background: var(--bg-card);
+    transition: border-color 0.15s ease, box-shadow 0.2s ease;
+}
+
+    .faq:hover {
+        border-color: var(--border-strong);
+    }
+
+    .faq[open] {
+        border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+        box-shadow: var(--shadow-xs);
+    }
+
+    .faq summary {
+        padding: 13px 16px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-1);
+        cursor: pointer;
+        list-style: none;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: background 0.15s ease;
+    }
+
+        .faq summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .faq summary::before {
+            content: "";
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            border-radius: 6px;
+            background: var(--primary-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232b59ff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='9 18 15 12 9 6'/%3E%3C/svg%3E") center / 12px no-repeat;
+            transition: transform 0.2s var(--ease-spring), background-color 0.15s ease;
+        }
+
+        .faq[open] summary::before {
+            transform: rotate(90deg);
+        }
+
+/* 暗色主题下图标颜色跟随提亮后的品牌色 */
+html[data-theme="dark"] .faq summary::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235c82ff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='9 18 15 12 9 6'/%3E%3C/svg%3E");
+}
+
+        .faq summary:hover {
+            background: var(--bg-soft);
+        }
+
+.faq-body {
+    padding: 2px 18px 16px 44px;
+    font-size: 13.5px;
+    line-height: 1.85;
+    color: var(--text-2);
+}
+
+    .faq-body p {
+        margin: 6px 0;
+    }
+
+    .faq-body strong {
+        color: var(--text-1);
+    }
+
+/* 快捷键 */
+kbd {
+    display: inline-block;
+    min-width: 22px;
+    padding: 2px 7px;
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 6px;
+    background: linear-gradient(180deg, var(--bg-card), var(--bg-soft));
+    box-shadow: 0 1px 2px rgba(10, 26, 51, 0.06);
+    color: var(--text-1);
+    font-size: 12px;
+    font-family: inherit;
+    text-align: center;
+    line-height: 1.6;
+}
+
+.kbd-table {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 10px;
+}
+
+.kbd-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 11px 15px;
+    background: var(--bg-soft);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--text-2);
+    transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+    .kbd-row:hover {
+        border-color: color-mix(in srgb, var(--primary) 24%, var(--border));
+    }

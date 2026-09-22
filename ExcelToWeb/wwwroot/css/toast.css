@@ -1,0 +1,97 @@
+/* ================================================================
+   ExcelToWeb 样式模块：toast.css —— Toast 提示与动画
+   （由 style.css 以 @import 汇总，加载顺序即层叠顺序）
+   ================================================================ */
+
+/* ================================================================
+   Toast
+   ----------------------------------------------------------------
+   所有提示挂在同一个 .toast-host 里纵向排列，
+   避免原本「每个 toast 都 fixed 在同一个位置」导致多条提示互相重叠。
+   ================================================================ */
+.toast-host {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    /* 容器不接收鼠标事件，避免遮挡下方内容；单个 toast 自己恢复 */
+    pointer-events: none;
+}
+
+.toast {
+    position: relative;
+    padding: 13px 20px 13px 24px;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: var(--shadow-pop);
+    max-width: 400px;
+    white-space: pre-line;
+    pointer-events: auto;
+    cursor: pointer;
+    animation: toastIn var(--transition-slow) var(--ease-spring);
+    transition: opacity var(--transition-base), transform var(--transition-base);
+    overflow: hidden;
+}
+
+/* 左侧类型色条：即便不看底色，余光也能分辨成功/失败 */
+.toast::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: rgba(255, 255, 255, 0.55);
+}
+
+/* 由 utils.js 在移除前加上，做出淡出效果 */
+.toast.toast-out {
+    opacity: 0;
+    transform: translateX(24px);
+}
+
+.toast-success {
+    background: var(--success);
+    color: #fff;
+}
+
+.toast-error {
+    background: var(--danger);
+    color: #fff;
+}
+
+.toast-info {
+    background: var(--primary);
+    color: #fff;
+}
+
+@keyframes toastIn {
+    from {
+        opacity: 0;
+        transform: translateX(24px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+/* 窄屏下让提示占满可用宽度，长文本（如校验明细）更好读 */
+@media (max-width: 640px) {
+    .toast-host {
+        left: 12px;
+        right: 12px;
+        top: 12px;
+        align-items: stretch;
+    }
+
+    .toast {
+        max-width: none;
+    }
+}

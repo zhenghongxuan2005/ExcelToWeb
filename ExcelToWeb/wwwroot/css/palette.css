@@ -1,0 +1,130 @@
+/* ================================================================
+   ExcelToWeb 样式模块：palette.css —— Ctrl+K 命令面板
+   （由 style.css 以 @import 汇总，加载顺序即层叠顺序）
+   ================================================================ */
+
+/* ================================================================
+   Ctrl+K 命令面板（js/palette.js）
+   与 .modal 共用遮罩语言，但位置靠上（类似 Spotlight），
+   动作列表紧凑、选中态用主色浅底而不是深色块，减少视觉跳跃。
+   ================================================================ */
+.cmdk-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--overlay);
+    backdrop-filter: blur(6px) saturate(1.15);
+    -webkit-backdrop-filter: blur(6px) saturate(1.15);
+    z-index: 1001;               /* 高于普通弹窗（999）与 toast-host（999） */
+    justify-content: center;
+    align-items: flex-start;
+    padding: 14vh 20px 20px;
+}
+
+    .cmdk-overlay.open {
+        display: flex;
+    }
+
+.cmdk-card {
+    width: 100%;
+    max-width: 560px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-modal);
+    overflow: hidden;
+    animation: modalIn 0.24s var(--ease-spring);
+}
+
+.cmdk-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-3);
+}
+
+.cmdk-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--text-1);
+}
+
+.cmdk-kbd {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: var(--text-3);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px 7px;
+    background: var(--bg-soft);
+}
+
+.cmdk-list {
+    max-height: 46vh;
+    overflow-y: auto;
+    padding: 6px;
+}
+
+.cmdk-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--text-2);
+    font-size: 13.5px;
+}
+
+    .cmdk-item .icon {
+        color: var(--text-3);
+        flex-shrink: 0;
+    }
+
+    .cmdk-item.active {
+        background: color-mix(in srgb, var(--primary) 12%, transparent);
+        color: var(--text-1);
+    }
+
+        .cmdk-item.active .icon {
+            color: var(--primary);
+        }
+
+.cmdk-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cmdk-hint {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: var(--text-3);
+    border: 1px solid var(--border-light);
+    border-radius: 999px;
+    padding: 1px 8px;
+}
+
+.cmdk-empty {
+    padding: 26px 0;
+    text-align: center;
+    color: var(--text-3);
+    font-size: 13px;
+}
+
+.cmdk-foot {
+    display: flex;
+    gap: 14px;
+    padding: 9px 16px;
+    border-top: 1px solid var(--border-light);
+    font-size: 11.5px;
+    color: var(--text-3);
+    background: var(--bg-soft);
+}

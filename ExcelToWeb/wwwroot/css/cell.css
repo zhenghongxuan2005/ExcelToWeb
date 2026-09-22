@@ -1,0 +1,155 @@
+/* ================================================================
+   ExcelToWeb 样式模块：cell.css —— 可编辑单元格、建议列表、搜索与查找高亮、区域选区、填充柄、排序序号
+   （由 style.css 以 @import 汇总，加载顺序即层叠顺序）
+   ================================================================ */
+
+/* ===== 可编辑单元格 ===== */
+.cell-input,
+.cell-select {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-size: 13px;
+    background: transparent;
+    font-family: inherit;
+    color: var(--text-1);
+    min-width: 60px;
+    transition: all 0.15s ease;
+}
+
+    .cell-input:hover,
+    .cell-select:hover {
+        background: var(--bg-soft);
+        border-color: var(--border);
+    }
+
+    .cell-input:focus,
+    .cell-select:focus {
+        border-color: var(--primary);
+        outline: none;
+        background: var(--bg-card);
+        box-shadow: var(--focus-ring);
+    }
+
+.editable-cell {
+    position: relative;
+}
+
+.suggest-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: var(--shadow-pop);
+    display: none;
+}
+
+.suggest-item {
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-1);
+}
+
+    .suggest-item:hover {
+        background: var(--primary-soft);
+        color: var(--primary);
+    }
+
+/* ===== 搜索命中高亮 =====
+   单元格本身是 <input>，无法在文本内部套标签，
+   因此用「单元格底色 + 内描边」标出命中位置。 */
+.editable-cell.search-hit {
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 34%, transparent);
+}
+
+    .editable-cell.search-hit .cell-input {
+        color: var(--primary);
+        font-weight: 600;
+    }
+
+/* 查找/替换定位到的单元格（比搜索命中更醒目，且不依赖 input 内容） */
+.editable-cell.find-hit {
+    box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+/* ================================================================
+   单元格区域选区（range.js）
+   ----------------------------------------------------------------
+   单元格本体是 <input>，底色由 input 自己画 —— 所以填充色必须给 input，
+   只在 td 上描边；否则底色会被 input 的实底盖住，选了看不出来。
+   ================================================================ */
+td.editable-cell.is-range-selected {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 28%, transparent);
+}
+
+    td.editable-cell.is-range-selected .cell-input {
+        background: color-mix(in srgb, var(--primary) 13%, var(--bg-card));
+        border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+    }
+
+/* 焦点格：比其余选中格更重的描边，指示「活动单元格」 */
+td.editable-cell.is-range-focus {
+    box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+/* 拖拽选取期间禁止选中文本，否则会连带选中一大片单元格文字 */
+body.is-range-dragging,
+body.is-fill-dragging {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* ================================================================
+   填充柄（fill-handle.js）
+   ----------------------------------------------------------------
+   贴在选区右下角的小方块，拖拽可复制单元格或延续序列。
+   宿主是 td.editable-cell（已 position: relative），因此随表格滚动自然跟随，
+   不需要额外的定位计算。
+   ================================================================ */
+.range-fill-handle {
+    position: absolute;
+    right: -3px;
+    bottom: -3px;
+    width: 8px;
+    height: 8px;
+    background: var(--primary);
+    border: 1px solid var(--bg-card);
+    border-radius: 2px;
+    cursor: crosshair;
+    z-index: 20;
+}
+
+/* 拖拽填充时，高亮「将被写入」的目标区域 */
+td.editable-cell.is-fill-target {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 48%, transparent);
+}
+
+    td.editable-cell.is-fill-target .cell-input {
+        background: color-mix(in srgb, var(--primary) 8%, var(--bg-card));
+    }
+
+/* 多列排序时，表头上的优先级序号 */
+.th-sort-rank {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 14px;
+    height: 14px;
+    margin-left: 3px;
+    padding: 0 3px;
+    border-radius: 999px;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-size: 10px;
+    font-weight: 700;
+    vertical-align: middle;
+}
