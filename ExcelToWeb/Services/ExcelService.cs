@@ -1,4 +1,3 @@
-using System.Text.Json;
 using ExcelToWeb.DTOs;
 using ExcelToWeb.Models;
 using ExcelToWeb.Services.Excel;
@@ -14,90 +13,39 @@ namespace ExcelToWeb.Services;
 public class ExcelService : IExcelService
 {
     private readonly ILogger<ExcelService> _logger;
-    private readonly ExcelSheetReader _reader;
+    private readonly TableImportService _imports;
     private readonly ExcelExportService _exporter;
-    private readonly RowValidator _validator;
     private readonly TableRepository _repository;
     private readonly RuleService _rules;
     private readonly ColumnStructureService _columns;
     private readonly ColumnMetaService _columnMeta;
+    private readonly AuditService _audit;
 
     public ExcelService(
         ILogger<ExcelService> logger,
-        ExcelSheetReader reader,
+        TableImportService imports,
         ExcelExportService exporter,
-        RowValidator validator,
         TableRepository repository,
         RuleService rules,
         ColumnStructureService columns,
-        ColumnMetaService columnMeta)
+        ColumnMetaService columnMeta,
+        AuditService audit)
     {
         _logger = logger;
-        _reader = reader;
+        _imports = imports;
         _exporter = exporter;
-        _validator = validator;
         _repository = repository;
         _rules = rules;
         _columns = columns;
         _columnMeta = columnMeta;
+        _audit = audit;
     }
 
     // ================================================================
-    // 上传 Excel
+    // 上传 Excel（编排见 Services/Excel/TableImportService.cs）
     // ================================================================
-    public async Task<ApiResponse<UploadResult>> UploadExcelAsync(IFormFile file, int userId)
-    {
-        if (file == null || file.Length == 0)
-            return ApiResponse<UploadResult>.Fail("请选择文件");
-
-        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-        if (ext != ".xlsx" && ext != ".xls")
-            return ApiResponse<UploadResult>.Fail("请上传 .xlsx 或 .xls 格式的文件");
-
-        try
-        {
-            var sheet = await _reader.ReadAsync(file);
-
-            if (sheet.SourceRowCount < 2)
-                return ApiResponse<UploadResult>.Fail("Excel 文件没有数据行");
-
-            if (sheet.Rows.Count == 0)
-                return ApiResponse<UploadResult>.Fail("没有找到有效数据");
-
-            var table = new DynamicTable
-            {
-                TableName = Path.GetFileNameWithoutExtension(file.FileName),
-                Headers = sheet.Headers,
-                UserId = userId,
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now
-            };
-            await _repository.AddTableAsync(table);
-            await _repository.BulkInsertRowsAsync(table.Id, sheet.Rows);
-
-            _logger.LogInformation("用户 {UserId} 上传表格 {TableName}，共 {RowCount} 行",
-                userId, table.TableName, sheet.Rows.Count);
-
-            return ApiResponse<UploadResult>.Ok(new UploadResult
-            {
-                TableId = table.Id,
-                TableName = table.TableName,
-                Headers = sheet.Headers,
-                Rows = sheet.Rows
-            }, $"成功导入 {sheet.Rows.Count} 条数据");
-        }
-        catch (ExcelReadException ex)
-        {
-            // 这类提示是面向用户的，可以安全返回
-            return ApiResponse<UploadResult>.Fail(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            // 其它异常明细只进日志，避免把内部实现细节暴露给客户端
-            _logger.LogError(ex, "上传 Excel 失败：用户 {UserId}", userId);
-            return ApiResponse<UploadResult>.Fail("文件解析失败，请确认上传的是有效的 .xlsx / .xls 文件");
-        }
-    }
+    public Task<ApiResponse<UploadResult>> UploadExcelAsync(IFormFile file, int userId) =>
+        _imports.ImportAsync(file, userId);
 
     // ================================================================
     // 查询数据
@@ -130,7 +78,7 @@ public class ExcelService : IExcelService
     // ================================================================
     // 保存数据（整表替换）
     // ================================================================
-    public async Task<ApiResponse> SaveTableDataAsync(int tableId, int userId, List<Dictionary<string, object>> rows)
+    public async Task<ApiResponse> SaveTableDataAsync(int tableId, int userId, List<Dictionary<string, object>> rows, string? userName = null)
     {
         try
         {
@@ -138,7 +86,13 @@ public class ExcelService : IExcelService
             if (table == null)
                 return ApiResponse.Fail("表格不存在");
 
+            // 保存前取旧数据，用于审计 diff（读取失败不应阻断保存，故放在 try 内但由 AuditService 自身兜底）
+            var oldRows = await _repository.GetRowDataAsync(tableId);
+
             await _repository.ReplaceRowsAsync(table, rows);
+
+            // 变更历史：异步落库，失败只记日志（见 AuditService）
+            await _audit.RecordSaveAsync(tableId, userName ?? "未知用户", oldRows, rows, table.Headers);
 
             _logger.LogInformation("用户 {UserId} 保存表格 {TableId}，共 {RowCount} 行", userId, tableId, rows.Count);
             return ApiResponse.Ok($"成功保存 {rows.Count} 条数据");
@@ -315,65 +269,28 @@ public class ExcelService : IExcelService
     }
 
     // ================================================================
-    // 带校验的上传
+    // 列去重值（跨表引用下拉 / 校验）+ 变更历史查询
     // ================================================================
-    public async Task<ApiResponse<ValidationResult>> UploadWithValidationAsync(IFormFile file, int tableId, int userId)
+    public async Task<List<string>> GetColumnValuesAsync(int tableId, int userId, string columnName)
     {
-        if (file == null || file.Length == 0)
-            return ApiResponse<ValidationResult>.Fail("请选择文件");
+        var table = await _repository.FindTableAsync(tableId, userId);
+        if (table == null || string.IsNullOrEmpty(columnName)) return new List<string>();
 
-        try
-        {
-            var table = await _repository.FindTableAsync(tableId, userId);
-            if (table == null)
-                return ApiResponse<ValidationResult>.Fail("表格不存在");
-
-            var sheet = await _reader.ReadAsync(file);
-            var rules = await GetValidationRulesAsync(tableId, userId);
-
-            var result = new ValidationResult();
-            var validRows = new List<Dictionary<string, object>>();
-
-            // 未配置规则时，全部数据视为通过
-            if (rules.Count == 0)
-            {
-                result.SuccessRows = sheet.Rows.Count;
-                result.TotalRows = result.SuccessRows;
-                result.ValidRows = sheet.Rows;
-                return ApiResponse<ValidationResult>.Ok(result, $"规则为空，导入 {result.SuccessRows} 行");
-            }
-
-            for (int i = 0; i < sheet.Rows.Count; i++)
-            {
-                var row = sheet.Rows[i];
-                var rowErrors = _validator.ValidateRow(row, rules);
-
-                if (rowErrors.Count == 0)
-                {
-                    validRows.Add(row);
-                    result.SuccessRows++;
-                    continue;
-                }
-
-                result.ErrorRows++;
-                // 用工作表真实行号报错，方便用户直接定位到文件里的第几行
-                result.Errors.Add($"第 {sheet.RowNumbers[i]} 行：{string.Join("；", rowErrors)}");
-            }
-
-            result.TotalRows = result.SuccessRows + result.ErrorRows;
-            result.ValidRows = validRows;
-
-            return ApiResponse<ValidationResult>.Ok(result);
-        }
-        catch (ExcelReadException ex)
-        {
-            return ApiResponse<ValidationResult>.Fail(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            // 这里原先完全没有异常保护：上传一个损坏的 xlsx 会直接抛到中间件变成 500
-            _logger.LogError(ex, "带校验上传失败：表 {TableId}，用户 {UserId}", tableId, userId);
-            return ApiResponse<ValidationResult>.Fail("文件解析失败，请确认上传的是有效的 .xlsx / .xls 文件");
-        }
+        return await _repository.GetDistinctColumnValuesAsync(tableId, columnName);
     }
+
+    public async Task<List<AuditLog>> GetAuditLogsAsync(int tableId, int userId, int? rowIndex)
+    {
+        // 归属校验：只能看自己表的日志
+        var table = await _repository.FindTableAsync(tableId, userId);
+        if (table == null) return new List<AuditLog>();
+
+        return await _audit.GetLogsAsync(tableId, rowIndex);
+    }
+
+    // ================================================================
+    // 带校验的上传（编排见 Services/Excel/TableImportService.cs）
+    // ================================================================
+    public Task<ApiResponse<ValidationResult>> UploadWithValidationAsync(IFormFile file, int tableId, int userId) =>
+        _imports.ImportWithValidationAsync(file, tableId, userId);
 }

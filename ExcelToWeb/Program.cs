@@ -59,6 +59,8 @@ builder.Services.AddScoped<RuleService>();
 builder.Services.AddScoped<ColumnStructureService>();
 builder.Services.AddScoped<ColumnMetaService>();
 builder.Services.AddScoped<ExcelExportService>();
+builder.Services.AddScoped<AuditService>();
+builder.Services.AddScoped<TableImportService>();
 
 builder.Services.AddScoped<IExcelService, ExcelService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
@@ -151,6 +153,28 @@ using (var scope = app.Services.CreateScope())
         -- SQL Server 没有 ADD COLUMN IF NOT EXISTS，用 COL_LENGTH 判断。
         IF COL_LENGTH('DynamicTables', 'ColumnMetaJson') IS NULL
             ALTER TABLE DynamicTables ADD ColumnMetaJson NVARCHAR(MAX) NULL;
+
+        -- ValidationRules 增强：唯一性约束 + 跨表引用（表 + 列）
+        IF COL_LENGTH('ValidationRules', 'Unique') IS NULL
+            ALTER TABLE ValidationRules ADD [Unique] BIT NOT NULL CONSTRAINT DF_ValidationRules_Unique DEFAULT 0;
+        IF COL_LENGTH('ValidationRules', 'RefTableId') IS NULL
+            ALTER TABLE ValidationRules ADD RefTableId INT NULL;
+        IF COL_LENGTH('ValidationRules', 'RefColumnName') IS NULL
+            ALTER TABLE ValidationRules ADD RefColumnName NVARCHAR(MAX) NOT NULL CONSTRAINT DF_ValidationRules_RefColumnName DEFAULT N'';
+
+        -- 变更历史（审计日志）：保存时服务端 diff 落库
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='AuditLogs' AND xtype='U')
+        CREATE TABLE AuditLogs (
+            Id INT IDENTITY(1,1) PRIMARY KEY,
+            TableId INT NOT NULL,
+            Action NVARCHAR(20) NOT NULL,
+            RowIndex INT NOT NULL,
+            ColumnName NVARCHAR(MAX) NOT NULL,
+            OldValue NVARCHAR(MAX) NOT NULL,
+            NewValue NVARCHAR(MAX) NOT NULL,
+            UserName NVARCHAR(100) NOT NULL,
+            CreatedAt DATETIME2 NOT NULL
+        );
     ");
 }
 
