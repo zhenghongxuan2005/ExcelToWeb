@@ -1,0 +1,72 @@
+# CI 流水线：构建 → xUnit 单元测试 → 约束守门 → Python/Node 黑盒回归
+# 顺序理由：守门与单元测试最先跑（秒级、失败成本最低），
+# 集成回归最后（需要起服务 + SQL Server，最慢也最容易受环境影响）。
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # SQL Server 容器服务：集成套件需要真实数据库。
+    # 本地开发用 Trusted_Connection（Windows 集成认证），Linux 容器里不可用，
+    # 下面用 ConnectionStrings__DefaultConnection 环境变量覆盖为 SQL 认证，零代码改动。
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: "Your_password123"
+          MSSQL_PID: "Developer"
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P Your_password123 -Q 'SELECT 1' -b"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 30s
+
+    env:
+      ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=ExcelToWeb_CI;User Id=sa;Password=Your_password123;TrustServerCertificate=True"
+      # CI 一次性签名密钥（满足 ≥32 字符的生产长度约束），只存在于本次流水线的环境里，非真实秘密
+      Jwt__Key: "ci-only-throwaway-key-0123456789abcdef0123456789abcdef"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # 显式指定 .slnx：仓库只入库 .slnx（本机 VS 生成的 .sln 副本不入库），
+      # 本地两者并存时裸跑 dotnet restore/build 会报 MSB1011，显式指定对两种环境都稳
+      - name: 还原依赖
+        run: dotnet restore ExcelToWeb.slnx
+
+      # 必须用默认 Debug 配置：tests/run.py 内部用 dotnet run --no-build，
+      # 找的是 Debug 产物，用 Release 构建会找不到输出
+      - name: 构建
+        run: dotnet build ExcelToWeb.slnx --no-restore
+
+      - name: xUnit 单元测试（纯逻辑层）
+        run: dotnet test ExcelToWeb.Tests --no-build
+
+      - name: 代码约束守门
+        run: python tests/check_constraints.py
+
+      # run.py 自带编排：起服务 → 等 5185 探活 → backend/*.py → frontend/*.js → 收尾杀进程
+      - name: 集成回归（Python 黑盒 + Node 前端）
+        run: python tests/run.py

@@ -365,6 +365,9 @@ FodyWeavers.xsd
 # WorkBuddy 工作区（智能体记忆、本地会话数据，不应入库）
 .workbuddy/
 
+# Trae 工作区（智能体本地文档/会话数据，不应入库）
+.trae/
+
 # 本地覆盖配置（可放个人连接串 / 密钥，不要提交）
 appsettings.*.local.json
 
