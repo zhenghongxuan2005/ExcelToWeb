@@ -13,7 +13,7 @@ public class User
     /// <summary>加密后的密码</summary>
     public string PasswordHash { get; set; } = string.Empty;
 
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>最后登录时间</summary>
     public DateTime? LastLoginAt { get; set; }

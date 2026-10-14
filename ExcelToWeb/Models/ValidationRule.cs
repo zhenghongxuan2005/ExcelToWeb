@@ -16,7 +16,7 @@ namespace ExcelToWeb.Models
         /// <summary>跨表引用：本列取值必须来自另一张表的某列；null 表示不启用</summary>
         public int? RefTableId { get; set; }
         public string RefColumnName { get; set; } = string.Empty;
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
-        public DateTime UpdatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 }

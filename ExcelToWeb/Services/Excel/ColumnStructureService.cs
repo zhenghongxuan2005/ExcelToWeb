@@ -122,7 +122,7 @@ public class ColumnStructureService
             // 传完整的 dropped（含 rename 源列）：PruneForColumns 内部先迁后删，
             // 这样改名的列能保住列宽/隐藏状态。
             table.Headers = newHeaders;
-            table.UpdatedAt = DateTime.Now;
+            table.UpdatedAt = DateTime.UtcNow;
 
             var prunedMeta = ColumnMetaService.PruneForColumns(
                 ColumnMetaService.Parse(table.ColumnMetaJson), renames, dropped);

@@ -45,8 +45,8 @@ public class RuleService
         foreach (var rule in rules)
         {
             rule.UserId = userId;
-            rule.CreatedAt = DateTime.Now;
-            rule.UpdatedAt = DateTime.Now;
+            rule.CreatedAt = DateTime.UtcNow;
+            rule.UpdatedAt = DateTime.UtcNow;
             await _db.ColorRules.AddAsync(rule);
         }
         await _db.SaveChangesAsync();
@@ -73,8 +73,8 @@ public class RuleService
         foreach (var rule in rules)
         {
             rule.TableId = tableId;
-            rule.CreatedAt = DateTime.Now;
-            rule.UpdatedAt = DateTime.Now;
+            rule.CreatedAt = DateTime.UtcNow;
+            rule.UpdatedAt = DateTime.UtcNow;
             await _db.ValidationRules.AddAsync(rule);
         }
         await _db.SaveChangesAsync();

@@ -17,6 +17,6 @@ namespace ExcelToWeb.Models
         public string OldValue { get; set; } = string.Empty;
         public string NewValue { get; set; } = string.Empty;
         public string UserName { get; set; } = string.Empty;
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
