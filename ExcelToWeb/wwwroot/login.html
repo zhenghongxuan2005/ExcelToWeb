@@ -52,6 +52,9 @@
                 <button class="btn btn-outline" style="width:100%; padding:11px;" onclick="tryWindowsLogin(true)">
                     <svg class="icon"><use href="#i-windows"/></svg>使用 Windows 账号登录
                 </button>
+                <button class="btn btn-outline" style="width:100%; padding:11px; margin-top:10px;" onclick="tryDemoLogin()">
+                    <svg class="icon"><use href="#i-user"/></svg>一键体验演示账号（只读）
+                </button>
                 <div class="auth-alt">还没有账号？<a href="#" onclick="showRegister()">立即注册</a></div>
             </div>
 
@@ -122,6 +125,8 @@
                 const result = await res.json();
                 if (result.success && result.data) {
                     localStorage.setItem('token', result.data.token);
+                    localStorage.setItem('refreshToken', result.data.refreshToken || '');
+                    localStorage.setItem('familyId', result.data.familyId || '');
                     localStorage.setItem('username', result.data.username);
                     showToast('登录成功，跳转中...', 'success');
                     setTimeout(() => { window.location.href = '/'; }, 800);
@@ -170,6 +175,34 @@
             }
         }
 
+        // 演示账号一键进入：服务端对 demo 用户拦截全部写操作，只能浏览、筛选与导出。
+        // 账号密码公开在页面上是产品设计（给 recruiter 30 秒内看到完整功能），不是泄露。
+        async function tryDemoLogin() {
+            const errorEl = document.getElementById('loginError');
+            errorEl.textContent = '';
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'demo', password: 'demo1234' })
+                });
+                const result = await res.json();
+                if (result.success && result.data) {
+                    localStorage.setItem('token', result.data.token);
+                    localStorage.setItem('refreshToken', result.data.refreshToken || '');
+                    localStorage.setItem('familyId', result.data.familyId || '');
+                    localStorage.setItem('username', result.data.username);
+                    showToast('正在进入演示模式...', 'success');
+                    setTimeout(() => { window.location.href = '/'; }, 800);
+                } else {
+                    errorEl.textContent = result.message || '演示账号暂不可用';
+                }
+            } catch (err) {
+                errorEl.textContent = '网络错误，请稍后重试';
+                console.error(err);
+            }
+        }
+
         // 尝试 Windows 集成身份验证（浏览器自动协商，无需输入账号密码）
         async function tryWindowsLogin(manual) {
             const statusEl = document.getElementById('windowsStatus');
@@ -183,6 +216,8 @@
                     const result = await res.json();
                     if (result.success && result.data) {
                         localStorage.setItem('token', result.data.token);
+                        localStorage.setItem('refreshToken', result.data.refreshToken || '');
+                    localStorage.setItem('familyId', result.data.familyId || '');
                         localStorage.setItem('username', result.data.username);
                         window.location.href = '/';
                         success = true;
@@ -224,6 +259,7 @@
                     }
                 } catch (err) { /* 忽略，继续走登录流程 */ }
                 localStorage.removeItem('token');
+                localStorage.removeItem('refreshToken');
                 localStorage.removeItem('username');
             }
             await tryWindowsLogin(false);

@@ -1,5 +1,5 @@
 // ================================================================
-// 设置页：修改密码 + 偏好设置 + 关于
+// 设置页：修改密码 + 会话管理 + 偏好设置 + 关于
 // 依赖：api.js、utils.js、shell.js
 // ================================================================
 
@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initUserCard();
     initPasswordForm();
+    initSessions();
     initPreferences();
     initAbout();
 });
@@ -56,6 +57,65 @@ function initPasswordForm() {
                 if (submitBtn) submitBtn.disabled = false;
             });
     });
+}
+
+// ================================================================
+// 会话管理：活跃会话列表 + 逐个注销
+// 「当前会话」用 localStorage.familyId 识别（登录 / 静默刷新时随响应下发）
+// ================================================================
+function initSessions() {
+    const host = document.getElementById('sessionList');
+    if (!host) return;
+
+    fetchSessions()
+        .then(sessions => renderSessionList(host, sessions || []))
+        .catch(err => {
+            host.innerHTML = `<p class="panel-hint">会话列表加载失败：${escapeHtml(err.message)}</p>`;
+        });
+}
+
+function renderSessionList(host, sessions) {
+    if (sessions.length === 0) {
+        host.innerHTML = '<p class="panel-hint">当前没有活跃会话。</p>';
+        return;
+    }
+
+    const currentFamily = localStorage.getItem('familyId');
+    let html = '';
+    for (const s of sessions) {
+        const isCurrent = currentFamily && s.familyId === currentFamily;
+        html += '<div class="session-row">';
+        html += `<div class="session-info">`
+            + `<span class="session-ip">${escapeHtml(s.createdByIp || '未知来源')}</span>`
+            + `<span class="session-time">登录于 ${formatTime(s.createdAt)}</span>`
+            + (isCurrent ? '<span class="session-badge">当前会话</span>' : '')
+            + `</div>`;
+        // 当前会话也允许注销（= 退出登录）；其余会话注销后对应设备将被踢下线
+        html += `<button type="button" class="btn btn-outline btn-sm" onclick="onRevokeSession(${s.id}, ${isCurrent})">`
+            + `<svg class="icon"><use href="#i-x"/></svg>注销</button>`;
+        html += '</div>';
+    }
+    host.innerHTML = html;
+}
+
+/** 注销一条会话。isCurrent 为 true 时等同退出登录：清本地登录态并回登录页 */
+function onRevokeSession(sessionId, isCurrent) {
+    if (!confirm(isCurrent ? '注销当前会话将退出登录，确定吗？' : '确定要注销该会话吗？该设备将需要重新登录。')) return;
+
+    revokeSessionApi(sessionId)
+        .then(() => {
+            if (isCurrent) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('familyId');
+                localStorage.removeItem('username');
+                window.location.href = '/login.html';
+                return;
+            }
+            showToast('✅ 会话已注销', 'success');
+            initSessions();   // 刷新列表
+        })
+        .catch(err => showToast('❌ ' + err.message, 'error'));
 }
 
 // ================================================================

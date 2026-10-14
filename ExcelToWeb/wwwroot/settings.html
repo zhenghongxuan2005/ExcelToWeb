@@ -35,6 +35,8 @@
                 <a class="nav-link" href="/" data-page="index" data-label="表格编辑"><svg class="icon"><use href="#i-table"/></svg><span class="collapse-hide">表格编辑</span></a>
                 <a class="nav-link" href="/tables.html" data-page="tables" data-label="表格管理"><svg class="icon"><use href="#i-columns"/></svg><span class="collapse-hide">表格管理</span></a>
                 <a class="nav-link" href="/dashboard.html" data-page="dashboard" data-label="数据看板"><svg class="icon"><use href="#i-chart"/></svg><span class="collapse-hide">数据看板</span></a>
+                <a class="nav-link" href="/audit.html" data-page="audit" data-label="审计中心"><svg class="icon"><use href="#i-clock"/></svg><span class="collapse-hide">审计中心</span></a>
+                <a class="nav-link" href="/trash.html" data-page="trash" data-label="回收站"><svg class="icon"><use href="#i-trash"/></svg><span class="collapse-hide">回收站</span></a>
                 <a class="nav-link" href="/help.html" data-page="help" data-label="使用帮助"><svg class="icon"><use href="#i-help"/></svg><span class="collapse-hide">使用帮助</span></a>
                 <a class="nav-link" href="/settings.html" data-page="settings" data-label="设置"><svg class="icon"><use href="#i-settings"/></svg><span class="collapse-hide">设置</span></a>
             </nav>
@@ -97,6 +99,18 @@
                             <svg class="icon"><use href="#i-save"/></svg>保存新密码
                         </button>
                     </form>
+                </section>
+
+                <!-- 会话管理：列出活跃会话，支持逐个注销 -->
+                <section class="panel">
+                    <h2 class="panel-title"><svg class="icon icon-sm"><use href="#i-clock"/></svg>会话管理</h2>
+                    <div id="sessionList">
+                        <p class="panel-hint">加载中...</p>
+                    </div>
+                    <p class="panel-hint">
+                        会话按「浏览器登录」划分：在某设备上注销该会话后，那台设备需要重新登录。
+                        登录状态最短 2 小时自动续期一次，最长 7 天不动也会过期。
+                    </p>
                 </section>
 
                 <!-- 偏好设置 -->

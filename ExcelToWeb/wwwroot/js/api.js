@@ -9,25 +9,80 @@ function getToken() {
     return localStorage.getItem('token') || '';
 }
 
+/** 获取存储的刷新令牌（长效、可吊销，用于 access token 过期后的静默续期） */
+function getRefreshToken() {
+    return localStorage.getItem('refreshToken') || '';
+}
+
 /** 构建带认证的请求头 */
 function authHeaders(extra = {}) {
     const token = getToken();
     return token ? { 'Authorization': 'Bearer ' + token, ...extra } : extra;
 }
 
+/** 清空本地登录态并回到登录页 */
+function redirectToLogin() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('familyId');
+    localStorage.removeItem('username');
+    window.location.href = '/login.html';
+}
+
+/**
+ * 单例刷新：并发多个 401 共享同一次刷新请求（promise 去重）。
+ * 服务端是轮换语义（旧 refresh token 用一次即失效），如果并发各刷各的，
+ * 第一轮之后的令牌都已被吊销，反而触发重用检测把整个会话族踢下线。
+ */
+let refreshingPromise = null;
+
+function refreshSession() {
+    if (refreshingPromise) return refreshingPromise;
+
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) return Promise.reject(new Error('无刷新令牌'));
+
+    refreshingPromise = fetch(API_BASE + '/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken })
+    }).then(async res => {
+        const result = await res.json().catch(() => null);
+        if (!res.ok || !result || !result.success) throw new Error('刷新失败');
+        localStorage.setItem('token', result.data.token);
+        localStorage.setItem('refreshToken', result.data.refreshToken);
+        if (result.data.familyId) localStorage.setItem('familyId', result.data.familyId);
+        return result.data.token;
+    }).finally(() => {
+        refreshingPromise = null;
+    });
+    return refreshingPromise;
+}
+
 /**
  * 统一 fetch 封装：自动带 token、解析统一响应、处理 401
+ * 401 时先用刷新令牌静默续期一次并重放原请求（仅排除 refresh 自身，防死循环）
  * @returns {Promise<any>} 解析后的响应 data（如果 success=true）
  * @throws {Error} 包含错误 message
  */
 async function request(url, options = {}) {
-    const headers = authHeaders(options.headers || {});
-    const res = await fetch(API_BASE + url, { ...options, headers });
+    let res = await fetch(API_BASE + url, { ...options, headers: authHeaders(options.headers || {}) });
+
+    // access token 失效：静默刷新一次并重放。只排除 refresh 自身（它走裸 fetch，这里纯防御）；
+    // /auth/me、/auth/sessions 等认证端点同样需要静默续期。重放后不再二次刷新，防止死循环
+    if (res.status === 401 && getRefreshToken() && url !== '/auth/refresh') {
+        try {
+            await refreshSession();
+            // 重放原请求：authHeaders 此时读到的已是新 token
+            res = await fetch(API_BASE + url, { ...options, headers: authHeaders(options.headers || {}) });
+        } catch (e) {
+            redirectToLogin();
+            throw new Error('登录已过期，请重新登录');
+        }
+    }
 
     if (res.status === 401) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('username');
-        window.location.href = '/login.html';
+        redirectToLogin();
         throw new Error('登录已过期，请重新登录');
     }
 
@@ -59,6 +114,27 @@ function register(username, password, confirmPassword) {
 
 function getCurrentUser() {
     return request('/auth/me');
+}
+
+/** 注销：通知服务端吊销当前会话族。失败静默——本地清 token 后照常退出 */
+function logoutApi() {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) return Promise.resolve();
+    return request('/auth/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken })
+    }).catch(() => { /* 服务端吊销失败不阻塞本地退出 */ });
+}
+
+/** 活跃会话列表（settings 页会话管理） */
+function fetchSessions() {
+    return request('/auth/sessions');
+}
+
+/** 注销指定会话（吊销其所属会话族） */
+function revokeSessionApi(sessionId) {
+    return request('/auth/sessions/' + sessionId, { method: 'DELETE' });
 }
 
 /** 修改密码（需登录，后端会校验原密码）。后端返回的是纯消息，这里直接取 message */
@@ -108,6 +184,25 @@ function saveTableData(tableId, rows) {
 
 function deleteTable(tableId) {
     return request('/excel/delete?tableId=' + tableId, { method: 'DELETE' });
+}
+
+// ================================================================
+// 回收站（软删除的表格：30 天内可恢复）
+// ================================================================
+
+/** 回收站列表：已删除表格（删除时间 + 行数） */
+function fetchTrash() {
+    return request('/excel/trash');
+}
+
+/** 恢复回收站里的表格 */
+function restoreFromTrash(tableId) {
+    return request('/excel/trash/' + tableId + '/restore', { method: 'POST' });
+}
+
+/** 彻底删除：物理删表并清掉关联的审计与校验规则，不可恢复 */
+function purgeTableForever(tableId) {
+    return request('/excel/trash/' + tableId, { method: 'DELETE' });
 }
 
 /** 重命名表格 */

@@ -20,6 +20,18 @@ public class AuthResponse
     public int Id { get; set; }
     public string Username { get; set; } = string.Empty;
     public string Token { get; set; } = string.Empty;
+
+    /// <summary>刷新令牌（长效、落库可吊销）。登录 / 刷新时下发，前端保存用于静默续期</summary>
+    public string RefreshToken { get; set; } = string.Empty;
+
+    /// <summary>会话族标识。前端保存后用于在会话列表里标记「当前会话」</summary>
+    public string FamilyId { get; set; } = string.Empty;
+}
+
+/// <summary>刷新令牌请求：用长效令牌换取新的 access + refresh 对（轮换）</summary>
+public class RefreshTokenRequest
+{
+    public string RefreshToken { get; set; } = string.Empty;
 }
 
 /// <summary>修改密码请求（需登录，且校验原密码）</summary>
@@ -214,4 +226,32 @@ public class UpdateHeadersRequest
 
     /// <summary>可选：把数据从 oldName 复制到 newName（不传视为直接 dropped + added）</summary>
     public List<ColumnRenameItem> Renames { get; set; } = new();
+}
+
+/// <summary>审计中心条目：审计日志字段 + 所属表名（跨表时间线展示用）</summary>
+public class AuditLogItemDto
+{
+    public int Id { get; set; }
+    public int TableId { get; set; }
+    public string TableName { get; set; } = string.Empty;
+    public string Action { get; set; } = string.Empty;
+    public int RowIndex { get; set; }
+    public string ColumnName { get; set; } = string.Empty;
+    public string OldValue { get; set; } = string.Empty;
+    public string NewValue { get; set; } = string.Empty;
+    public string UserName { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}
+
+/// <summary>回收站条目：已软删除表格的概要（功能 9）</summary>
+public class TrashItemDto
+{
+    public int Id { get; set; }
+    public string TableName { get; set; } = string.Empty;
+
+    /// <summary>回收站里的数据行数（恢复前让用户知道里面有多少数据）</summary>
+    public int RowCount { get; set; }
+
+    /// <summary>删除时间（UTC）。距此 30 天后会被后台自动物理清除</summary>
+    public DateTime DeletedAt { get; set; }
 }

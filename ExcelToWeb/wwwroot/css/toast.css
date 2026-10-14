@@ -95,3 +95,50 @@
         max-width: none;
     }
 }
+
+/* ================================================================
+   演示模式横幅
+   ----------------------------------------------------------------
+   demo 账号进入编辑器后显示在右下角，提示当前会话只读。
+   真正的写拦截在服务端门面层（ExcelService），这里只负责给用户预期，
+   避免「点了保存却收到失败提示」的困惑。
+   ================================================================ */
+.demo-banner {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 900;
+    max-width: 340px;
+    padding: 13px 16px;
+    background: var(--warning-soft);
+    border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-pop);
+    color: var(--text-2);
+    font-size: 13px;
+    line-height: 1.6;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    animation: toastIn var(--transition-slow) var(--ease-spring);
+}
+
+.demo-banner button {
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    color: var(--warning);
+    cursor: pointer;
+    font-size: 17px;
+    line-height: 1;
+    padding: 2px;
+}
+
+@media (max-width: 640px) {
+    .demo-banner {
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        max-width: none;
+    }
+}

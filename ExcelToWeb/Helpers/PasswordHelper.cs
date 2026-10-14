@@ -30,8 +30,13 @@ public static class PasswordHelper
         return $"{Pbkdf2Prefix}|{Convert.ToBase64String(salt)}|{Convert.ToBase64String(hash)}|{Iterations}";
     }
 
-    public static bool VerifyPassword(string password, string storedHash)
+    /// <summary>
+    /// 校验密码。needsRehash 为 true 表示该哈希是旧版 SHA256 格式且校验通过，
+    /// 调用方应改用 HashPassword 重新落库，实现「登录即静默升级」。
+    /// </summary>
+    public static bool VerifyPassword(string password, string storedHash, out bool needsRehash)
     {
+        needsRehash = false;
         if (string.IsNullOrEmpty(password) || string.IsNullOrEmpty(storedHash))
             return false;
 
@@ -65,7 +70,13 @@ public static class PasswordHelper
                 var expectedHash = Convert.FromBase64String(legacyParts[1]);
                 var saltedPassword = Encoding.UTF8.GetBytes(password + legacyParts[0]);
                 var computedHash = SHA256.HashData(saltedPassword);
-                return CryptographicOperations.FixedTimeEquals(computedHash, expectedHash);
+                if (CryptographicOperations.FixedTimeEquals(computedHash, expectedHash))
+                {
+                    // 旧格式（无迭代次数、易被 GPU 爆破）校验通过，标记待升级
+                    needsRehash = true;
+                    return true;
+                }
+                return false;
             }
             catch
             {

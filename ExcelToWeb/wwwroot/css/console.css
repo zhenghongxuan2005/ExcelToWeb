@@ -114,6 +114,50 @@ html[data-text-size="large"] thead th {
 }
 
 /* ================================================================
+   会话管理：活跃会话行（settings 页）
+   ================================================================ */
+.session-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+    .session-row:last-of-type {
+        border-bottom: none;
+    }
+
+.session-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.session-ip {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-1);
+}
+
+.session-time {
+    font-size: 12px;
+    color: var(--text-3);
+}
+
+.session-badge {
+    padding: 1px 8px;
+    border-radius: var(--radius-full);
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-size: 11px;
+    font-weight: 500;
+}
+
+/* ================================================================
    响应式：二级页面
    ================================================================ */
 @media (max-width: 900px) {

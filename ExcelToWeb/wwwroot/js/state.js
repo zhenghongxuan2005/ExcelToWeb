@@ -64,6 +64,24 @@ let aggregateMode = 'off';
 // ================================================================
 // 认证（JWT）
 // ================================================================
+/** 演示账号横幅：右下角提示当前会话只读，可手动关闭（服务端仍会拦截全部写操作） */
+function showDemoBanner() {
+    if (document.getElementById('demoBanner')) return;
+    const banner = document.createElement('div');
+    banner.id = 'demoBanner';
+    banner.className = 'demo-banner';
+    banner.setAttribute('role', 'status');
+    banner.appendChild(Object.assign(document.createElement('span'), {
+        textContent: '演示模式：只能浏览、筛选与导出，编辑和导入需要注册账号。'
+    }));
+    const close = document.createElement('button');
+    close.textContent = '×';
+    close.setAttribute('aria-label', '关闭演示提示');
+    close.onclick = () => banner.remove();
+    banner.appendChild(close);
+    document.body.appendChild(banner);
+}
+
 function checkLogin() {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -75,6 +93,8 @@ function checkLogin() {
     if (userInfoEl && username) {
         userInfoEl.textContent = username;
     }
+    // 演示账号：提示只读（真正的拦截在服务端门面层，这里让用户对限制有预期）
+    if (username === 'demo') showDemoBanner();
     getCurrentUser()
         .then(() => loadTableList())
         .catch(() => {
@@ -86,7 +106,11 @@ function checkLogin() {
 
 function handleLogout() {
     if (!confirm('确定要退出登录吗？')) return;
+    // 服务端吊销当前会话族（刷新令牌失效），失败不阻塞本地退出
+    if (typeof logoutApi === 'function') logoutApi();
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('familyId');
     localStorage.removeItem('username');
     window.location.href = '/login.html';
 }
