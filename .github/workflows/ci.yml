@@ -5,7 +5,8 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # 当前默认分支是 master；main 一并保留，将来改名默认分支时无需再改这里
+    branches: [main, master]
   pull_request:
 
 jobs:
