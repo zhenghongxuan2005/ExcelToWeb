@@ -3,6 +3,7 @@
 // ================================================================
 
 let tableId = null;
+let tablesCache = [];   // 表格选择器的数据源：此前看板硬取 tables[0]，其余表根本无法查看
 let headers = [];
 let rows = [];
 let chartInstance = null;
@@ -18,13 +19,23 @@ function fetchDashboardData() {
                 showEmptyState('暂无数据，请先上传 Excel 文件');
                 return;
             }
-            tableId = tables[0].id;
+            tablesCache = tables;
+            // 优先恢复上次看过的表；那张表已被删除时回落到第一张
+            const saved = localStorage.getItem('dashboardTableId');
+            tableId = tables.some(t => String(t.id) === saved) ? Number(saved) : tables[0].id;
             loadData(tableId);
         })
         .catch(err => {
             showEmptyState('加载数据失败：' + err.message);
             console.error('fetchDashboardData 错误:', err);
         });
+}
+
+/** 切换看板的表格（表格选择器 onchange 入口） */
+function onDashboardTableChange(el) {
+    tableId = Number(el.value);
+    localStorage.setItem('dashboardTableId', String(tableId));
+    loadData(tableId);
 }
 
 function loadData(id) {
@@ -118,8 +129,21 @@ function renderDashboard() {
     const container = document.getElementById('dashboardContent');
     const { dimensions: dims, metrics } = identifyDimensions();
 
+    // 上一张图表实例先释放：切表重渲染会在同一容器上再次 init，旧实例不释放会叠加报错
+    if (chartInstance) {
+        chartInstance.dispose();
+        chartInstance = null;
+    }
+
+    // 表格选择器在任何分支都要渲染：当前表识别不出维度/指标时，用户还切得走
+    const tableOptions = tablesCache
+        .map(t => `<option value="${t.id}"${t.id === tableId ? ' selected' : ''}>${escapeHtml(t.tableName)}</option>`)
+        .join('');
+    const tableControl = `<label>表格：<select id="dashboardTableSelect" onchange="onDashboardTableChange(this)">${tableOptions}</select></label>`;
+
     if (dims.length === 0 || metrics.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#i-inbox"/></svg></div><p>数据中未识别到分组维度或数值指标</p><p class="empty-sub">请确保 Excel 包含文本列（如销售员）和数值列（如金额）</p></div>';
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#i-inbox"/></svg></div><p>数据中未识别到分组维度或数值指标</p><p class="empty-sub">请确保 Excel 包含文本列（如销售员）和数值列（如金额）</p></div>'
+            + `<div class="controls">${tableControl}</div>`;
         return;
     }
 
@@ -164,6 +188,7 @@ function renderDashboard() {
     const metricOptions = metrics.map(m => `<option value="${m}"${m === defaultMetric ? ' selected' : ''}>${m}</option>`).join('');
 
     html += '<div class="controls">';
+    html += tableControl;
     html += `<label>分组：<select id="dimSelect" onchange="updateChart()">${dimOptions}</select></label>`;
     html += `<label>指标：<select id="metricSelect" onchange="updateChart()">${metricOptions}</select></label>`;
     html += '<label>图表：<select id="chartTypeSelect" onchange="updateChart()">';

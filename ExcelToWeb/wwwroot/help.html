@@ -16,6 +16,24 @@
         })();
     </script>
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* 本页专用：页内锚点导航（纯 CSS 吸顶，无 JS 依赖） */
+        .doc-toc {
+            position: sticky; top: 0; z-index: 5;
+            display: flex; flex-wrap: wrap; gap: 8px;
+            padding: 12px 0; margin-bottom: 4px;
+            background: var(--bg-page);
+            border-bottom: 1px solid var(--border-light);
+        }
+        .doc-toc a {
+            font-size: 13px; padding: 4px 14px; border-radius: 999px;
+            color: var(--text-2);
+            border: 1px solid var(--border); text-decoration: none;
+        }
+        .doc-toc a:hover { color: var(--primary); border-color: var(--primary); }
+        .doc-section { scroll-margin-top: 64px; }
+        .kbd-group { margin: 14px 0 6px; font-size: 13px; font-weight: 600; color: var(--text-2); }
+    </style>
 </head>
 <body>
     <!-- 页面外壳：图标 sprite / 主题切换 / 退出登录 / 导航高亮，由 js/shell.js 统一提供 -->
@@ -34,6 +52,8 @@
                 <a class="nav-link" href="/" data-page="index" data-label="表格编辑"><svg class="icon"><use href="#i-table"/></svg><span class="collapse-hide">表格编辑</span></a>
                 <a class="nav-link" href="/tables.html" data-page="tables" data-label="表格管理"><svg class="icon"><use href="#i-columns"/></svg><span class="collapse-hide">表格管理</span></a>
                 <a class="nav-link" href="/dashboard.html" data-page="dashboard" data-label="数据看板"><svg class="icon"><use href="#i-chart"/></svg><span class="collapse-hide">数据看板</span></a>
+                <a class="nav-link" href="/audit.html" data-page="audit" data-label="审计中心"><svg class="icon"><use href="#i-clock"/></svg><span class="collapse-hide">审计中心</span></a>
+                <a class="nav-link" href="/trash.html" data-page="trash" data-label="回收站"><svg class="icon"><use href="#i-trash"/></svg><span class="collapse-hide">回收站</span></a>
                 <a class="nav-link" href="/help.html" data-page="help" data-label="使用帮助"><svg class="icon"><use href="#i-help"/></svg><span class="collapse-hide">使用帮助</span></a>
                 <a class="nav-link" href="/settings.html" data-page="settings" data-label="设置"><svg class="icon"><use href="#i-settings"/></svg><span class="collapse-hide">设置</span></a>
             </nav>
@@ -65,20 +85,28 @@
                 </a>
             </div>
 
+            <!-- 页内锚点导航：滚动到哪都能一键跳转 -->
+            <nav class="doc-toc" aria-label="页内导航">
+                <a href="#quickstart">快速上手</a>
+                <a href="#features">功能说明</a>
+                <a href="#keyboard">键盘与快捷键</a>
+                <a href="#faq">常见问题</a>
+            </nav>
+
             <!-- 快速上手 -->
-            <section class="doc-section">
+            <section class="doc-section" id="quickstart">
                 <h2 class="doc-title">快速上手</h2>
                 <ol class="doc-steps">
                     <li><strong>登录</strong>：使用已注册的账号，或通过 Windows 集成身份验证直接进入。</li>
-                    <li><strong>导入数据</strong>：点击「上传 Excel」，或把 <code>.xlsx</code> / <code>.xls</code> 文件直接拖到页面上。</li>
-                    <li><strong>编辑数据</strong>：直接在单元格中输入；新增行、批量编辑、删除选中行都由工具栏完成。</li>
+                    <li><strong>导入数据</strong>：点击「上传」按钮，或把 <code>.xlsx</code> / <code>.csv</code> 文件直接拖到页面上。中文 Excel 导出的 GBK 编码 CSV 也能自动识别。</li>
+                    <li><strong>编辑数据</strong>：直接在单元格中输入；新增行、批量编辑、删除选中行都由工具栏完成。完整的键盘操作见<a href="#keyboard">下方速查表</a>。</li>
                     <li><strong>保存</strong>：点击「保存」写回数据库，保存时会自动执行已配置的校验规则。</li>
-                    <li><strong>查看看板</strong>：进入「数据看板」查看自动生成的汇总图表。</li>
+                    <li><strong>查看看板</strong>：进入「数据看板」，选择任意表格查看汇总图表。</li>
                 </ol>
             </section>
 
             <!-- 功能说明 -->
-            <section class="doc-section">
+            <section class="doc-section" id="features">
                 <h2 class="doc-title">功能说明</h2>
 
                 <details class="faq" open>
@@ -86,6 +114,34 @@
                     <div class="faq-body">
                         <p>工具栏右侧的搜索框会在<strong>所有列</strong>中查找，命中内容以蓝色底纹高亮，并实时显示命中行数。搜索不影响原始数据，只改变显示范围。</p>
                         <p>快捷键 <kbd>Ctrl</kbd> + <kbd>F</kbd> 可快速聚焦搜索框；点搜索框右侧的 ✕ 清除。</p>
+                    </div>
+                </details>
+
+                <details class="faq">
+                    <summary>查找替换</summary>
+                    <div class="faq-body">
+                        <p>编辑器提供查找替换，可在全部数据中查找并替换内容。替换前建议先用搜索确认命中范围，避免误替换。</p>
+                    </div>
+                </details>
+
+                <details class="faq">
+                    <summary>填充柄</summary>
+                    <div class="faq-body">
+                        <p>选中单元格后，拖动右下角的填充柄，可把内容快速填充到相邻单元格，适合批量补序号或复制内容。</p>
+                    </div>
+                </details>
+
+                <details class="faq">
+                    <summary>合并单元格</summary>
+                    <div class="faq-body">
+                        <p>Excel 文件里的合并区域在导入时会原样记录，网页中按合并效果展示，导出时同样保留。</p>
+                    </div>
+                </details>
+
+                <details class="faq">
+                    <summary>计算列</summary>
+                    <div class="faq-body">
+                        <p>输入以 <code>=</code> 开头的公式即可创建计算列（如单价 × 数量），支持四则运算与单元格引用，保存后自动算出结果，适合维护派生指标。</p>
                     </div>
                 </details>
 
@@ -124,8 +180,15 @@
                 <details class="faq">
                     <summary>数据校验规则</summary>
                     <div class="faq-body">
-                        <p>「设置 → 数据校验规则」可按列设置是否必填、数据类型（数字等）、最小值 / 最大值。</p>
+                        <p>「设置 → 数据校验规则」可按列设置是否必填、数据类型（数字等）、最小值 / 最大值，还支持引用<strong>其它表格</strong>的列做合法值校验。</p>
                         <p>保存数据时会逐行检查，校验不通过的行会给出具体行号与原因，整批数据不会写入。</p>
+                    </div>
+                </details>
+
+                <details class="faq">
+                    <summary>透视汇总</summary>
+                    <div class="faq-body">
+                        <p>选择维度列与数值列、指定聚合方式，即可生成跨行分组汇总，并支持导出——不用写公式就能得到「按地区 / 按月份」这类统计结果。</p>
                     </div>
                 </details>
 
@@ -145,33 +208,48 @@
                 </details>
 
                 <details class="faq">
-                    <summary>表格管理</summary>
+                    <summary>表格管理与回收站</summary>
                     <div class="faq-body">
                         <p>「表格管理」页以卡片形式列出全部表格，可打开编辑、重命名、复制、单独导出或删除。</p>
-                        <p>删除操作不可恢复，会弹出确认框。</p>
+                        <p>删除不会立刻清数据：表格会进入<a href="/trash.html">回收站</a>并保留 30 天，期间可随时恢复；确认不再需要时可在回收站里彻底删除，数据与关联的审计、校验规则将一并清除。</p>
                     </div>
                 </details>
             </section>
 
-            <!-- 快捷键 -->
-            <section class="doc-section">
-                <h2 class="doc-title">快捷键</h2>
+            <!-- 键盘与快捷键 -->
+            <section class="doc-section" id="keyboard">
+                <h2 class="doc-title">键盘与快捷键</h2>
+                <p class="muted" style="margin-top:-6px;">单元格操作只在可编辑单元格上生效，不影响页面其它输入框；越过页边界时会自动翻页并落在目标行。</p>
+
+                <p class="kbd-group">单元格导航与编辑（表格编辑器内）</p>
+                <div class="kbd-table">
+                    <div class="kbd-row"><span><kbd>Enter</kbd> / <kbd>Shift</kbd> + <kbd>Enter</kbd></span><span>下移 / 上移一格</span></div>
+                    <div class="kbd-row"><span><kbd>Tab</kbd> / <kbd>Shift</kbd> + <kbd>Tab</kbd></span><span>右移 / 左移一格（到行尾自动换行，与 Excel 一致）</span></div>
+                    <div class="kbd-row"><span><kbd>↑</kbd> / <kbd>↓</kbd></span><span>上移 / 下移一格</span></div>
+                    <div class="kbd-row"><span><kbd>←</kbd> / <kbd>→</kbd></span><span>光标先在格内移动，到首 / 尾才跳到相邻单元格</span></div>
+                    <div class="kbd-row"><span><kbd>Shift</kbd> + 方向键</span><span>从当前格扩展选区（Excel 的选区手感）</span></div>
+                    <div class="kbd-row"><span><kbd>Ctrl</kbd> + <kbd>Home</kbd></span><span>跳到第一个单元格</span></div>
+                    <div class="kbd-row"><span><kbd>Ctrl</kbd> + <kbd>End</kbd></span><span>跳到最后一个单元格</span></div>
+                    <div class="kbd-row"><span><kbd>Esc</kbd></span><span>取消编辑 / 关闭当前弹窗</span></div>
+                </div>
+
+                <p class="kbd-group">全局快捷键</p>
                 <div class="kbd-table">
                     <div class="kbd-row"><span><kbd>Ctrl</kbd> + <kbd>F</kbd></span><span>聚焦全表搜索</span></div>
                     <div class="kbd-row"><span><kbd>Ctrl</kbd> + <kbd>Z</kbd></span><span>撤销</span></div>
                     <div class="kbd-row"><span><kbd>Ctrl</kbd> + <kbd>Y</kbd></span><span>重做</span></div>
-                    <div class="kbd-row"><span><kbd>Esc</kbd></span><span>关闭当前弹窗</span></div>
+                    <div class="kbd-row"><span><kbd>Ctrl</kbd> + <kbd>K</kbd></span><span>打开命令面板（跨页面快速跳转 / 执行操作）</span></div>
                 </div>
             </section>
 
             <!-- 常见问题 -->
-            <section class="doc-section">
+            <section class="doc-section" id="faq">
                 <h2 class="doc-title">常见问题</h2>
 
                 <details class="faq">
                     <summary>上传后提示「文件解析失败」怎么办？</summary>
                     <div class="faq-body">
-                        <p>请确认文件确实是 <code>.xlsx</code> 或 <code>.xls</code> 格式（把 <code>.csv</code> 直接改后缀是不行的），并且第一行为表头、至少有一行数据。</p>
+                        <p>目前支持 <code>.xlsx</code> 与 <code>.csv</code> 两种格式（把其它文件直接改后缀是不行的），且要求第一行为表头、至少有一行数据。CSV 需为 UTF-8 或 GBK 编码，中文 Excel 导出的 CSV 通常可以直接使用。</p>
                     </div>
                 </details>
 
@@ -193,6 +271,13 @@
                     <summary>搜索后保存，会把搜索之外的行删掉吗？</summary>
                     <div class="faq-body">
                         <p>不会。保存提交的始终是完整数据，搜索只是显示层的筛选。但删除选中行时需要注意：删除只作用于被勾选的行。</p>
+                    </div>
+                </details>
+
+                <details class="faq">
+                    <summary>误删了整张表格还能找回来吗？</summary>
+                    <div class="faq-body">
+                        <p>可以。删除的表格会进入<a href="/trash.html">回收站</a>保留 30 天，在「回收站」页点「恢复」即可原样找回（数据、审计历史、校验规则都还在）。超过 30 天会被系统自动彻底清除。</p>
                     </div>
                 </details>
             </section>
