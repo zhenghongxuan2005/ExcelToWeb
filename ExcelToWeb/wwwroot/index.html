@@ -32,6 +32,8 @@
                 <a class="nav-link" href="/" data-page="index" data-label="表格编辑"><svg class="icon"><use href="#i-table"/></svg><span class="collapse-hide">表格编辑</span></a>
                 <a class="nav-link" href="/tables.html" data-page="tables" data-label="表格管理"><svg class="icon"><use href="#i-columns"/></svg><span class="collapse-hide">表格管理</span></a>
                 <a class="nav-link" href="/dashboard.html" data-page="dashboard" data-label="数据看板"><svg class="icon"><use href="#i-chart"/></svg><span class="collapse-hide">数据看板</span></a>
+                <a class="nav-link" href="/audit.html" data-page="audit" data-label="审计中心"><svg class="icon"><use href="#i-clock"/></svg><span class="collapse-hide">审计中心</span></a>
+                <a class="nav-link" href="/trash.html" data-page="trash" data-label="回收站"><svg class="icon"><use href="#i-trash"/></svg><span class="collapse-hide">回收站</span></a>
                 <a class="nav-link" href="/help.html" data-page="help" data-label="使用帮助"><svg class="icon"><use href="#i-help"/></svg><span class="collapse-hide">使用帮助</span></a>
                 <a class="nav-link" href="/settings.html" data-page="settings" data-label="设置"><svg class="icon"><use href="#i-settings"/></svg><span class="collapse-hide">设置</span></a>
             </nav>
@@ -65,7 +67,7 @@
             <div class="toolbar">
                 <!-- 文件组 -->
                 <div class="toolbar-group">
-                    <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none;">
+                    <input type="file" id="fileInput" accept=".xlsx,.csv" style="display:none;">
                     <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
                         <svg class="icon"><use href="#i-upload"/></svg>上传 Excel
                     </button>
@@ -162,7 +164,7 @@
                 <div class="empty-state">
                     <div class="empty-icon"><svg class="icon"><use href="#i-inbox"/></svg></div>
                     <p>请点击"上传 Excel"开始</p>
-                    <p class="empty-sub">支持 .xlsx 和 .xls 格式</p>
+                    <p class="empty-sub">支持 .xlsx / .csv 格式</p>
                 </div>
             </div>
 
