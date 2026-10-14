@@ -16,6 +16,7 @@ public class TableImportService
 {
     private readonly ILogger<TableImportService> _logger;
     private readonly ExcelSheetReader _reader;
+    private readonly CsvSheetReader _csvReader;
     private readonly RowValidator _validator;
     private readonly TableRepository _repository;
     private readonly RuleService _rules;
@@ -23,20 +24,27 @@ public class TableImportService
     public TableImportService(
         ILogger<TableImportService> logger,
         ExcelSheetReader reader,
+        CsvSheetReader csvReader,
         RowValidator validator,
         TableRepository repository,
         RuleService rules)
     {
         _logger = logger;
         _reader = reader;
+        _csvReader = csvReader;
         _validator = validator;
         _repository = repository;
         _rules = rules;
     }
 
+    /// <summary>CSV 与 Excel 输出同一份 SheetData，编排层只按扩展名分流</summary>
+    private static bool IsCsv(IFormFile file) =>
+        Path.GetExtension(file.FileName).Equals(".csv", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>
     /// 上传 Excel：解析指定工作表，建表并批量写入数据行。
     /// sheetIndex 是 0 基序号 —— 单工作表文件固定传 0；多工作表由前端选好后回传。
+    /// CSV 没有多工作表概念，前端不会传 sheetIndex，传了也忽略。
     /// </summary>
     public async Task<ApiResponse<UploadResult>> ImportAsync(IFormFile file, int userId, int sheetIndex = 0)
     {
@@ -46,10 +54,12 @@ public class TableImportService
 
         try
         {
-            var sheet = await _reader.ReadAsync(file, sheetIndex);
+            var sheet = IsCsv(file)
+                ? await _csvReader.ReadAsync(file)
+                : await _reader.ReadAsync(file, sheetIndex);
 
             if (sheet.SourceRowCount < 2)
-                return ApiResponse<UploadResult>.Fail("Excel 文件没有数据行");
+                return ApiResponse<UploadResult>.Fail("文件没有数据行");
 
             if (sheet.Rows.Count == 0)
                 return ApiResponse<UploadResult>.Fail("没有找到有效数据");
@@ -62,8 +72,8 @@ public class TableImportService
                 // 供导出时还原排版
                 MergeRangesJson = MergeRangeCodec.Serialize(sheet.MergedRanges),
                 UserId = userId,
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             };
             await _repository.AddTableAsync(table);
             await _repository.BulkInsertRowsAsync(table.Id, sheet.Rows);
@@ -90,7 +100,7 @@ public class TableImportService
         {
             // 其它异常明细只进日志，避免把内部实现细节暴露给客户端
             _logger.LogError(ex, "上传 Excel 失败：用户 {UserId}", userId);
-            return ApiResponse<UploadResult>.Fail("文件解析失败，请确认上传的是有效的 .xlsx / .xls 文件");
+            return ApiResponse<UploadResult>.Fail("文件解析失败，请确认上传的是有效的 .xlsx / .csv 文件");
         }
     }
 
@@ -103,6 +113,23 @@ public class TableImportService
 
         try
         {
+            // CSV 是单工作表语义：解析一遍给出概要，保持返回结构与 Excel 一致
+            if (IsCsv(file))
+            {
+                var csv = await _csvReader.ReadAsync(file);
+                return ApiResponse<List<SheetInfoDto>>.Ok(new List<SheetInfoDto>
+                {
+                    new()
+                    {
+                        Index = 0,
+                        Name = Path.GetFileNameWithoutExtension(file.FileName),
+                        RowCount = csv.SourceRowCount,
+                        ColumnCount = csv.SourceColumnCount,
+                        HasData = csv.SourceRowCount >= 2
+                    }
+                });
+            }
+
             var sheets = await _reader.ListSheetsAsync(file);
             if (sheets.Count == 0)
                 return ApiResponse<List<SheetInfoDto>>.Fail("文件里没有工作表");
@@ -125,7 +152,7 @@ public class TableImportService
         catch (Exception ex)
         {
             _logger.LogError(ex, "读取工作表列表失败");
-            return ApiResponse<List<SheetInfoDto>>.Fail("文件解析失败，请确认上传的是有效的 .xlsx / .xls 文件");
+            return ApiResponse<List<SheetInfoDto>>.Fail("文件解析失败，请确认上传的是有效的 .xlsx / .csv 文件");
         }
     }
 
@@ -140,13 +167,18 @@ public class TableImportService
         return sheet.SheetCount > 1 ? $"{baseName} - {sheet.SheetName}" : baseName;
     }
 
+    /// <summary>上传文件大小上限（10MB）—— 再大解压出的行数足以拖垮实例</summary>
+    private const long MaxFileBytes = 10 * 1024 * 1024;
+
     /// <summary>文件是否可接受；不可接受时给出面向用户的原因</summary>
     private static string? ValidateFile(IFormFile? file)
     {
         if (file == null || file.Length == 0) return "请选择文件";
+        if (file.Length > MaxFileBytes) return "文件不能超过 10MB";
 
         var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-        if (ext != ".xlsx" && ext != ".xls") return "请上传 .xlsx 或 .xls 格式的文件";
+        if (ext != ".xlsx" && ext != ".csv")
+            return "请上传 .xlsx 或 .csv 格式的文件（.xls 旧格式不受支持）";
         return null;
     }
 
@@ -156,8 +188,10 @@ public class TableImportService
     /// </summary>
     public async Task<ApiResponse<ValidationResult>> ImportWithValidationAsync(IFormFile file, int tableId, int userId)
     {
-        if (file == null || file.Length == 0)
-            return ApiResponse<ValidationResult>.Fail("请选择文件");
+        // 与普通上传走同一套校验（扩展名 + 大小），否则这条路径会被绕过
+        var invalid = ValidateFile(file);
+        if (invalid != null)
+            return ApiResponse<ValidationResult>.Fail(invalid);
 
         try
         {
@@ -165,7 +199,9 @@ public class TableImportService
             if (table == null)
                 return ApiResponse<ValidationResult>.Fail("表格不存在");
 
-            var sheet = await _reader.ReadAsync(file);
+            var sheet = IsCsv(file)
+                ? await _csvReader.ReadAsync(file)
+                : await _reader.ReadAsync(file);
 
             // 归属已在上方校验过，这里直接取规则，不必再查一次表
             var rules = await _rules.GetValidationRulesAsync(tableId);
@@ -235,7 +271,7 @@ public class TableImportService
         {
             // 这里原先完全没有异常保护：上传一个损坏的 xlsx 会直接抛到中间件变成 500
             _logger.LogError(ex, "带校验上传失败：表 {TableId}，用户 {UserId}", tableId, userId);
-            return ApiResponse<ValidationResult>.Fail("文件解析失败，请确认上传的是有效的 .xlsx / .xls 文件");
+            return ApiResponse<ValidationResult>.Fail("文件解析失败，请确认上传的是有效的 .xlsx / .csv 文件");
         }
     }
 }

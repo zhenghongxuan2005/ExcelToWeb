@@ -18,8 +18,8 @@ function uploadWithValidation() {
     }
 
     const ext = file.name.split('.').pop().toLowerCase();
-    if (ext !== 'xlsx' && ext !== 'xls') {
-        showToast('请上传 .xlsx 或 .xls 格式的文件', 'error');
+    if (ext !== 'xlsx' && ext !== 'csv') {
+        showToast('请上传 .xlsx 或 .csv 格式的文件', 'error');
         fileInput.value = '';
         return;
     }

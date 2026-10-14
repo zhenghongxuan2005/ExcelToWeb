@@ -22,7 +22,13 @@ function startImport(file) {
     if (!file) return;
 
     if (!isAcceptedExcelFile(file)) {
-        showToast('请上传 .xlsx 或 .xls 格式的文件', 'error');
+        showToast('请上传 .xlsx 或 .csv 格式的文件', 'error');
+        return;
+    }
+
+    // CSV 没有多工作表概念，跳过「问后端有哪些工作表」这一步，直接导入
+    if (file.name.toLowerCase().endsWith('.csv')) {
+        uploadFile(file);
         return;
     }
 

@@ -3,11 +3,11 @@
 // 依赖：utils.js（showToast / setStatus）、api.js（uploadExcel）、state.js、render.js、tables.js
 // ================================================================
 
-/** 校验拖入的文件是否为受支持的 Excel */
+/** 校验拖入的文件是否为受支持的格式（.xlsx / .csv，与后端白名单一致） */
 function isAcceptedExcelFile(file) {
     if (!file) return false;
     const ext = (file.name.split('.').pop() || '').toLowerCase();
-    return ext === 'xlsx' || ext === 'xls';
+    return ext === 'xlsx' || ext === 'csv';
 }
 
 /**
@@ -21,7 +21,7 @@ function uploadFile(file, sheetIndex) {
     if (!file) return;
 
     if (!isAcceptedExcelFile(file)) {
-        showToast('请上传 .xlsx 或 .xls 格式的文件', 'error');
+        showToast('请上传 .xlsx 或 .csv 格式的文件', 'error');
         return;
     }
 

