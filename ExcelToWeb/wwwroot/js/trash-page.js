@@ -1,0 +1,131 @@
+// ================================================================
+// 回收站（trash.html）：已删除表格列表 + 恢复 / 彻底删除
+// ----------------------------------------------------------------
+// 依赖：api.js（fetchTrash / restoreFromTrash / purgeTableForever）、
+//       utils.js（escapeHtml / formatTime / showToast）、shell.js
+// 说明：删除走软删除，这里列出的表数据行仍完整保留；恢复只是清掉删除标记。
+//       卡片样式复用 table.css 的 table-card，与表格管理页视觉一致。
+// ================================================================
+
+const TRASH_RETENTION_DAYS = 30;
+
+let trashItems = [];
+
+// ----- 初始化（脚本在 body 末尾加载，DOM 已就绪） -----
+(function initTrashPage() {
+    'use strict';
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = '/login.html';
+        return;
+    }
+    const username = localStorage.getItem('username');
+    const userInfoEl = document.getElementById('userInfo');
+    if (userInfoEl && username) userInfoEl.textContent = username;
+
+    loadTrashList();
+})();
+
+/** 拉取回收站列表并渲染 */
+function loadTrashList() {
+    const host = document.getElementById('trashGrid');
+    if (!host) return;
+
+    host.innerHTML = '<div class="skeleton-block" style="height:80px; width:100%;"></div>'
+        + '<div class="skeleton-block" style="height:80px; width:100%; margin-top:12px;"></div>';
+
+    fetchTrash()
+        .then(items => {
+            trashItems = items || [];
+            renderTrashList();
+        })
+        .catch(err => {
+            host.innerHTML = '<div class="empty-state">'
+                + '<div class="empty-icon"><svg class="icon"><use href="#i-x-circle"/></svg></div>'
+                + `<p>加载失败：${escapeHtml(err.message)}</p>`
+                + '</div>';
+        });
+}
+
+/** 渲染回收站卡片列表 */
+function renderTrashList() {
+    const host = document.getElementById('trashGrid');
+    const countEl = document.getElementById('trashCount');
+    if (!host) return;
+
+    if (countEl) countEl.textContent = trashItems.length === 0 ? '' : `${trashItems.length} 个已删除表格`;
+
+    if (trashItems.length === 0) {
+        host.innerHTML = '<div class="empty-state">'
+            + '<div class="empty-icon"><svg class="icon"><use href="#i-inbox"/></svg></div>'
+            + '<p>回收站是空的</p>'
+            + '<p class="empty-sub">删除的表格会出现在这里，30 天内可恢复</p>'
+            + '<a class="btn btn-primary" href="/tables.html" style="margin-top:14px;">'
+            + '<svg class="icon"><use href="#i-columns"/></svg>查看表格管理</a>'
+            + '</div>';
+        return;
+    }
+
+    let html = '';
+    for (const t of trashItems) {
+        const daysLeft = daysRemaining(t.deletedAt);
+        html += '<div class="table-card">';
+        html += '<div class="card-head">';
+        html += '<div class="card-icon"><svg class="icon"><use href="#i-trash"/></svg></div>';
+        html += `<h3 class="card-title" title="${escapeHtml(t.tableName)}">${escapeHtml(t.tableName)}</h3>`;
+        html += '</div>';
+
+        html += '<div class="card-meta">';
+        html += `<span><svg class="icon icon-sm"><use href="#i-columns"/></svg>${t.rowCount} 行数据</span>`;
+        html += `<span><svg class="icon icon-sm"><use href="#i-clock"/></svg>删除于 ${escapeHtml(formatTime(t.deletedAt))}</span>`;
+        html += `<span><svg class="icon icon-sm"><use href="#i-info"/></svg>${daysLeft} 天后自动清除</span>`;
+        html += '</div>';
+
+        html += '<div class="card-actions">';
+        html += `<button class="btn btn-primary btn-sm" onclick="doRestore(${t.id})">`
+            + '<svg class="icon icon-sm"><use href="#i-refresh"/></svg>恢复</button>';
+        html += `<button class="btn btn-danger btn-sm" onclick="doPurge(${t.id})">`
+            + '<svg class="icon icon-sm"><use href="#i-trash"/></svg>彻底删除</button>';
+        html += '</div>';
+
+        html += '</div>';
+    }
+    host.innerHTML = html;
+}
+
+/** 删除时间（UTC ISO）→ 剩余保留天数（向上取整，删除当天算 30） */
+function daysRemaining(deletedAtIso) {
+    const deleted = new Date(deletedAtIso).getTime();
+    if (isNaN(deleted)) return TRASH_RETENTION_DAYS;
+    const elapsed = Date.now() - deleted;
+    const left = TRASH_RETENTION_DAYS - elapsed / 86400000;
+    return Math.max(0, Math.ceil(left));
+}
+
+/** 恢复表格（无需二次确认：恢复没有破坏性） */
+function doRestore(tableId) {
+    restoreFromTrash(tableId)
+        .then(msg => {
+            showToast('✅ ' + (msg || '已恢复'), 'success');
+            loadTrashList();
+        })
+        .catch(err => showToast('❌ 恢复失败：' + err.message, 'error'));
+}
+
+/** 彻底删除（二次确认，含表格名——这一步不可恢复） */
+function doPurge(tableId) {
+    const t = trashItems.find(x => x.id === tableId);
+    const name = t ? t.tableName : '该表格';
+    if (!confirm(`确定要彻底删除「${name}」吗？其全部数据、变更历史与校验规则都将被清除，此操作不可恢复。`)) return;
+
+    purgeTableForever(tableId)
+        .then(msg => {
+            showToast('✅ ' + (msg || '已彻底删除'), 'success');
+            loadTrashList();
+        })
+        .catch(err => showToast('❌ 彻底删除失败：' + err.message, 'error'));
+}
+
+// 暴露给内联 onclick
+Object.assign(window, { doRestore, doPurge });

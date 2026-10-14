@@ -167,17 +167,17 @@ function doExport(tableId, kind) {
         .catch(err => showToast('❌ 导出失败：' + err.message, 'error'));
 }
 
-/** 删除（二次确认，含表格名，避免误删） */
+/** 删除（二次确认；删除进回收站，30 天内可恢复） */
 function doDelete(tableId) {
     const t = findTable(tableId);
     const name = t ? t.tableName : '该表格';
-    if (!confirm(`确定要删除「${name}」及其全部数据吗？此操作不可恢复。`)) return;
+    if (!confirm(`确定要删除「${name}」吗？删除后进回收站，30 天内可恢复。`)) return;
 
     deleteTable(tableId)
-        .then(() => {
+        .then(msg => {
             manageTables = manageTables.filter(x => x.id !== tableId);
             renderManageList();
-            showToast('✅ 已删除', 'success');
+            showToast('✅ ' + (msg || '已删除'), 'success');
         })
         .catch(err => showToast('❌ 删除失败：' + err.message, 'error'));
 }

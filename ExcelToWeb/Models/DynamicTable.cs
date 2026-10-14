@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace ExcelToWeb.Models;
 
 public class DynamicTable
@@ -21,8 +23,24 @@ public class DynamicTable
     public string? MergeRangesJson { get; set; }
 
     public int UserId { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
-    public DateTime UpdatedAt { get; set; } = DateTime.Now;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// 软删除时间（UPGRADE_PLAN 功能 9 回收站）：null = 活表；
+    /// 非 null = 已进回收站（30 天内可恢复，过期由 RecycleBinCleanupService 物理删除）。
+    /// 可空列不会污染唯一约束 / 索引，这是软删除方案里代价最小的形态。
+    /// </summary>
+    public DateTime? DeletedAt { get; set; }
+
+    /// <summary>
+    /// 并发令牌（SQL Server ROWVERSION）。整表替换保存时 EF 会把它带进 UPDATE 的 WHERE 条件，
+    /// 若期间已被其他人或另一个标签页改过则更新 0 行，触发 DbUpdateConcurrencyException，
+    /// 从而阻止「后保存者静默覆盖先保存者」。
+    /// </summary>
+    [Timestamp]
+    public byte[]? RowVersion { get; set; }
+
     public List<DynamicRow> Rows { get; set; } = new();
 }
 
@@ -31,6 +49,6 @@ public class DynamicRow
     public int Id { get; set; }
     public int TableId { get; set; }
     public string DataJson { get; set; } = "{}";
-    public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DynamicTable Table { get; set; } = null!;
 }

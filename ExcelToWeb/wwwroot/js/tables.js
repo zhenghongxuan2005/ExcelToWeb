@@ -141,11 +141,11 @@ function deleteCurrentTable() {
         showToast('请先选择一个表格', 'info');
         return;
     }
-    if (!confirm('确定要删除当前表格及其所有数据吗？此操作不可恢复。')) return;
+    if (!confirm('确定要删除当前表格吗？删除后进回收站，30 天内可恢复。')) return;
 
     deleteTable(currentTableId)
-        .then(() => {
-            showToast('✅ 表格已删除', 'success');
+        .then(msg => {
+            showToast('✅ ' + (msg || '表格已删除'), 'success');
             allTables = allTables.filter(t => t.id !== currentTableId);
             currentTableId = null;
             currentHeaders = [];

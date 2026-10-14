@@ -13,6 +13,7 @@ namespace ExcelToWeb.Services;
 public class ExcelService : IExcelService
 {
     private readonly ILogger<ExcelService> _logger;
+    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly TableImportService _imports;
     private readonly ExcelExportService _exporter;
     private readonly TableRepository _repository;
@@ -26,6 +27,7 @@ public class ExcelService : IExcelService
 
     public ExcelService(
         ILogger<ExcelService> logger,
+        IHttpContextAccessor httpContextAccessor,
         TableImportService imports,
         ExcelExportService exporter,
         TableRepository repository,
@@ -38,6 +40,7 @@ public class ExcelService : IExcelService
         AuditService audit)
     {
         _logger = logger;
+        _httpContextAccessor = httpContextAccessor;
         _imports = imports;
         _exporter = exporter;
         _repository = repository;
@@ -51,18 +54,26 @@ public class ExcelService : IExcelService
     }
 
     // ================================================================
+    // 演示账号只读拦截（判定逻辑见 DemoWriteGuard）
+    // ================================================================
+    private bool IsDemoUser => DemoWriteGuard.IsDemo(_httpContextAccessor.HttpContext);
+
+    private ApiResponse<T> DemoReadOnly<T>() => DemoWriteGuard.Fail<T>();
+
+    // ================================================================
     // 上传 Excel（编排见 Services/Excel/TableImportService.cs）
     // ================================================================
-    public Task<ApiResponse<UploadResult>> UploadExcelAsync(IFormFile file, int userId, int sheetIndex = 0) =>
-        _imports.ImportAsync(file, userId, sheetIndex);
+    public Task<ApiResponse<UploadResult>> UploadExcelAsync(IFormFile file, int userId, int sheetIndex = 0)
+    {
+        if (IsDemoUser) return Task.FromResult(DemoReadOnly<UploadResult>());
+        return _imports.ImportAsync(file, userId, sheetIndex);
+    }
 
     /// <summary>列出文件里的工作表（多工作表导入时让用户选一张）</summary>
     public Task<ApiResponse<List<SheetInfoDto>>> ListSheetsAsync(IFormFile file) =>
         _imports.ListSheetsAsync(file);
 
-    // ================================================================
-    // 查询数据
-    // ================================================================
+    // ---- 查询数据 ----
     public async Task<ApiResponse<TableDataDto>> GetTableDataAsync(int tableId, int userId, string? date = null)
     {
         var table = await _repository.FindTableAsync(tableId, userId);
@@ -98,8 +109,11 @@ public class ExcelService : IExcelService
     // ================================================================
     public async Task<ApiResponse> SaveTableDataAsync(int tableId, int userId, List<Dictionary<string, object>> rows, string? userName = null)
     {
+        if (IsDemoUser) return ApiResponse.Fail(DemoWriteGuard.ReadOnlyMessage);
+
         try
         {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             var table = await _repository.FindTableAsync(tableId, userId);
             if (table == null)
                 return ApiResponse.Fail("表格不存在");
@@ -118,8 +132,14 @@ public class ExcelService : IExcelService
             // 变更历史：异步落库，失败只记日志（见 AuditService）
             await _audit.RecordSaveAsync(tableId, userName ?? "未知用户", oldRows, rows, table.Headers);
 
-            _logger.LogInformation("用户 {UserId} 保存表格 {TableId}，共 {RowCount} 行", userId, tableId, rows.Count);
+            _logger.LogInformation("保存表格 {TableId} 完成，用户 {UserId}，{RowCount} 行，耗时 {ElapsedMs} ms", tableId, userId, rows.Count, sw.ElapsedMilliseconds);
             return ApiResponse.Ok($"成功保存 {rows.Count} 条数据");
+        }
+        catch (ConcurrencyConflictException)
+        {
+            // 冲突次数是「乐观并发真的在工作」的直接证据，记 Warning 便于日志平台筛选统计
+            _logger.LogWarning("并发冲突：保存表格 {TableId}（用户 {UserId}）时版本已过期，已回滚", tableId, userId);
+            return ApiResponse.Fail("表格刚被其他人（或另一个标签页）修改，请刷新后再保存");
         }
         catch (Exception ex)
         {
@@ -129,18 +149,20 @@ public class ExcelService : IExcelService
     }
 
     // ================================================================
-    // 删除表格
+    // 删除表格（软删除：进回收站，30 天内可恢复；彻底删除见 TrashService）
     // ================================================================
     public async Task<ApiResponse> DeleteTableAsync(int tableId, int userId)
     {
+        if (IsDemoUser) return ApiResponse.Fail(DemoWriteGuard.ReadOnlyMessage);
+
         var table = await _repository.FindTableAsync(tableId, userId);
         if (table == null)
             return ApiResponse.Fail("表格不存在");
 
-        await _repository.DeleteTableAsync(table);
+        await _repository.SoftDeleteAsync(table);
 
-        _logger.LogInformation("用户 {UserId} 删除表格 {TableId}", userId, tableId);
-        return ApiResponse.Ok("表格已删除");
+        _logger.LogInformation("用户 {UserId} 删除表格 {TableId}（已进回收站）", userId, tableId);
+        return ApiResponse.Ok("表格已删除，30 天内可在回收站恢复");
     }
 
     // ================================================================
@@ -160,6 +182,8 @@ public class ExcelService : IExcelService
     // ================================================================
     public async Task<ApiResponse> RenameTableAsync(int tableId, int userId, string newName)
     {
+        if (IsDemoUser) return ApiResponse.Fail(DemoWriteGuard.ReadOnlyMessage);
+
         var name = (newName ?? string.Empty).Trim();
         if (name.Length == 0)
             return ApiResponse.Fail("表格名称不能为空");
@@ -178,6 +202,8 @@ public class ExcelService : IExcelService
 
     public async Task<ApiResponse<UploadResult>> DuplicateTableAsync(int tableId, int userId)
     {
+        if (IsDemoUser) return DemoReadOnly<UploadResult>();
+
         try
         {
             var table = await _repository.FindTableAsync(tableId, userId);
@@ -217,6 +243,8 @@ public class ExcelService : IExcelService
     // ================================================================
     public async Task<ApiResponse> UpdateHeadersAsync(int tableId, int userId, UpdateHeadersRequest request)
     {
+        if (IsDemoUser) return ApiResponse.Fail(DemoWriteGuard.ReadOnlyMessage);
+
         try
         {
             return await _columns.UpdateHeadersAsync(tableId, userId, request);
@@ -233,6 +261,8 @@ public class ExcelService : IExcelService
 
     public async Task<ApiResponse> SaveColumnMetaAsync(int tableId, int userId, SaveColumnMetaRequest request)
     {
+        if (IsDemoUser) return ApiResponse.Fail(DemoWriteGuard.ReadOnlyMessage);
+
         try
         {
             return await _columnMeta.SaveAsync(tableId, userId, request);
@@ -250,6 +280,8 @@ public class ExcelService : IExcelService
     /// </summary>
     public async Task<ApiResponse> SaveFormulaAsync(int tableId, int userId, SaveFormulaRequest request)
     {
+        if (IsDemoUser) return ApiResponse.Fail(DemoWriteGuard.ReadOnlyMessage);
+
         try
         {
             var result = await _computed.SaveFormulaAsync(tableId, userId, request);
@@ -287,9 +319,7 @@ public class ExcelService : IExcelService
         return ApiResponse<byte[]>.Ok(bytes, "导出成功");
     }
 
-    // ================================================================
-    // 获取表格列表
-    // ================================================================
+    // ---- 获取表格列表 ----
     public Task<List<TableInfoDto>> GetTablesAsync(int userId) => _repository.GetTableInfosAsync(userId);
 
     // ================================================================
@@ -300,6 +330,8 @@ public class ExcelService : IExcelService
 
     public async Task<ApiResponse> SaveColorRulesAsync(int userId, List<ColorRule> rules)
     {
+        if (IsDemoUser) return ApiResponse.Fail(DemoWriteGuard.ReadOnlyMessage);
+
         if (rules.Count == 0)
         {
             // 传空数组表示「清空该列规则」，但原实现会直接返回成功而不删除任何东西，
@@ -324,6 +356,8 @@ public class ExcelService : IExcelService
 
     public async Task<ApiResponse> SaveValidationRulesAsync(int tableId, int userId, List<ValidationRule> rules)
     {
+        if (IsDemoUser) return ApiResponse.Fail(DemoWriteGuard.ReadOnlyMessage);
+
         if (rules.Count == 0)
             return ApiResponse.Fail("规则不能为空");
 
@@ -358,6 +392,9 @@ public class ExcelService : IExcelService
     // ================================================================
     // 带校验的上传（编排见 Services/Excel/TableImportService.cs）
     // ================================================================
-    public Task<ApiResponse<ValidationResult>> UploadWithValidationAsync(IFormFile file, int tableId, int userId) =>
-        _imports.ImportWithValidationAsync(file, tableId, userId);
+    public Task<ApiResponse<ValidationResult>> UploadWithValidationAsync(IFormFile file, int tableId, int userId)
+    {
+        if (IsDemoUser) return Task.FromResult(DemoReadOnly<ValidationResult>());
+        return _imports.ImportWithValidationAsync(file, tableId, userId);
+    }
 }
