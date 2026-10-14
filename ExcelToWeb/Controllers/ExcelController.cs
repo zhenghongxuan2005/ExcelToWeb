@@ -1,6 +1,7 @@
 using ExcelToWeb.DTOs;
 using ExcelToWeb.Models;
 using ExcelToWeb.Services;
+using ExcelToWeb.Services.Excel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,12 +14,15 @@ public class ExcelController : ControllerBase
 {
     private readonly IExcelService _service;
     private readonly ITokenService _tokenService;
+    private readonly AuditService _audit;
     private readonly ILogger<ExcelController> _logger;
 
-    public ExcelController(IExcelService service, ITokenService tokenService, ILogger<ExcelController> logger)
+    public ExcelController(IExcelService service, ITokenService tokenService,
+        AuditService audit, ILogger<ExcelController> logger)
     {
         _service = service;
         _tokenService = tokenService;
+        _audit = audit;
         _logger = logger;
     }
 
@@ -348,5 +352,23 @@ public class ExcelController : ControllerBase
 
         var logs = await _service.GetAuditLogsAsync(tableId, userId, rowIndex);
         return Ok(ApiResponse<List<AuditLog>>.Ok(logs));
+    }
+
+    /// <summary>
+    /// 审计中心：跨该用户全部表格的审计时间线（支持表格 / 操作类型 / 时间范围筛选 + 分页）。
+    /// 直接注入 AuditService 而不走 ExcelService 门面：数据归属校验已在 join 里完成，
+    /// 同时也为门面省出宝贵的行数预算（400 行上限）。
+    /// 参数名用 actionType 而非 action，避开 MVC 的路由值保留字。
+    /// </summary>
+    [HttpGet("audit-center")]
+    public async Task<IActionResult> AuditCenter(
+        int? tableId, string? actionType, DateTime? from, DateTime? to,
+        int page = 1, int pageSize = 50)
+    {
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
+
+        var (logs, total) = await _audit.SearchAsync(userId, tableId, actionType, from, to, page, pageSize);
+        return Ok(ApiResponse<object>.Ok(new { logs, total }));
     }
 }

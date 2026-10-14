@@ -231,6 +231,28 @@
             box-shadow: var(--focus-ring);
         }
 
+/* 审计中心等二级页的筛选区：.controls 里的日期输入与 select 同款观感 */
+.controls input[type="date"] {
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-family: inherit;
+    background: var(--bg-card);
+    color: var(--text-1);
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+    .controls input[type="date"]:hover {
+        border-color: var(--border-strong);
+    }
+
+    .controls input[type="date"]:focus {
+        border-color: var(--primary);
+        box-shadow: var(--focus-ring);
+    }
+
 /* ===== 下拉菜单 ===== */
 .dropdown {
     position: relative;

@@ -1,4 +1,5 @@
 using ExcelToWeb.Data;
+using ExcelToWeb.DTOs;
 using ExcelToWeb.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -103,6 +104,57 @@ public class AuditService
         if (rowIndex.HasValue)
             query = query.Where(a => a.RowIndex == rowIndex.Value);
         return query.OrderByDescending(a => a.CreatedAt).Take(take).ToListAsync();
+    }
+
+    /// <summary>
+    /// 审计中心：跨该用户全部表格的审计时间线，支持表格 / 操作类型 / 时间范围筛选与分页。
+    /// AuditLogs 本身没有 UserId，归属校验靠与 DynamicTables 的 join 完成——
+    /// 这也是「删表必须事务性清掉审计日志」的另一个原因：孤儿日志会永远留在 join 结果之外。
+    /// to 参数按「当天含边界」处理（下探到 to 当天 24 点前）。
+    /// </summary>
+    public async Task<(List<AuditLogItemDto> Logs, int Total)> SearchAsync(
+        int userId, int? tableId, string? actionType, DateTime? from, DateTime? to,
+        int page, int pageSize)
+    {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 50;
+        if (pageSize > 100) pageSize = 100;
+
+        var query = from log in _db.AuditLogs
+                    join table in _db.DynamicTables on log.TableId equals table.Id
+                    where table.UserId == userId && table.DeletedAt == null
+                    select new { log, table.TableName };
+
+        if (tableId.HasValue)
+            query = query.Where(x => x.log.TableId == tableId.Value);
+        if (!string.IsNullOrEmpty(actionType))
+            query = query.Where(x => x.log.Action == actionType);
+        if (from.HasValue)
+            query = query.Where(x => x.log.CreatedAt >= from.Value);
+        if (to.HasValue)
+            query = query.Where(x => x.log.CreatedAt < to.Value.AddDays(1));
+
+        var total = await query.CountAsync();
+        var logs = await query
+            .OrderByDescending(x => x.log.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(x => new AuditLogItemDto
+            {
+                Id = x.log.Id,
+                TableId = x.log.TableId,
+                TableName = x.TableName,
+                Action = x.log.Action,
+                RowIndex = x.log.RowIndex,
+                ColumnName = x.log.ColumnName,
+                OldValue = x.log.OldValue,
+                NewValue = x.log.NewValue,
+                UserName = x.log.UserName,
+                CreatedAt = x.log.CreatedAt
+            })
+            .ToListAsync();
+
+        return (logs, total);
     }
 
     /// <summary>取单元格文本。值经 System.Text.Json 反序列化后是 JsonElement，ToString 即原始文本</summary>
