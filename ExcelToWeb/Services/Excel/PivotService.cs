@@ -204,20 +204,23 @@ public class PivotService
             }
         }
 
-        if (keys.All(k => ExcelNumber.TryParseNumber(k, out _)))
+        // 先一次性把每个键解析成 (原文, 数值)：全都能解析才按数值排序，否则按序数排序。
+        // 原实现把 TryParseNumber 放在比较器里，同一个键会被反复解析多次。
+        var numericKeys = new List<(string Key, decimal Number)>(keys.Count);
+        var allNumeric = true;
+        foreach (var key in keys)
         {
-            keys.Sort((a, b) =>
-            {
-                ExcelNumber.TryParseNumber(a, out var x);
-                ExcelNumber.TryParseNumber(b, out var y);
-                return x.CompareTo(y);
-            });
-        }
-        else
-        {
-            keys.Sort(StringComparer.Ordinal);
+            if (ExcelNumber.TryParseNumber(key, out var n)) numericKeys.Add((key, n));
+            else { allNumeric = false; break; }
         }
 
+        if (allNumeric)
+        {
+            numericKeys.Sort((a, b) => a.Number.CompareTo(b.Number));
+            return numericKeys.Select(t => t.Key).ToList();
+        }
+
+        keys.Sort(StringComparer.Ordinal);
         return keys;
     }
 
@@ -270,7 +273,8 @@ public class PivotService
             "avg" => numbers.Sum() / numbers.Count,
             "max" => numbers.Max(),
             "min" => numbers.Min(),
-            _ => 0m
+            // 不静默返回 0：非法的聚合方式应当尽早暴露，而不是给出一份看着正常的错误结果
+            _ => throw new ArgumentOutOfRangeException(nameof(agg), agg, "不支持的聚合方式")
         };
 
         return ExcelNumber.Format(value);

@@ -114,6 +114,13 @@ public class ExcelSheetReader
         var rowCount = worksheet.Dimension.Rows;
         var colCount = worksheet.Dimension.Columns;
 
+        // 资源上限：JSON-per-row 存储下读取路径都是整表加载，不设上限会被单个大文件拖垮
+        // rowCount 含表头行，因此数据行是 rowCount - 1
+        if (rowCount - 1 > MaxRows)
+            throw new ExcelReadException($"数据行超过上限 {MaxRows} 行");
+        if (colCount > MaxColumns)
+            throw new ExcelReadException($"列数超过上限 {MaxColumns} 列");
+
         // 先取值矩阵并按合并区域铺平 —— 必须在读表头之前：A1:B1 合并成「销售额」大标题时
         // B1 本身是空的，不铺值表头就会退化成「列2」。
         var (grid, areas) = SheetGrid.Build(worksheet, rowCount, colCount);
@@ -191,6 +198,12 @@ public class ExcelSheetReader
 
     /// <summary>列名长度上限，与 ColumnStructureService 的校验保持一致</summary>
     private const int MaxHeaderLength = 100;
+
+    /// <summary>单个工作表的数据行上限（不含表头）—— JSON-per-row 存储的合理天花板</summary>
+    private const int MaxRows = 50_000;
+
+    /// <summary>单个工作表的列数上限</summary>
+    private const int MaxColumns = 200;
 
     private static List<string> ReadHeaders(string[,] grid, int colCount)
     {
