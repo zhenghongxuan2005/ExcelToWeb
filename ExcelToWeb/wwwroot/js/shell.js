@@ -98,7 +98,12 @@
     /** 退出登录（HTML 通过 onclick="handleLogout()" 调用，须为全局函数） */
     function handleLogout() {
         if (!confirm('确定要退出登录吗？')) return;
+        // 通知服务端吊销当前会话族（刷新令牌失效），失败不阻塞本地退出。
+        // logoutApi 在 api.js 里定义，运行时调用时它早已加载，typeof 只是防御
+        if (typeof logoutApi === 'function') logoutApi();
         localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('familyId');
         localStorage.removeItem('username');
         window.location.href = '/login.html';
     }

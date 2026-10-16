@@ -19,6 +19,12 @@
     padding: 20px;
 }
 
+/* sheet-picker 的显隐走类名开关（classList.add('show')）——
+   缺了这条规则时弹窗加类后仍是 display:none，表现为「上传后毫无反应」 */
+.modal.show {
+    display: flex;
+}
+
 .modal-card {
     position: relative;
     background: var(--bg-card);

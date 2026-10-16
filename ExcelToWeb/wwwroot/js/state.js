@@ -104,16 +104,8 @@ function checkLogin() {
         });
 }
 
-function handleLogout() {
-    if (!confirm('确定要退出登录吗？')) return;
-    // 服务端吊销当前会话族（刷新令牌失效），失败不阻塞本地退出
-    if (typeof logoutApi === 'function') logoutApi();
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('familyId');
-    localStorage.removeItem('username');
-    window.location.href = '/login.html';
-}
+// 退出登录的唯一实现已收敛到 shell.js（window.handleLogout），
+// 这里不再重复定义——此前两份实现曾漂移出「非首页退出不清 refreshToken」的 bug。
 
 // ================================================================
 // 颜色规则
