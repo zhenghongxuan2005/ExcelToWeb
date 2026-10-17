@@ -205,6 +205,9 @@
 
         // 尝试 Windows 集成身份验证（浏览器自动协商，无需输入账号密码）
         async function tryWindowsLogin(manual) {
+            // 手动点击按钮时先征求用户同意，不悄悄登录
+            if (manual && !confirm('确定使用当前 Windows 账号登录吗？')) return;
+
             const statusEl = document.getElementById('windowsStatus');
             statusEl.classList.remove('hidden');
             document.getElementById('loginForm').classList.add('hidden');
@@ -244,8 +247,15 @@
             }
         });
 
-        // 页面加载：已有有效 token 直接进主页；否则尝试 Windows 静默登录，失败回退到表单
+        // 页面加载：已有有效 token 直接进主页；否则尝试 Windows 静默登录，失败回退到表单。
+        // 例外：URL 带 loggedout=1（用户刚点了退出登录）时跳过一切自动登录，
+        // 否则 Windows 集成认证会静默把用户重新登回去，表现为“退出登录没反应”。
         (async function initLoginPage() {
+            // 刚退出登录：跳过一切自动登录，直接显示账号密码表单
+            if (new URLSearchParams(window.location.search).has('loggedout')) {
+                document.getElementById('loginForm').classList.remove('hidden');
+                return;
+            }
             const token = localStorage.getItem('token');
             if (token) {
                 try {

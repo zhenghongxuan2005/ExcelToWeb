@@ -1,0 +1,363 @@
+/* ================================================================
+   ExcelToWeb 样式模块：settings.css —— 设置页（一）：页头 / 卡片网格 / 账号 / 密码 / 会话
+   偏好设置与「关于」见 settings-prefs.css（必须紧跟本文件）
+   （由 style.css 以 @import 汇总，加载顺序即层叠顺序，排在 console.css 之后）
+   ================================================================ */
+
+/* ================================================================
+   页头：图标徽章 + 标题 + 副标题（副标题不再缩进，跟标题左边缘对齐）
+   ================================================================ */
+.settings-head {
+    align-items: center;
+    padding-top: 20px;      /* 比其他页多留一点上边距：36px 徽章需要呼吸空间 */
+    margin-bottom: 20px;
+}
+
+    .settings-head .page-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }
+
+.head-badge {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    flex: none;
+    border-radius: 10px;
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+    .head-badge .icon {
+        width: 19px;
+        height: 19px;
+        stroke-width: 1.9;
+    }
+
+.settings-head h1 {
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--text-1);
+}
+
+    .settings-head .page-sub {
+        margin-top: 2px;
+        padding-left: 0;
+        font-size: 13px;
+        color: var(--text-3);
+    }
+
+/* ================================================================
+   卡片网格
+   第一行三栏等分；第二行「偏好 55 : 关于 45」（与设计稿像素比例一致）
+   同一行内卡片默认 stretch，行高对齐
+   ================================================================ */
+.settings-grid {
+    display: grid;
+    gap: 24px 16px;
+}
+
+.settings-grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.settings-grid-2 {
+    grid-template-columns: 55fr 45fr;
+}
+
+/* ===== 卡片外壳：白底、无描边、圆角 12（画布是浅灰，靠底色区分层次） ===== */
+.panel {
+    min-width: 0;
+    padding: 20px;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+}
+
+.panel-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text-1);
+}
+
+    /* 标题前的小徽章：22px 浅靛蓝底 + 13px 图标 */
+    .panel-icon {
+        display: grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        flex: none;
+        border-radius: 7px;
+        background: var(--primary-soft);
+        color: var(--primary);
+    }
+
+        .panel-icon .icon {
+            width: 13px;
+            height: 13px;
+            stroke-width: 2;
+        }
+
+/* 卡片内通用说明文字 */
+.panel-hint {
+    margin-top: 16px;
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--text-3);
+}
+
+/* ================================================================
+   账号：头像 + 账号名 / 键值行 / 灰色提示条
+   ================================================================ */
+.account {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.account-avatar {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    flex: none;
+    border-radius: var(--radius-lg);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+    .account-avatar .icon {
+        width: 22px;
+        height: 22px;
+        stroke-width: 1.7;
+    }
+
+.account-meta {
+    min-width: 0;
+}
+
+.account-name {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--text-1);
+    word-break: break-all;
+}
+
+.account-role {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--text-3);
+}
+
+.kv {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 13px;
+    line-height: 1.65;
+}
+
+    .kv + .kv {
+        margin-top: 9px;
+    }
+
+    .kv dt {
+        flex: none;
+        color: var(--text-3);
+    }
+
+    .kv dd {
+        min-width: 0;
+        color: var(--text-1);
+        font-weight: 500;
+        text-align: right;
+        word-break: break-all;
+    }
+
+        /* 弱化值：状态类信息（如「未设置本地密码」）不该抢视觉重心 */
+        .kv dd.is-muted {
+            color: var(--text-2);
+            font-weight: 400;
+        }
+
+.panel-note {
+    display: flex;
+    gap: 8px;
+    margin-top: 18px;
+    padding: 11px 13px;
+    border-radius: var(--radius-md);
+    background: var(--bg-soft);
+    font-size: 12px;
+    line-height: 1.65;
+    color: var(--text-3);
+}
+
+    .panel-note .icon {
+        width: 14px;
+        height: 14px;
+        margin-top: 2px;
+        color: var(--text-4);
+    }
+
+    /* 账号卡片按类型动态显示提示条：hidden 必须真的不占位 */
+    .panel-note[hidden] {
+        display: none;
+    }
+
+/* ================================================================
+   修改密码：左侧固定宽标签 + 右侧输入框
+   ================================================================ */
+.form-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+    .form-row + .form-row {
+        margin-top: 17px;
+    }
+
+    .form-row > label {
+        width: 76px;
+        flex: none;
+        font-size: 13px;
+        color: var(--text-2);
+    }
+
+    /* 覆盖弹窗里「灰底通栏」的输入框：这里是白底细描边、35px 高 */
+    .form-row .input {
+        flex: 1;
+        min-width: 0;
+        height: 35px;
+        padding: 0 12px;
+        font-size: 13px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-field);
+        border-radius: var(--radius-md);
+    }
+
+        .form-row .input::placeholder {
+            color: var(--text-4);
+        }
+
+        .form-row .input:focus {
+            border-color: var(--primary);
+            box-shadow: var(--focus-ring);
+        }
+
+/* 卡片内的按钮：比工具栏高 2px、圆角更大，跟输入框同一套观感 */
+.panel .btn {
+    height: 34px;
+    padding: 0 14px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+}
+
+    .panel .btn .icon {
+        width: 15px;
+        height: 15px;
+    }
+
+    .panel form > .btn {
+        margin-top: 21px;
+    }
+
+/* ================================================================
+   会话管理：一行一个会话（登录时间 + 当前会话标记 + 注销）
+   ================================================================ */
+.session-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 39px;
+    border-bottom: 1px solid var(--border-row);
+}
+
+    .session-row:last-of-type {
+        border-bottom: 0;
+    }
+
+.session-enter {
+    width: 14px;
+    height: 14px;
+    color: var(--primary);
+    stroke-width: 2;
+}
+
+.session-time {
+    min-width: 0;
+    font-size: 13px;
+    color: var(--text-1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.session-badge {
+    flex: none;
+    padding: 2px 7px;
+    border-radius: var(--radius-sm);
+    background: var(--success-soft);
+    color: var(--success);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+/* 行内次级按钮：浅灰底、无描边，hover 才加深 */
+.btn-quiet {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 24px;
+    margin-left: auto;
+    padding: 0 8px;
+    flex: none;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: var(--bg-soft);
+    color: var(--text-3);
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+    .btn-quiet .icon {
+        width: 12px;
+        height: 12px;
+    }
+
+    .btn-quiet:hover {
+        background: var(--border-light);
+        color: var(--text-2);
+    }
+
+/* ================================================================
+   响应式：三栏折两栏（会话管理独占一行），两栏改为上下堆叠
+   ================================================================ */
+@media (max-width: 1180px) {
+    .settings-grid-3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+        .settings-grid-3 > .panel:last-child {
+            grid-column: 1 / -1;
+        }
+
+    .settings-grid-2 {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

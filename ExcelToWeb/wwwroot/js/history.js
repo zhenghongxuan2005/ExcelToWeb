@@ -79,8 +79,11 @@ function restoreState(state) {
 
 function updateUndoButtons() {
     const statusText = document.getElementById('statusText');
-    if (statusText) {
-        const currentStatus = statusText.textContent.split(' | ')[0] || '就绪';
-        statusText.textContent = `${currentStatus} | 撤销: ${undoHistory.length} | 重做: ${redoHistory.length}`;
-    }
+    if (!statusText) return;
+    // 页头位置有限：只在确有可撤销 / 可重做的内容时才追加计数，
+    // 否则「撤销: 0 | 重做: 0」会长期占满状态胶囊
+    const base = (statusText.textContent.split(' | ')[0] || '就绪').trim();
+    statusText.textContent = (undoHistory.length || redoHistory.length)
+        ? `${base} | 撤销: ${undoHistory.length} | 重做: ${redoHistory.length}`
+        : base;
 }

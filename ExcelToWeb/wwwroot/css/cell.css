@@ -3,24 +3,26 @@
    （由 style.css 以 @import 汇总，加载顺序即层叠顺序）
    ================================================================ */
 
-/* ===== 可编辑单元格 ===== */
+/* ===== 可编辑单元格 =====
+   单元格默认看起来就是「纯文本」——输入框的边框与底色全透明，
+   只有悬停 / 聚焦时才浮出编辑态，静态阅读时表格保持干净。 */
 .cell-input,
 .cell-select {
     width: 100%;
-    padding: 6px 8px;
+    padding: 8px 6px;
     border: 1px solid transparent;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     font-size: 13px;
     background: transparent;
     font-family: inherit;
     color: var(--text-1);
     min-width: 60px;
-    transition: all 0.15s ease;
+    transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
     .cell-input:hover,
     .cell-select:hover {
-        background: var(--bg-soft);
+        background: var(--bg-card);
         border-color: var(--border);
     }
 
@@ -31,6 +33,68 @@
         background: var(--bg-card);
         box-shadow: var(--focus-ring);
     }
+
+/* ================================================================
+   状态值标签（render.js 判定）
+   ----------------------------------------------------------------
+   「已完成 / 未完成 / 进行中」这类短状态值直接以胶囊呈现，
+   仍然是一个可编辑的 input，聚焦后恢复普通输入框形态。
+   ================================================================ */
+td.cell-tag .cell-input {
+    /* input 的默认宽度约 20 字符，不定宽会把胶囊撑满整格 */
+    width: 72px;
+    min-width: 0;
+    max-width: 100%;
+    padding: 2px 10px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    line-height: 20px;
+    text-align: center;
+    text-overflow: ellipsis;
+}
+
+td.cell-tag-success .cell-input {
+    background: var(--success-soft);
+    color: var(--success);
+    border-color: transparent;
+}
+
+    td.cell-tag-success .cell-input:hover {
+        background: color-mix(in srgb, var(--success) 14%, var(--bg-card));
+        border-color: transparent;
+    }
+
+td.cell-tag-warning .cell-input {
+    background: var(--warning-soft);
+    color: var(--warning);
+    border-color: transparent;
+}
+
+    td.cell-tag-warning .cell-input:hover {
+        background: color-mix(in srgb, var(--warning) 14%, var(--bg-card));
+        border-color: transparent;
+    }
+
+td.cell-tag-muted .cell-input {
+    background: var(--bg-soft);
+    color: var(--text-3);
+    border-color: transparent;
+}
+
+    td.cell-tag-muted .cell-input:hover {
+        background: color-mix(in srgb, var(--text-4) 16%, var(--bg-card));
+        border-color: transparent;
+    }
+
+/* 聚焦时恢复成普通输入框并撑开，否则改一个长值只能在 72px 里横向滚动 */
+td.cell-tag .cell-input:focus {
+    width: 100%;
+    min-width: 120px;
+    background: var(--bg-card);
+    border-color: var(--primary);
+    color: var(--text-1);
+    text-align: left;
+}
 
 .editable-cell {
     position: relative;

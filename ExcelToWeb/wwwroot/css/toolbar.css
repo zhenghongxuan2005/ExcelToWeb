@@ -1,6 +1,8 @@
 /* ================================================================
-   ExcelToWeb 样式模块：toolbar.css —— 按钮、工具栏、下拉菜单、表格选择器
+   ExcelToWeb 样式模块：toolbar.css —— 按钮、工具栏、下拉菜单、表单控件外观
    （由 style.css 拆分而来；style.css 以 @import 汇总，加载顺序即层叠顺序）
+   统一口径：控件高度 32px（小号 28px）、圆角 7px、1px 描边、无投影，
+   颜色只表达语义，不靠渐变与阴影制造层级。
    ================================================================ */
 
 /* ================================================================
@@ -11,46 +13,43 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 8px 14px;
+    height: var(--control-h);
+    padding: 0 12px;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 7px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 400;
     font-family: inherit;
+    line-height: 1;
     cursor: pointer;
-    transition: background var(--transition-fast), color var(--transition-fast),
-                border-color var(--transition-fast), box-shadow var(--transition-fast),
-                transform var(--transition-fast), filter var(--transition-fast);
+    white-space: nowrap;
     background: var(--bg-card);
     color: var(--text-2);
-    white-space: nowrap;
-    box-shadow: var(--shadow-xs);
+    transition: background var(--transition-fast), color var(--transition-fast),
+                border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
     .btn:hover {
-        transform: translateY(-1px);
+        background: var(--bg-soft);
         border-color: var(--border-strong);
         color: var(--text-1);
-        box-shadow: 0 3px 10px rgba(10, 26, 51, 0.09);
     }
 
     .btn:active {
-        transform: translateY(0) scale(0.97);
-        box-shadow: var(--shadow-xs);
+        background: color-mix(in srgb, var(--bg-soft) 70%, var(--border-light));
     }
 
     .btn:focus-visible {
         outline: none;
         box-shadow: var(--focus-ring);
+        border-color: var(--primary);
     }
 
-    /* 禁用态：不再响应悬停位移，避免「看起来还能点」的误导 */
+    /* 禁用态：不再响应悬停，避免「看起来还能点」的误导 */
     .btn:disabled,
     .btn[disabled] {
-        opacity: 0.55;
+        opacity: 0.5;
         cursor: not-allowed;
-        transform: none;
-        box-shadow: none;
     }
 
 .btn .icon {
@@ -58,90 +57,100 @@
     height: 15px;
 }
 
+/* 主操作：实心品牌色，一屏只出现一次（上传 / 导入） */
 .btn-primary {
-    background: var(--grad-brand);
-    border-color: transparent;
+    background: var(--primary);
+    border-color: var(--primary);
     color: #fff;
-    box-shadow: 0 2px 10px color-mix(in srgb, var(--primary) 32%, transparent),
-                inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    font-weight: 500;
 }
 
     .btn-primary:hover {
-        border-color: transparent;
+        background: var(--primary-hover);
+        border-color: var(--primary-hover);
         color: #fff;
-        filter: brightness(1.08);
-        box-shadow: 0 6px 18px color-mix(in srgb, var(--primary) 40%, transparent),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.22);
     }
 
+    .btn-primary:active {
+        background: var(--primary-hover);
+    }
+
+/* 保存类操作：实心绿（弹窗主按钮） */
 .btn-success {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--success) 88%, #fff), var(--success));
-    border-color: transparent;
+    background: var(--success);
+    border-color: var(--success);
     color: #fff;
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--success) 26%, transparent),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    font-weight: 500;
 }
 
     .btn-success:hover {
         background: var(--success-hover);
-        border-color: transparent;
+        border-color: var(--success-hover);
         color: #fff;
-        box-shadow: 0 6px 16px color-mix(in srgb, var(--success) 34%, transparent);
     }
 
+/* 危险操作：浅红底 + 红字，弱于实心红，仍清晰可辨 */
 .btn-danger {
     background: var(--danger-soft);
+    border-color: var(--danger-line);
     color: var(--danger);
-    border-color: color-mix(in srgb, var(--danger) 18%, transparent);
 }
 
     .btn-danger:hover {
-        background: var(--danger);
-        border-color: transparent;
-        color: #fff;
-        box-shadow: 0 5px 14px color-mix(in srgb, var(--danger) 32%, transparent);
+        background: color-mix(in srgb, var(--danger) 12%, var(--bg-card));
+        border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+        color: var(--danger-hover);
     }
 
-.btn-purple {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--purple) 90%, #fff), var(--purple));
-    border-color: transparent;
-    color: #fff;
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--purple) 26%, transparent),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+/* 次要强调（批量编辑等）：浅蓝底 + 品牌色文字 */
+.btn-soft {
+    background: var(--primary-soft);
+    border-color: var(--primary-line);
+    color: var(--primary);
 }
 
-    .btn-purple:hover {
-        border-color: transparent;
-        color: #fff;
-        filter: brightness(1.08);
-        box-shadow: 0 6px 16px color-mix(in srgb, var(--purple) 34%, transparent);
+    .btn-soft:hover {
+        background: color-mix(in srgb, var(--primary) 14%, var(--bg-card));
+        border-color: color-mix(in srgb, var(--primary) 34%, transparent);
+        color: var(--primary-hover);
+    }
+
+/* 保存按钮在工具栏里的形态：浅绿底，比实心绿克制（实心绿留给弹窗主按钮） */
+.btn-soft-success {
+    background: var(--success-soft);
+    border-color: var(--success-line);
+    color: var(--success);
+}
+
+    .btn-soft-success:hover {
+        background: color-mix(in srgb, var(--success) 12%, var(--bg-card));
+        border-color: color-mix(in srgb, var(--success) 34%, transparent);
+        color: var(--success-hover);
     }
 
 .btn-outline {
-    background: transparent;
+    background: var(--bg-card);
     border-color: var(--border);
     color: var(--text-2);
-    box-shadow: none;
 }
-
-    .btn-outline:hover {
-        background: var(--bg-soft);
-        border-color: var(--border-strong);
-        color: var(--text-1);
-        box-shadow: none;
-    }
 
 .btn-sm {
-    padding: 6px 12px;
+    height: var(--control-h-sm);
+    padding: 0 9px;
     font-size: 12px;
 }
+
+    .btn-sm .icon {
+        width: 13px;
+        height: 13px;
+    }
 
 .icon {
     width: 16px;
     height: 16px;
     stroke: currentColor;
     fill: none;
-    stroke-width: 2;
+    stroke-width: 1.8;
     stroke-linecap: round;
     stroke-linejoin: round;
     flex-shrink: 0;
@@ -158,11 +167,11 @@
     background: transparent;
     cursor: pointer;
     padding: 4px 6px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     color: var(--primary);
-    font-size: 15px;
+    font-size: 14px;
     line-height: 1;
-    transition: background 0.15s ease;
+    transition: background var(--transition-fast);
 }
 
     .icon-btn:hover {
@@ -174,36 +183,53 @@
     }
 
 /* ================================================================
-   工具栏（分组 + 下拉菜单）
+   工具栏：两行结构（文件级 / 数据级），行间用发丝线分隔
    ================================================================ */
 .toolbar {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px 10px;
+    flex-direction: column;
+    gap: 10px;
     padding: 12px 14px;
-    margin-bottom: 18px;
+    margin-bottom: 12px;
     background: var(--bg-card);
     border: 1px solid var(--border-light);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-card);
 }
+
+.toolbar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px 10px;
+    flex-wrap: wrap;
+}
+
+    .toolbar-row + .toolbar-row {
+        padding-top: 10px;
+        border-top: 1px solid var(--border-light);
+    }
 
 .toolbar-group {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* 右半区：搜索、筛选、列、日期、每页行数 */
+.toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-left: auto;
 }
 
 .toolbar-divider {
     width: 1px;
     align-self: stretch;
-    margin: 2px 4px;
+    min-height: 20px;
+    margin: 0 2px;
     background: var(--border-light);
-}
-
-.toolbar-spacer {
-    flex: 1;
 }
 
 .filter-group {
@@ -213,47 +239,88 @@
     flex-wrap: wrap;
 }
 
-    .filter-group input[type="date"] {
-        padding: 7px 12px;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        font-size: 13px;
-        font-family: inherit;
-        background: var(--bg-card);
-        color: var(--text-1);
-        outline: none;
-        width: 148px;
-        transition: all 0.18s ease;
-    }
-
-        .filter-group input[type="date"]:focus {
-            border-color: var(--primary);
-            box-shadow: var(--focus-ring);
-        }
-
-/* 审计中心等二级页的筛选区：.controls 里的日期输入与 select 同款观感 */
+/* ================================================================
+   表单控件：日期 / 下拉
+   ================================================================ */
+.filter-group input[type="date"],
 .controls input[type="date"] {
-    padding: 7px 12px;
+    height: var(--control-h);
+    padding: 0 10px;
     border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    font-size: 13px;
+    border-radius: 7px;
+    font-size: 12.5px;
     font-family: inherit;
     background: var(--bg-card);
-    color: var(--text-1);
+    color: var(--text-2);
     outline: none;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    width: 138px;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
+    .filter-group input[type="date"]:hover,
     .controls input[type="date"]:hover {
         border-color: var(--border-strong);
     }
 
+    .filter-group input[type="date"]:focus,
     .controls input[type="date"]:focus {
         border-color: var(--primary);
         box-shadow: var(--focus-ring);
     }
 
-/* ===== 下拉菜单 ===== */
+/* 原生下拉去掉系统箭头，换成统一的细箭头，宽度与按钮一致 */
+.table-select {
+    height: var(--control-h);
+    padding: 0 28px 0 10px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-family: inherit;
+    background-color: var(--bg-card);
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2378849a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 9px center;
+    color: var(--text-2);
+    min-width: 168px;
+    max-width: 300px;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+    .table-select:hover {
+        border-color: var(--border-strong);
+    }
+
+    .table-select:focus {
+        border-color: var(--primary);
+        box-shadow: var(--focus-ring);
+    }
+
+.table-select-sm {
+    min-width: 74px;
+    max-width: 96px;
+    height: var(--control-h-sm);
+    font-size: 12px;
+}
+
+.page-size-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.page-size-label {
+    font-size: 12px;
+    color: var(--text-4);
+    white-space: nowrap;
+}
+
+/* ================================================================
+   下拉菜单
+   ================================================================ */
 .dropdown {
     position: relative;
 }
@@ -267,20 +334,20 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-pop);
-    padding: 6px;
+    padding: 5px;
     z-index: 80;
     opacity: 0;
     visibility: hidden;
-    transform: translateY(8px) scale(0.98);
+    transform: translateY(6px);
     transform-origin: top left;
-    transition: opacity 0.18s ease, transform 0.22s var(--ease-spring), visibility 0.18s;
+    transition: opacity var(--transition-fast), transform var(--transition-fast), visibility var(--transition-fast);
 }
 
     .dropdown:hover .dropdown-menu,
     .dropdown:focus-within .dropdown-menu {
         opacity: 1;
         visibility: visible;
-        transform: translateY(0) scale(1);
+        transform: translateY(0);
     }
 
 .dropdown-item {
@@ -288,7 +355,7 @@
     align-items: center;
     gap: 8px;
     width: 100%;
-    padding: 9px 12px;
+    padding: 7px 9px;
     border: none;
     background: transparent;
     border-radius: var(--radius-sm);
@@ -297,7 +364,8 @@
     color: var(--text-2);
     cursor: pointer;
     text-align: left;
-    transition: background 0.12s ease, color 0.12s ease;
+    white-space: nowrap;
+    transition: background var(--transition-fast), color var(--transition-fast);
 }
 
     .dropdown-item:hover {
@@ -308,42 +376,3 @@
         .dropdown-item:hover .icon {
             color: var(--primary);
         }
-
-/* ===== 表格选择器 ===== */
-.table-select {
-    padding: 8px 12px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    font-size: 13px;
-    font-family: inherit;
-    background: var(--bg-card);
-    color: var(--text-1);
-    min-width: 170px;
-    max-width: 300px;
-    outline: none;
-    cursor: pointer;
-    transition: all 0.18s ease;
-}
-
-    .table-select:focus {
-        border-color: var(--primary);
-        box-shadow: var(--focus-ring);
-    }
-
-.table-select-sm {
-    min-width: 76px;
-    max-width: 96px;
-    padding: 6px 8px;
-}
-
-.page-size-group {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.page-size-label {
-    font-size: 13px;
-    color: var(--text-3);
-    white-space: nowrap;
-}

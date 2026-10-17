@@ -11,8 +11,12 @@
             if (t === 'dark' || (!t && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.setAttribute('data-theme', 'dark');
             }
-            if (localStorage.getItem('prefTextSize') === 'large') {
+            // 表格字号三档：紧凑 13px / 标准 14px / 舒适 15px（旧值 large = 舒适，未设置默认舒适）
+            var s = localStorage.getItem('prefTextSize') || 'cozy';
+            if (s === 'large' || s === 'cozy') {
                 document.documentElement.setAttribute('data-text-size', 'large');
+            } else if (s === 'compact') {
+                document.documentElement.setAttribute('data-text-size', 'compact');
             }
         })();
     </script>
@@ -28,32 +32,41 @@
         <aside class="sidebar">
             <div class="sidebar-brand">
                 <div class="brand-icon"><svg class="icon"><use href="#i-table"/></svg></div>
-                <span class="brand-name">ExcelToWeb</span>
+                <div class="brand-text">
+                    <span class="brand-name">ExcelToWeb</span>
+                    <span class="brand-sub collapse-hide">表格数据工作台</span>
+                </div>
             </div>
 
             <nav class="sidebar-nav">
+                <p class="nav-section collapse-hide">工作区</p>
                 <a class="nav-link" href="/" data-page="index" data-label="表格编辑"><svg class="icon"><use href="#i-table"/></svg><span class="collapse-hide">表格编辑</span></a>
                 <a class="nav-link" href="/tables.html" data-page="tables" data-label="表格管理"><svg class="icon"><use href="#i-columns"/></svg><span class="collapse-hide">表格管理</span></a>
                 <a class="nav-link" href="/dashboard.html" data-page="dashboard" data-label="数据看板"><svg class="icon"><use href="#i-chart"/></svg><span class="collapse-hide">数据看板</span></a>
                 <a class="nav-link" href="/audit.html" data-page="audit" data-label="审计中心"><svg class="icon"><use href="#i-clock"/></svg><span class="collapse-hide">审计中心</span></a>
                 <a class="nav-link" href="/trash.html" data-page="trash" data-label="回收站"><svg class="icon"><use href="#i-trash"/></svg><span class="collapse-hide">回收站</span></a>
+                <p class="nav-section collapse-hide">系统</p>
                 <a class="nav-link" href="/help.html" data-page="help" data-label="使用帮助"><svg class="icon"><use href="#i-help"/></svg><span class="collapse-hide">使用帮助</span></a>
                 <a class="nav-link" href="/settings.html" data-page="settings" data-label="设置"><svg class="icon"><use href="#i-settings"/></svg><span class="collapse-hide">设置</span></a>
             </nav>
 
             <div class="sidebar-bottom">
-                <button class="btn btn-outline btn-sm sidebar-collapse-btn" id="sidebarToggle"
+                <button class="side-action sidebar-collapse-btn" id="sidebarToggle"
                         aria-label="折叠侧边栏" title="折叠侧边栏" aria-expanded="true">
                     <svg class="icon"><use href="#i-chevron-left"/></svg><span class="collapse-label collapse-hide">折叠侧边栏</span>
                 </button>
-                <button class="btn btn-outline btn-sm" id="themeToggle" aria-label="切换主题">
+                <button class="side-action" id="themeToggle" aria-label="切换主题">
                     <svg class="icon"><use href="#i-moon"/></svg><span class="theme-label collapse-hide">深色模式</span>
+                    <span class="switch" aria-hidden="true"></span>
                 </button>
-                <div class="user-box">
-                    <svg class="icon icon-sm"><use href="#i-user"/></svg>
-                    <span id="userInfo"></span>
+                <div class="user-card">
+                    <div class="user-avatar"><svg class="icon icon-sm"><use href="#i-user"/></svg></div>
+                    <div class="user-meta">
+                        <span class="user-name" id="userInfo"></span>
+                        <span class="user-role">管理员 · 本机</span>
+                    </div>
                 </div>
-                <button class="btn btn-outline btn-sm" onclick="handleLogout()">
+                <button class="side-action" onclick="handleLogout()">
                     <svg class="icon"><use href="#i-logout"/></svg><span class="collapse-hide">退出登录</span>
                 </button>
             </div>
@@ -61,138 +74,177 @@
 
         <!-- ===== 主内容 ===== -->
         <main class="main" id="mainContent">
-            <div class="page-header">
-                <h1><svg class="icon"><use href="#i-settings"/></svg>设置</h1>
+            <div class="page-header settings-head">
+                <div class="page-title">
+                    <span class="head-badge"><svg class="icon"><use href="#i-gear"/></svg></span>
+                    <div class="head-text">
+                        <h1>设置</h1>
+                        <p class="page-sub">账号、偏好与安全设置 · 仅作用于本机浏览器</p>
+                    </div>
+                </div>
             </div>
 
-            <div class="settings-grid">
+            <!-- 第一行：账号 / 修改密码 / 会话管理，三栏等分 -->
+            <div class="settings-grid settings-grid-3">
 
                 <!-- 账号 -->
                 <section class="panel">
-                    <h2 class="panel-title"><svg class="icon icon-sm"><use href="#i-user"/></svg>账号</h2>
-                    <div class="panel-row">
-                        <span class="panel-label">当前账号</span>
-                        <span class="panel-value" id="accountName">加载中...</span>
+                    <h2 class="panel-title">
+                        <span class="panel-icon"><svg class="icon"><use href="#i-user"/></svg></span>账号
+                    </h2>
+
+                    <div class="account">
+                        <div class="account-avatar"><svg class="icon"><use href="#i-user"/></svg></div>
+                        <div class="account-meta">
+                            <span class="account-name" id="accountName">加载中…</span>
+                            <span class="account-role" id="accountRole">管理员 · 本机</span>
+                        </div>
                     </div>
-                    <p class="panel-hint">
-                        使用 Windows 集成身份验证自动创建的账号没有本地密码，无法在此修改。
+
+                    <dl class="kv-list">
+                        <div class="kv">
+                            <dt>账号类型</dt>
+                            <dd id="accountType">识别中…</dd>
+                        </div>
+                        <div class="kv">
+                            <dt>密码状态</dt>
+                            <dd class="is-muted" id="passwordState">识别中…</dd>
+                        </div>
+                    </dl>
+
+                    <p class="panel-note" id="accountNote" hidden>
+                        <svg class="icon"><use href="#i-info"/></svg>
+                        <span id="accountNoteText">使用 Windows 集成身份验证自动创建的账号没有本地密码，无法在此修改。</span>
                     </p>
                 </section>
 
                 <!-- 修改密码 -->
                 <section class="panel">
-                    <h2 class="panel-title"><svg class="icon icon-sm"><use href="#i-key"/></svg>修改密码</h2>
+                    <h2 class="panel-title">
+                        <span class="panel-icon"><svg class="icon"><use href="#i-key"/></svg></span>修改密码
+                    </h2>
+
                     <form id="passwordForm" autocomplete="off">
-                        <div class="field">
-                            <label class="field-label" for="oldPassword">原密码</label>
-                            <input type="password" id="oldPassword" class="input" autocomplete="current-password" placeholder="请输入当前密码">
+                        <div class="form-row">
+                            <label for="oldPassword">原密码</label>
+                            <input type="password" id="oldPassword" class="input"
+                                   autocomplete="current-password" placeholder="请输入当前密码">
                         </div>
-                        <div class="field">
-                            <label class="field-label" for="newPassword">新密码</label>
-                            <input type="password" id="newPassword" class="input" autocomplete="new-password" placeholder="至少 6 位">
+                        <div class="form-row">
+                            <label for="newPassword">新密码</label>
+                            <input type="password" id="newPassword" class="input"
+                                   autocomplete="new-password" placeholder="至少 6 位">
                         </div>
-                        <div class="field">
-                            <label class="field-label" for="confirmPassword">确认新密码</label>
-                            <input type="password" id="confirmPassword" class="input" autocomplete="new-password" placeholder="再次输入新密码">
+                        <div class="form-row">
+                            <label for="confirmPassword">确认新密码</label>
+                            <input type="password" id="confirmPassword" class="input"
+                                   autocomplete="new-password" placeholder="再次输入新密码">
                         </div>
                         <button type="submit" class="btn btn-primary">
-                            <svg class="icon"><use href="#i-save"/></svg>保存新密码
+                            <svg class="icon"><use href="#i-key"/></svg>保存新密码
                         </button>
                     </form>
                 </section>
 
                 <!-- 会话管理：列出活跃会话，支持逐个注销 -->
                 <section class="panel">
-                    <h2 class="panel-title"><svg class="icon icon-sm"><use href="#i-clock"/></svg>会话管理</h2>
-                    <div id="sessionList">
-                        <p class="panel-hint">加载中...</p>
+                    <h2 class="panel-title">
+                        <span class="panel-icon"><svg class="icon"><use href="#i-clock"/></svg></span>会话管理
+                    </h2>
+
+                    <div class="session-list" id="sessionList">
+                        <p class="panel-hint">加载中…</p>
                     </div>
+
                     <p class="panel-hint">
                         会话按「浏览器登录」划分：在某设备上注销该会话后，那台设备需要重新登录。
                         登录状态最短 2 小时自动续期一次，最长 7 天不动也会过期。
                     </p>
                 </section>
+            </div>
+
+            <!-- 第二行：偏好设置（宽）/ 关于（窄） -->
+            <div class="settings-grid settings-grid-2">
 
                 <!-- 偏好设置 -->
                 <section class="panel">
-                    <h2 class="panel-title"><svg class="icon icon-sm"><use href="#i-settings"/></svg>偏好设置</h2>
+                    <h2 class="panel-title">
+                        <span class="panel-icon"><svg class="icon"><use href="#i-sliders"/></svg></span>偏好设置
+                    </h2>
 
-                    <div class="field">
-                        <label class="field-label" for="prefTheme">主题</label>
-                        <select id="prefTheme" class="select">
+                    <div class="pref-row">
+                        <label class="pref-label" for="prefTheme">主题</label>
+                        <select id="prefTheme" class="pref-select">
                             <option value="light">浅色</option>
                             <option value="dark">深色</option>
                         </select>
                     </div>
 
-                    <div class="field">
-                        <label class="field-label" for="prefPageSize">默认每页行数</label>
-                        <select id="prefPageSize" class="select">
+                    <div class="pref-row">
+                        <label class="pref-label" for="prefPageSize">默认每页行数</label>
+                        <select id="prefPageSize" class="pref-select">
                             <option value="0">全部（不分页）</option>
                             <option value="50">50 行</option>
                             <option value="100">100 行</option>
                             <option value="500">500 行</option>
                         </select>
-                        <p class="panel-hint">数据量较大时建议分页，可明显提升表格滚动与编辑的流畅度。</p>
+                        <p class="pref-hint">数据量较大时建议分页，可明显提升表格滚动与编辑的流畅度</p>
                     </div>
 
-                    <div class="field">
-                        <label class="field-label" for="prefTextSize">表格字号</label>
-                        <select id="prefTextSize" class="select">
-                            <option value="normal">标准</option>
-                            <option value="large">大号</option>
-                        </select>
+                    <div class="pref-row">
+                        <span class="pref-label" id="prefTextSizeLabel">表格字号</span>
+                        <!-- 分段控件：值写入 localStorage.prefTextSize，表格页据此调整字号 -->
+                        <div class="segmented" id="prefTextSize" role="group" aria-labelledby="prefTextSizeLabel">
+                            <button type="button" data-value="standard" aria-pressed="false">标准</button>
+                            <button type="button" data-value="compact" aria-pressed="false">紧凑</button>
+                            <button type="button" data-value="cozy" aria-pressed="true">舒适</button>
+                        </div>
                     </div>
 
-                    <div class="field">
-                        <label class="field-label" for="prefDensity">表格密度</label>
-                        <select id="prefDensity" class="select">
-                            <option value="compact">紧凑（一屏看更多行）</option>
-                            <option value="comfortable">舒适（默认）</option>
-                            <option value="spacious">宽松（便于触屏点选）</option>
-                        </select>
+                    <div class="pref-row">
+                        <span class="pref-label" id="prefGridLabel">网格线</span>
+                        <button type="button" class="toggle" id="prefGrid" role="switch"
+                                aria-checked="true" aria-labelledby="prefGridLabel"></button>
+                        <p class="pref-hint">字号与网格线在「表格编辑」页生效，可自行切换对比。</p>
                     </div>
 
-                    <div class="field">
-                        <label class="field-label" for="prefGrid">网格线</label>
-                        <select id="prefGrid" class="select">
-                            <option value="on">显示行分隔线</option>
-                            <option value="off">隐藏行分隔线</option>
-                        </select>
-                        <p class="panel-hint">密度与网格线在「表格编辑」页生效，可自行切换对比。</p>
+                    <div class="pref-footer">
+                        <button type="button" class="btn btn-outline" id="resetPrefs">
+                            <svg class="icon"><use href="#i-refresh"/></svg>恢复默认设置
+                        </button>
+                        <p class="panel-hint">偏好设置保存在本机浏览器中，不影响账号数据。</p>
                     </div>
-
-                    <button type="button" class="btn btn-outline" id="resetPrefs">
-                        <svg class="icon"><use href="#i-refresh"/></svg>恢复默认设置
-                    </button>
-                    <p class="panel-hint">偏好设置保存在本机浏览器中，不影响账号数据。</p>
                 </section>
 
                 <!-- 关于 -->
                 <section class="panel">
-                    <h2 class="panel-title"><svg class="icon icon-sm"><use href="#i-info"/></svg>关于</h2>
-                    <div class="panel-row">
-                        <span class="panel-label">版本</span>
-                        <span class="panel-value" id="appVersion">-</span>
-                    </div>
-                    <div class="panel-row">
-                        <span class="panel-label">后端</span>
-                        <span class="panel-value">ASP.NET Core Web API + EF Core + SQL Server</span>
-                    </div>
-                    <div class="panel-row">
-                        <span class="panel-label">前端</span>
-                        <span class="panel-value">原生 HTML / CSS / JavaScript（零构建、零依赖）</span>
-                    </div>
-                    <div class="panel-row">
-                        <span class="panel-label">浏览器</span>
-                        <span class="panel-value panel-value-wrap" id="appBrowser">-</span>
-                    </div>
-                    <div class="panel-row">
-                        <span class="panel-label">帮助文档</span>
-                        <a class="link" href="/help.html">查看使用帮助</a>
-                    </div>
-                </section>
+                    <h2 class="panel-title">
+                        <span class="panel-icon"><svg class="icon"><use href="#i-info"/></svg></span>关于
+                    </h2>
 
+                    <dl class="about-list">
+                        <div class="about-row">
+                            <dt>版本</dt>
+                            <dd id="appVersion">-</dd>
+                        </div>
+                        <div class="about-row">
+                            <dt>后端</dt>
+                            <dd>ASP.NET Core Web API + EF Core + SQL Server</dd>
+                        </div>
+                        <div class="about-row">
+                            <dt>前端</dt>
+                            <dd>原生 HTML / CSS / JavaScript（零构建、零依赖）</dd>
+                        </div>
+                        <div class="about-row">
+                            <dt>浏览器</dt>
+                            <dd class="is-small" id="appBrowser">-</dd>
+                        </div>
+                        <div class="about-row">
+                            <dt>帮助文档</dt>
+                            <dd><a class="about-link" href="/help.html">查看使用帮助 <span aria-hidden="true">→</span></a></dd>
+                        </div>
+                    </dl>
+                </section>
             </div>
         </main>
     </div>

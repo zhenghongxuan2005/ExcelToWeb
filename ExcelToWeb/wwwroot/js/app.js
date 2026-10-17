@@ -75,19 +75,30 @@ document.addEventListener('DOMContentLoaded', () => {
 // 应用「设置」页保存的偏好
 // ================================================================
 function applySavedPreferences() {
-    // 默认每页行数
+    // 默认每页行数（未设置时用 state.js 的默认值，下拉框必须跟它保持一致，
+    // 否则会出现「下拉显示全部、表格却在分页」这种自相矛盾）
     const savedSize = localStorage.getItem('prefPageSize');
     if (savedSize !== null) {
         const n = parseInt(savedSize);
         pageSize = isNaN(n) ? 0 : n;
-        const sel = document.getElementById('pageSizeSelect');
-        if (sel) sel.value = String(pageSize);
+    }
+    const sel = document.getElementById('pageSizeSelect');
+    if (sel) sel.value = String(pageSize);
+
+    // 表格字号：紧凑 13px / 标准 14px / 舒适 15px（旧值 large 等同舒适）
+    // 未设置时按设置页的默认值「舒适」渲染，两处口径必须一致
+    const size = localStorage.getItem('prefTextSize') || 'cozy';
+    if (size === 'large' || size === 'cozy') {
+        document.documentElement.setAttribute('data-text-size', 'large');
+    } else if (size === 'compact') {
+        document.documentElement.setAttribute('data-text-size', 'compact');
     }
 
-    // 表格字号
-    if (localStorage.getItem('prefTextSize') === 'large') {
-        document.documentElement.setAttribute('data-text-size', 'large');
-    }
+    // 网格线与表格密度：设置页写的是 localStorage，这两项以前只有设置页自己读，
+    // 表格页从来没应用过（等于开关无效），在这里补上
+    applyGridLines(localStorage.getItem('prefGrid') !== 'off');
+    const density = localStorage.getItem('prefDensity');
+    if (density) applyDensity(density);
 }
 
 // ================================================================

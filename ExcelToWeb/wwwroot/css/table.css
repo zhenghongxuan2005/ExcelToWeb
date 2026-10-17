@@ -5,21 +5,23 @@
    ================================================================ */
 
 /* ================================================================
-   表格
+   表格容器
+   ----------------------------------------------------------------
+   一整块白卡片：发丝描边 + 大圆角，表头与统计栏都在卡片内部，
+   滚动发生在卡片里，页面本身不横向滚动。
    ================================================================ */
 #tableContainer {
     overflow: auto;
-    max-height: calc(100vh - 250px);
+    max-height: calc(100vh - 268px);
     background: var(--bg-card);
     border: 1px solid var(--border-light);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-card);
 }
 
 /* ===== 骨架屏（加载态） =====
    加载数据时先占位出表格的形状，避免出现「白屏 → 表格突然出现」的跳动。 */
 .skeleton-table {
-    padding: 18px;
+    padding: 14px;
 }
 
 .skeleton-row {
@@ -29,14 +31,14 @@
 }
 
     .skeleton-row:first-child .skeleton-cell {
-        height: 34px;
+        height: 20px;
         opacity: 0.75;
     }
 
 .skeleton-cell {
     flex: 1;
-    height: 30px;
-    border-radius: var(--radius-sm);
+    height: 14px;
+    border-radius: var(--radius-xs);
     background: linear-gradient(90deg,
         var(--bg-soft) 25%,
         var(--bg-head) 37%,
@@ -69,7 +71,7 @@
     padding: 2px;
     border-radius: var(--radius-sm);
     display: inline-flex;
-    transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+    transition: opacity var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
 }
 
 tr:hover .row-hist-btn,
@@ -113,42 +115,55 @@ tr:hover .row-hist-btn,
         margin-top: 10px;
     }
 
+/* ================================================================
+   表格本体
+   ================================================================ */
 table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 14px;
+    font-size: 13px;
 }
 
+/* 表头：白底 + 发丝下边框，字号小一号、颜色降一级，让数据行成为视觉主体 */
 thead th {
     position: sticky;
     top: 0;
     z-index: 10;
     background: var(--bg-head);
     text-align: left;
-    padding: 11px 14px;
-    font-weight: 600;
+    padding: 10px 14px;
+    font-weight: 500;
     color: var(--text-3);
-    border-bottom: 2px solid var(--border);
+    border-bottom: 1px solid var(--border-light);
     font-size: 12px;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.01em;
     white-space: nowrap;
     user-select: none;
 }
 
 tbody td {
-    padding: 4px 8px;
-    border-bottom: 1px solid var(--border-light);
+    padding: 0 12px;
+    height: 46px;
+    border-bottom: 1px solid var(--border-row);
     vertical-align: middle;
+    color: var(--text-1);
+    transition: background-color var(--transition-fast);
 }
 
-/* 斑马纹用「与卡片底色混合」的不透明色：
-   冻结列一旦需要遮挡横向滚动的内容，半透明底色会让后面的单元格透出来 */
-tbody tr:nth-child(even) td {
-    background: color-mix(in srgb, var(--bg-soft) 45%, var(--bg-card));
-}
-
+/* 不使用斑马纹：行间靠 1px 分隔线区分，长表格反而更安静 */
 tbody tr:hover td {
-    background: var(--primary-softer);
+    background: color-mix(in srgb, var(--bg-soft) 70%, var(--bg-card));
+}
+
+/* 勾选的行整行淡品牌色铺底，与工具栏的「删除选中 · N」互相呼应 */
+tbody tr:has(.row-checkbox:checked) td,
+tbody tr:has(.row-checkbox:checked) td.col-pin {
+    background: color-mix(in srgb, var(--primary) 5%, var(--bg-card));
+}
+
+/* 最后一行不再画底线：外层容器自带圆角与边框，多一条线反而显脏 */
+tbody tr:last-child td {
+    border-bottom-color: transparent;
 }
 
 /* ================================================================
@@ -178,21 +193,13 @@ tbody td.col-pin {
     background: var(--bg-card);
 }
 
-tbody tr:nth-child(even) td.col-pin {
-    background: color-mix(in srgb, var(--bg-soft) 45%, var(--bg-card));
-}
-
-tbody tr:hover td.col-pin {
-    background: var(--primary-softer);
-}
-
 /* 冻结区与滚动区之间的分隔线 */
 tbody td.col-pin-2 {
     box-shadow: inset -1px 0 0 var(--border-light);
 }
 
 thead th.col-pin-2 {
-    box-shadow: inset -1px 0 0 var(--border);
+    box-shadow: inset -1px 0 0 var(--border-light);
 }
 
 /* ================================================================
@@ -200,7 +207,8 @@ thead th.col-pin-2 {
    compact 紧凑 / comfortable 舒适（默认） / spacious 宽松
    ================================================================ */
 html[data-density="compact"] tbody td {
-    padding: 0 6px;
+    height: 36px;
+    padding: 0 8px;
 }
 
 html[data-density="compact"] .cell-input,
@@ -214,13 +222,14 @@ html[data-density="compact"] .row-index {
 }
 
 html[data-density="spacious"] tbody td {
-    padding: 10px 10px;
+    height: 54px;
+    padding: 0 14px;
 }
 
 html[data-density="spacious"] .cell-input,
 html[data-density="spacious"] .cell-select {
     padding: 10px 8px;
-    font-size: 14px;
+    font-size: 13.5px;
 }
 
 /* ================================================================
@@ -239,6 +248,9 @@ html[data-grid="off"] thead th.col-pin-2 {
     box-shadow: none;
 }
 
+/* ================================================================
+   表头内的排序 / 筛选
+   ================================================================ */
 .th-inner {
     display: flex;
     align-items: center;
@@ -249,23 +261,46 @@ html[data-grid="off"] thead th.col-pin-2 {
     cursor: pointer;
 }
 
-    .th-sort:hover {
+/* 排序指示：小三角，默认只在悬停列时出现，已排序的列常显 */
+.th-arrow {
+    margin-left: 3px;
+    font-size: 9px;
+    color: var(--text-4);
+    opacity: 0.7;
+    display: none;
+}
+
+    .th-arrow.is-on,
+    thead th:hover .th-arrow {
+        display: inline;
+    }
+
+    .th-arrow.is-on {
         color: var(--primary);
+        opacity: 1;
+    }
+
+    .th-sort:hover {
+        color: var(--text-1);
     }
 
 .th-filter {
     border: none;
     background: transparent;
     cursor: pointer;
-    color: var(--text-3);
+    color: var(--text-4);
     padding: 2px;
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
     display: inline-flex;
-    transition: color 0.15s ease;
+    /* 图标默认收敛，表头不再一排小图标齐刷刷；悬停该列时恢复 */
+    opacity: 0;
+    transition: color var(--transition-fast), opacity var(--transition-fast);
 }
 
-    .th-filter:hover {
+    .th-filter:hover,
+    thead th:hover .th-filter {
         color: var(--primary);
+        opacity: 1;
     }
 
 .cell-center {
@@ -273,7 +308,51 @@ html[data-grid="off"] thead th.col-pin-2 {
 }
 
 .row-index {
-    font-weight: 500;
-    color: var(--text-3);
+    font-weight: 400;
+    color: var(--text-4);
     font-size: 12px;
 }
+
+/* 勾选框：16px、略深的描边，选中后填品牌色 */
+.row-checkbox,
+thead th input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+/* ================================================================
+   表格底部的「添加一行」幽灵行
+   ----------------------------------------------------------------
+   与数据行同高、同缩进（让出勾选列 + 序号列），只在悬停时浮出品牌色。
+   ================================================================ */
+.ghost-row {
+    display: flex;
+    align-items: center;
+    height: 44px;
+    padding-left: 58px;
+    border-top: 1px solid var(--border-light);
+}
+
+    .ghost-row button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 28px;
+        padding: 0 10px;
+        border: none;
+        border-radius: var(--radius-sm);
+        background: transparent;
+        font-family: inherit;
+        font-size: 13px;
+        color: var(--text-4);
+        cursor: pointer;
+        transition: background var(--transition-fast), color var(--transition-fast);
+    }
+
+        .ghost-row button:hover {
+            background: var(--primary-soft);
+            color: var(--primary);
+        }

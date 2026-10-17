@@ -112,7 +112,9 @@ public class AuthController : ControllerBase
             Username = user.Username,
             Token = token,
             RefreshToken = refreshToken,
-            FamilyId = refreshEntity.FamilyId
+            FamilyId = refreshEntity.FamilyId,
+            AuthType = "local",
+            HasPassword = true
         }, "登录成功"));
     }
 
@@ -162,7 +164,9 @@ public class AuthController : ControllerBase
             Username = windowsName.Split('\\').Last(),
             Token = token,
             RefreshToken = refreshToken,
-            FamilyId = refreshEntity.FamilyId
+            FamilyId = refreshEntity.FamilyId,
+            AuthType = "windows",
+            HasPassword = false
         }, "Windows 登录成功"));
     }
 
@@ -181,7 +185,10 @@ public class AuthController : ControllerBase
         return Ok(ApiResponse<AuthResponse>.Ok(new AuthResponse
         {
             Id = user.Id,
-            Username = user.Username
+            Username = user.Username,
+            // 设置页据此区分「本地账号密码 / Windows 集成身份验证」，空哈希即 Windows 自动建档
+            AuthType = string.IsNullOrEmpty(user.PasswordHash) ? "windows" : "local",
+            HasPassword = !string.IsNullOrEmpty(user.PasswordHash)
         }));
     }
 

@@ -14,6 +14,12 @@
     </script>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <script>
+        // 图表库走 CDN，偶尔会加载失败；失败时自动换备用源再试一次，避免看板整页空白
+        if (typeof echarts === 'undefined') {
+            document.write('<script src="https://registry.npmmirror.com/echarts/5.5.1/files/dist/echarts.min.js"><\/script>');
+        }
+    </script>
 </head>
 <body>
     <!-- 页面外壳：图标 sprite / 主题切换 / 退出登录 / 导航高亮，由 js/shell.js 统一提供 -->
@@ -25,32 +31,41 @@
         <aside class="sidebar">
             <div class="sidebar-brand">
                 <div class="brand-icon"><svg class="icon"><use href="#i-table"/></svg></div>
-                <span class="brand-name">ExcelToWeb</span>
+                <div class="brand-text">
+                    <span class="brand-name">ExcelToWeb</span>
+                    <span class="brand-sub collapse-hide">表格数据工作台</span>
+                </div>
             </div>
 
             <nav class="sidebar-nav">
+                <p class="nav-section collapse-hide">工作区</p>
                 <a class="nav-link" href="/" data-page="index" data-label="表格编辑"><svg class="icon"><use href="#i-table"/></svg><span class="collapse-hide">表格编辑</span></a>
                 <a class="nav-link" href="/tables.html" data-page="tables" data-label="表格管理"><svg class="icon"><use href="#i-columns"/></svg><span class="collapse-hide">表格管理</span></a>
                 <a class="nav-link" href="/dashboard.html" data-page="dashboard" data-label="数据看板"><svg class="icon"><use href="#i-chart"/></svg><span class="collapse-hide">数据看板</span></a>
                 <a class="nav-link" href="/audit.html" data-page="audit" data-label="审计中心"><svg class="icon"><use href="#i-clock"/></svg><span class="collapse-hide">审计中心</span></a>
                 <a class="nav-link" href="/trash.html" data-page="trash" data-label="回收站"><svg class="icon"><use href="#i-trash"/></svg><span class="collapse-hide">回收站</span></a>
+                <p class="nav-section collapse-hide">系统</p>
                 <a class="nav-link" href="/help.html" data-page="help" data-label="使用帮助"><svg class="icon"><use href="#i-help"/></svg><span class="collapse-hide">使用帮助</span></a>
                 <a class="nav-link" href="/settings.html" data-page="settings" data-label="设置"><svg class="icon"><use href="#i-settings"/></svg><span class="collapse-hide">设置</span></a>
             </nav>
 
             <div class="sidebar-bottom">
-                <button class="btn btn-outline btn-sm sidebar-collapse-btn" id="sidebarToggle"
+                <button class="side-action sidebar-collapse-btn" id="sidebarToggle"
                         aria-label="折叠侧边栏" title="折叠侧边栏" aria-expanded="true">
                     <svg class="icon"><use href="#i-chevron-left"/></svg><span class="collapse-label collapse-hide">折叠侧边栏</span>
                 </button>
-                <button class="btn btn-outline btn-sm" id="themeToggle" aria-label="切换主题">
+                <button class="side-action" id="themeToggle" aria-label="切换主题">
                     <svg class="icon"><use href="#i-moon"/></svg><span class="theme-label collapse-hide">深色模式</span>
+                    <span class="switch" aria-hidden="true"></span>
                 </button>
-                <div class="user-box">
-                    <svg class="icon icon-sm"><use href="#i-user"/></svg>
-                    <span id="userInfo"></span>
+                <div class="user-card">
+                    <div class="user-avatar"><svg class="icon icon-sm"><use href="#i-user"/></svg></div>
+                    <div class="user-meta">
+                        <span class="user-name" id="userInfo"></span>
+                        <span class="user-role">管理员 · 本机</span>
+                    </div>
                 </div>
-                <button class="btn btn-outline btn-sm" onclick="handleLogout()">
+                <button class="side-action" onclick="handleLogout()">
                     <svg class="icon"><use href="#i-logout"/></svg><span class="collapse-hide">退出登录</span>
                 </button>
             </div>
@@ -59,8 +74,16 @@
         <!-- ===== 主内容 ===== -->
         <main class="main" id="mainContent">
             <div class="page-header">
-                <h1><svg class="icon"><use href="#i-chart"/></svg>数据看板</h1>
-                <a class="link" href="/" style="font-size:14px;">返回表格编辑</a>
+                <div class="page-title">
+                    <h1><svg class="icon"><use href="#i-chart"/></svg>数据看板</h1>
+                    <p class="page-sub" id="dashSub">正在加载数据…</p>
+                </div>
+                <div class="page-actions">
+                    <span class="dash-updated" id="dashUpdated"></span>
+                    <a class="btn btn-outline btn-sm" href="/">
+                        <svg class="icon"><use href="#i-chevron-left"/></svg>返回表格编辑
+                    </a>
+                </div>
             </div>
 
             <div id="dashboardContent">
@@ -78,6 +101,11 @@
     <script src="js/utils.js"></script>
     <script src="js/api.js"></script>
     <script src="js/palette.js"></script>
+    <!-- 看板三件套：chart.js（尺寸/滚动策略，纯函数）-> chart-render.js（ECharts 选项）
+         -> dashboard-view.js（HTML 模板）-> dashboard.js（取数与联动） -->
+    <script src="js/chart.js"></script>
+    <script src="js/chart-render.js"></script>
+    <script src="js/dashboard-view.js"></script>
     <script src="js/dashboard.js"></script>
 </body>
 </html>

@@ -1,0 +1,337 @@
+/* ================================================================
+   ExcelToWeb 样式模块：sidebar.css —— 侧边栏（品牌 / 导航 / 底部操作 / 折叠态）
+   （由 layout.css 按区域拆分而来；style.css 以 @import 汇总，加载顺序即层叠顺序）
+   宽屏三态：常态 / 折叠 / 悬停气泡；窄屏形态（横向工具条）见 pages.css。
+   ================================================================ */
+
+.sidebar {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-light);
+    padding: 14px 12px 12px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    transition: width var(--transition-base), background var(--transition-base), border-color var(--transition-base);
+}
+
+/* ===== 品牌区 ===== */
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 4px 6px 18px;
+}
+
+    .sidebar-brand .brand-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        background: var(--grad-brand);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        flex-shrink: 0;
+        box-shadow: 0 2px 6px color-mix(in srgb, var(--primary) 32%, transparent);
+    }
+
+        .sidebar-brand .brand-icon .icon {
+            width: 17px;
+            height: 17px;
+            stroke-width: 2.2;
+        }
+
+    .sidebar-brand .brand-text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .sidebar-brand .brand-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text-1);
+        letter-spacing: 0.01em;
+        line-height: 1.35;
+    }
+
+    .sidebar-brand .brand-sub {
+        font-size: 11px;
+        color: var(--text-4);
+        line-height: 1.4;
+        white-space: nowrap;
+    }
+
+/* ===== 导航 ===== */
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* 分组标题：把「工作区 / 系统」分开，长导航一眼能扫到目标 */
+.nav-section {
+    padding: 14px 10px 6px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--text-4);
+    white-space: nowrap;
+}
+
+.sidebar-nav .nav-section:first-child {
+    padding-top: 2px;
+}
+
+.nav-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 10px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-2);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+    .nav-link .icon {
+        width: 16px;
+        height: 16px;
+        color: var(--text-3);
+        transition: color var(--transition-fast);
+    }
+
+    .nav-link:hover {
+        background: var(--bg-soft);
+        color: var(--text-1);
+    }
+
+        .nav-link:hover .icon {
+            color: var(--text-2);
+        }
+
+    /* 激活态：浅色底 + 品牌色文字，不加粗（加粗会让导航文字抖动） */
+    .nav-link.active {
+        background: var(--primary-soft);
+        color: var(--primary);
+        font-weight: 500;
+    }
+
+        .nav-link.active .icon {
+            color: var(--primary);
+        }
+
+/* ===== 侧边栏底部：折叠 / 主题 / 用户 / 退出 ===== */
+.sidebar-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    border-top: 1px solid var(--border-light);
+    padding-top: 8px;
+    margin-top: 8px;
+}
+
+/* 底部条目的统一形态：整行可点，图标 + 文字，右侧可挂控件（开关） */
+.side-action {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 7px 10px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-2);
+    font-family: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+    .side-action .icon {
+        width: 15px;
+        height: 15px;
+        color: var(--text-3);
+        transition: color var(--transition-fast);
+    }
+
+    .side-action:hover {
+        background: var(--bg-soft);
+        color: var(--text-1);
+    }
+
+        .side-action:hover .icon {
+            color: var(--text-2);
+        }
+
+    .side-action:focus-visible {
+        outline: 2px solid var(--primary);
+        outline-offset: -2px;
+    }
+
+/* 主题开关：纯 CSS 表达状态，由 html[data-theme] 驱动，不需要 JS 同步 */
+.switch {
+    position: relative;
+    margin-left: auto;
+    width: 30px;
+    height: 17px;
+    flex-shrink: 0;
+    border-radius: var(--radius-full);
+    background: var(--border-strong);
+    transition: background var(--transition-base);
+}
+
+    .switch::after {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(17, 26, 43, 0.24);
+        transition: transform var(--transition-base) var(--ease-out);
+    }
+
+html[data-theme="dark"] .switch {
+    background: var(--primary);
+}
+
+html[data-theme="dark"] .switch::after {
+    transform: translateX(13px);
+}
+
+/* 用户卡片：头像 + 姓名 + 角色，是侧边栏唯一的「实底」元素 */
+.user-card {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 6px 0 2px;
+    padding: 7px 9px;
+    border-radius: var(--radius-md);
+    background: var(--bg-soft);
+    min-width: 0;
+}
+
+    .user-card .user-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: var(--radius-sm);
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: color-mix(in srgb, var(--primary) 12%, var(--bg-card));
+        color: var(--primary);
+    }
+
+    .user-card .user-meta {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        line-height: 1.35;
+    }
+
+    .user-card .user-name {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-1);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .user-card .user-role {
+        font-size: 11px;
+        color: var(--text-4);
+        white-space: nowrap;
+    }
+
+/* ================================================================
+   侧边栏折叠（图标模式）
+   ----------------------------------------------------------------
+   折叠状态挂在 .app-shell 上（.app-shell.sidebar-collapsed），
+   只隐藏文字与次要元素，导航图标保持居中可用；悬停时用气泡提示标题。
+   ================================================================ */
+.sidebar-collapse-btn {
+    justify-content: flex-start;
+}
+
+/* 折叠后：整体收窄 */
+.app-shell.sidebar-collapsed .sidebar {
+    width: var(--sidebar-w-collapsed);
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+/* 折叠后：隐藏文字，只留图标（.collapse-hide 标记所有会被折叠隐藏的文本） */
+.app-shell.sidebar-collapsed .brand-text,
+.app-shell.sidebar-collapsed .collapse-hide,
+.app-shell.sidebar-collapsed .nav-section,
+.app-shell.sidebar-collapsed .user-meta,
+.app-shell.sidebar-collapsed .switch {
+    display: none;
+}
+
+.app-shell.sidebar-collapsed .sidebar-brand,
+.app-shell.sidebar-collapsed .user-card {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.app-shell.sidebar-collapsed .nav-link,
+.app-shell.sidebar-collapsed .side-action {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.app-shell.sidebar-collapsed .sidebar-nav {
+    gap: 2px;
+}
+
+/* 折叠后的悬停气泡提示（内容取自 data-label） */
+.app-shell.sidebar-collapsed .nav-link {
+    position: relative;
+}
+
+    .app-shell.sidebar-collapsed .nav-link::after {
+        content: attr(data-label);
+        position: absolute;
+        left: calc(100% + 10px);
+        top: 50%;
+        transform: translateY(-50%);
+        padding: 5px 10px;
+        background: var(--text-1);
+        color: var(--bg-card);
+        border-radius: var(--radius-sm);
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+        box-shadow: var(--shadow-pop);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity var(--transition-fast), visibility var(--transition-fast);
+        z-index: 120;
+    }
+
+    .app-shell.sidebar-collapsed .nav-link:hover::after {
+        opacity: 1;
+        visibility: visible;
+    }

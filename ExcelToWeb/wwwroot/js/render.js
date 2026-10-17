@@ -33,6 +33,45 @@ function showTableSkeleton(colCount) {
     }, 120);
 }
 
+/* 短状态值 → 标签色。只用于视觉呈现，不改变取值、不改变可编辑性。
+   命中率应当极低：只有值恰好等于这些词的单元格才会变成胶囊。 */
+const STATUS_TAGS = {
+    '已完成': 'success', '已通过': 'success', '正常': 'success', '有效': 'success',
+    '启用': 'success', '已启用': 'success', '在售': 'success',
+    '进行中': 'warning', '处理中': 'warning', '待审核': 'warning',
+    '未完成': 'muted', '未开始': 'muted', '待处理': 'muted', '未启用': 'muted',
+    '停用': 'muted', '已停用': 'muted', '无效': 'muted', '已关闭': 'muted'
+};
+
+/** 返回值对应的标签类名片段（无命中时返回空串，不影响原有单元格样式） */
+function statusTagClass(value) {
+    const key = String(value === null || value === undefined ? '' : value).trim();
+    const tone = STATUS_TAGS[key];
+    return tone ? ' cell-tag cell-tag-' + tone : '';
+}
+
+/**
+ * 刷新页头的「数据来源 + 行/列统计」。
+ * 表格加载、切换、增删行都会经过 renderTable，因此在这里统一同步，
+ * 用户不用回头去看下拉框也能知道当前看的是哪张表。
+ */
+function updatePageMeta() {
+    const sub = document.getElementById('pageSub');
+    const meta = document.getElementById('tableMeta');
+    const table = (typeof allTables !== 'undefined' && allTables)
+        ? allTables.find(t => t.id === currentTableId)
+        : null;
+
+    if (sub) {
+        sub.textContent = table
+            ? `${table.tableName} · 最后保存 ${formatTime(table.updatedAt || table.createdAt)}`
+            : '尚未选择表格 · 上传 Excel 或从上方下拉框选择';
+    }
+    if (meta) {
+        meta.textContent = `${currentRows.length} 行 · ${currentHeaders.length} 列`;
+    }
+}
+
 /**
  * 取消尚未显示的骨架屏。数据就绪（成功或失败）时必须调用，
  * 否则延迟到点的骨架屏会覆盖刚渲染好的真实表格。
@@ -47,6 +86,8 @@ function hideTableSkeleton() {
 function renderTable() {
     const container = document.getElementById('tableContainer');
     if (!container) return;
+
+    updatePageMeta();
 
     // 空状态
     if (currentHeaders.length === 0 || currentRows.length === 0) {
@@ -109,10 +150,14 @@ function renderTable() {
     // col-pin / col-pin-1 / col-pin-2 用于冻结「勾选列 + 序号列」（样式见 table.css）
     let html = '<table><thead><tr>';
     html += '<th class="cell-center col-pin col-pin-1" style="width:36px; min-width:36px;"><input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes()" /></th>';
-    html += '<th class="cell-center col-pin col-pin-2" style="width:44px; min-width:44px;">#</th>';
+    html += '<th class="cell-center col-pin col-pin-2" style="width:44px; min-width:44px;">序号</th>';
     for (const h of visibleHeaders) {
         const order = sortOrderOf(h);
-        const arrow = order === 1 ? ' ▲' : (order === -1 ? ' ▼' : ' ⇅');
+        // 排序指示器平时隐藏（悬停该列才出现），只有真正参与排序的列常显 ——
+        // 否则每一列都顶着一个小箭头，表头会显得很吵
+        const arrow = order === 1 ? '<span class="th-arrow is-on">▲</span>'
+            : (order === -1 ? '<span class="th-arrow is-on">▼</span>'
+                : '<span class="th-arrow">⇅</span>');
         // 多列排序时给参与排序的列标出优先级序号（1 = 主排序键）
         const rank = (order !== 0 && sortKeys.length > 1)
             ? `<span class="th-sort-rank">${sortKeys.findIndex(k => k.field === h) + 1}</span>`
@@ -152,8 +197,10 @@ function renderTable() {
             const highlight = cellMatchesSearch(key, val) ? ' search-hit' : '';
             const style = bgColor ? ` style="background-color:${bgColor};"` : '';
             const computed = isComputedColumn(key);
+            // 命中颜色规则时以规则色为准，不再叠加状态标签（两者都是底色，会互相打架）
+            const tag = bgColor ? '' : statusTagClass(val);
 
-            html += `<td class="editable-cell${highlight}${computed ? ' cell-computed' : ''}"${style}>`;
+            html += `<td class="editable-cell${highlight}${computed ? ' cell-computed' : ''}${tag}"${style}>`;
 
             // 计算列仍然渲染成 .cell-input —— 一批模块（选区 / 填充柄 / 键盘导航 /
             // 粘贴）是按「每列一个 .cell-input」的位置关系定位的，少渲染一个就会整列错位。
@@ -183,6 +230,12 @@ function renderTable() {
     html += buildAggregateRowHtml(visibleHeaders);
     html += '</table>';
 
+    // 表格底部的「添加一行」：与 Excel 的「在末尾追加」直觉一致，
+    // 比每次回到工具栏点「新增行」更顺手（仍然复用同一个 addRow）
+    html += '<div class="ghost-row">'
+        + '<button type="button" onclick="addRow()">'
+        + '<svg class="icon icon-sm"><use href="#i-plus"/></svg>添加一行</button></div>';
+
     // 统计栏：区分「全量」与「被视图裁剪后」的行数，避免用户误以为数据变少了；
     // 生效中的筛选必须一直看得见（筛选是隐形状态，看不见就会以为数据丢了）
     const viewFiltered = !!searchKeyword || (typeof isFilterActive === 'function' && isFilterActive());
@@ -191,7 +244,7 @@ function renderTable() {
         html += `<span>筛选出 <strong>${displayRows.length}</strong> 行</span>`;
         html += `<span class="stats-muted">全量 ${currentRows.length} 行</span>`;
     } else {
-        html += `<span>共 <strong>${currentRows.length}</strong> 行</span>`;
+        html += `<span>共 <strong>${currentRows.length}</strong> 行 · <strong>${visibleHeaders.length}</strong> 列</span>`;
     }
     if (typeof isFilterActive === 'function' && isFilterActive()) {
         html += '<span class="filter-chip">';
@@ -206,7 +259,7 @@ function renderTable() {
         html += '<button class="filter-chip-x" title="清除排序" onclick="clearSort()"><svg class="icon icon-sm"><use href="#i-x"/></svg></button>';
         html += '</span>';
     }
-    html += `<span><strong>${visibleHeaders.length}</strong> 列</span>`;
+    if (viewFiltered) html += `<span><strong>${visibleHeaders.length}</strong> 列</span>`;
     html += '<span class="stat-hint">拖拽 / Shift+方向键选区 · 表头点击排序（Shift+点击多列）· Ctrl+C·V 与 Excel 互通 · 编辑后点击"保存"</span>';
     html += '</div>';
 

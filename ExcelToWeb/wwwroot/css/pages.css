@@ -1,332 +1,27 @@
 /* ================================================================
-   ExcelToWeb 样式模块：pages.css —— 登录页、看板页、响应式断点
+   ExcelToWeb 样式模块：pages.css —— 主页面响应式断点
+   登录页见 login.css，看板页见 dash.css
    （由 style.css 拆分而来；style.css 以 @import 汇总，加载顺序即层叠顺序）
    ================================================================ */
 
 /* ================================================================
-   登录页：极光渐变背景 + 点阵纹理 + 悬浮玻璃卡片
+   看板：1180px 以下统计卡从 4 列变 2 列
+   ----------------------------------------------------------------
+   侧栏固定 220px，1440 屏主区约 1160px，4 列每卡 ~270px 正合适；
+   到 1024 屏主区只剩 ~740px，4 列会把「单价(元)合计」这类长标签挤到省略号，
+   与设计稿的 1024 版（2×2）保持一致。
    ================================================================ */
-.auth-page {
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-    position: relative;
-    overflow: hidden;
-    background:
-        radial-gradient(ellipse 70% 55% at 15% -5%, color-mix(in srgb, var(--primary) 22%, transparent), transparent 65%),
-        radial-gradient(ellipse 55% 50% at 90% 105%, color-mix(in srgb, var(--purple) 20%, transparent), transparent 65%),
-        radial-gradient(ellipse 40% 40% at 85% 10%, color-mix(in srgb, var(--info) 10%, transparent), transparent 70%),
-        var(--bg-page);
-}
-
-    /* 点阵纹理层，增加空间纵深感 */
-    .auth-page::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background-image: radial-gradient(color-mix(in srgb, var(--text-1) 14%, transparent) 1px, transparent 1px);
-        background-size: 26px 26px;
-        mask-image: radial-gradient(ellipse 70% 65% at 50% 42%, transparent 30%, #000 100%);
-        -webkit-mask-image: radial-gradient(ellipse 70% 65% at 50% 42%, transparent 30%, #000 100%);
-        pointer-events: none;
-    }
-
-.auth-card {
-    position: relative;
-    background: color-mix(in srgb, var(--bg-card) 88%, transparent);
-    backdrop-filter: blur(18px) saturate(1.4);
-    -webkit-backdrop-filter: blur(18px) saturate(1.4);
-    border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-    border-radius: 24px;
-    padding: 46px 42px;
-    max-width: 424px;
-    width: 100%;
-    box-shadow: 0 2px 6px rgba(10, 26, 51, 0.05), 0 30px 80px rgba(10, 26, 51, 0.14);
-    animation: authIn 0.55s var(--ease-spring);
-}
-
-    /* 卡片顶部品牌渐变发丝线 */
-    .auth-card::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 12%;
-        right: 12%;
-        height: 3px;
-        border-radius: 0 0 var(--radius-full) var(--radius-full);
-        background: var(--grad-brand);
-        opacity: 0.9;
-    }
-
-@keyframes authIn {
-    from {
-        opacity: 0;
-        transform: translateY(22px) scale(0.97);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
+@media (max-width: 1180px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
-
-.auth-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 24px;
-}
-
-    .auth-brand .brand-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 12px;
-        background: var(--grad-brand);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        box-shadow: 0 4px 14px color-mix(in srgb, var(--primary) 40%, transparent),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-    }
-
-    .auth-brand .brand-name {
-        font-size: 16px;
-        font-weight: 700;
-        color: var(--text-1);
-        letter-spacing: 0.2px;
-    }
-
-.auth-title {
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--text-1);
-    margin-bottom: 6px;
-}
-
-.auth-sub {
-    color: var(--text-3);
-    font-size: 14px;
-    margin-bottom: 28px;
-}
-
-.auth-status {
-    text-align: center;
-    color: var(--text-3);
-    font-size: 14px;
-    padding: 24px 0;
-}
-
-.auth-divider {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: var(--text-4);
-    font-size: 12px;
-    margin: 18px 0;
-}
-
-    .auth-divider::before,
-    .auth-divider::after {
-        content: "";
-        flex: 1;
-        height: 1px;
-        background: var(--border-light);
-    }
-
-.auth-alt {
-    text-align: center;
-    margin-top: 18px;
-    font-size: 14px;
-    color: var(--text-3);
-}
-
-    .auth-alt a,
-    .link {
-        color: var(--primary);
-        text-decoration: none;
-        font-weight: 500;
-    }
-
-        .auth-alt a:hover,
-        .link:hover {
-            text-decoration: underline;
-        }
-
-.error-msg {
-    color: var(--danger);
-    font-size: 13px;
-    margin-top: 4px;
-    min-height: 20px;
-}
-
-.hidden {
-    display: none !important;
-}
-
-/* ================================================================
-   看板页
-   ================================================================ */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-    gap: 16px;
-    margin-bottom: 22px;
-}
-
-.stat-card {
-    position: relative;
-    background: var(--bg-card);
-    border: 1px solid var(--border-light);
-    padding: 20px 22px;
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-card);
-    overflow: hidden;
-    transition: transform var(--transition-base) var(--ease-spring), box-shadow var(--transition-base), border-color var(--transition-base);
-}
-
-    /* 顶部渐变发丝线 + 角落光晕，让数字卡更有「仪表感」 */
-    .stat-card::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: var(--grad-brand);
-        opacity: 0.85;
-    }
-
-    .stat-card::after {
-        content: "";
-        position: absolute;
-        right: -26px;
-        bottom: -30px;
-        width: 96px;
-        height: 96px;
-        border-radius: 50%;
-        background: var(--grad-brand-soft);
-        filter: blur(20px);
-        opacity: 0.6;
-        pointer-events: none;
-    }
-
-    .stat-card:hover {
-        transform: translateY(-3px);
-        border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
-        box-shadow: var(--shadow-pop);
-    }
-
-    .stat-card .label {
-        font-size: 13px;
-        color: var(--text-3);
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .stat-card .value {
-        font-size: 30px;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        margin-top: 6px;
-        background: var(--grad-brand);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
-    }
-
-.controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px 20px;
-    margin-bottom: 22px;
-    padding: 14px 18px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-card);
-    align-items: center;
-}
-
-    .controls label {
-        font-size: 13px;
-        color: var(--text-2);
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .controls select {
-        padding: 7px 12px;
-        border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        font-size: 13px;
-        font-family: inherit;
-        background: var(--bg-card);
-        color: var(--text-1);
-        outline: none;
-        cursor: pointer;
-        transition: border-color 0.15s ease, box-shadow 0.15s ease;
-    }
-
-        .controls select:hover {
-            border-color: var(--border-strong);
-        }
-
-        .controls select:focus {
-            border-color: var(--primary);
-            box-shadow: var(--focus-ring);
-        }
-
-#chartContainer {
-    width: 100%;
-    height: 400px;
-    background: var(--bg-card);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-light);
-    box-shadow: var(--shadow-card);
-    padding: 16px;
-    margin-bottom: 22px;
-}
-
-.summary-table-wrap {
-    background: var(--bg-card);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-light);
-    box-shadow: var(--shadow-card);
-    overflow: hidden;
-}
-
-    .summary-table-wrap table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 14px;
-    }
-
-    .summary-table-wrap th {
-        background: var(--bg-head);
-        text-align: left;
-        padding: 12px 16px;
-        font-weight: 600;
-        color: var(--text-2);
-        border-bottom: 2px solid var(--border);
-    }
-
-    .summary-table-wrap td {
-        padding: 10px 16px;
-        border-bottom: 1px solid var(--border-light);
-    }
-
-    .summary-table-wrap tr:hover td {
-        background: var(--bg-head);
-    }
 
 /* ================================================================
    响应式
+   ----------------------------------------------------------------
+   960px 以下：侧边栏变成「品牌 + 底部操作」一行 + 可横向滚动的导航条，
+   工具栏的两行退化为可换行的整体；表格高度交给页面滚动，不再内部截断。
    ================================================================ */
 @media (max-width: 960px) {
     .app-shell {
@@ -339,62 +34,254 @@
         position: static;
         flex-direction: row;
         align-items: center;
-        gap: 10px;
-        padding: 10px 14px;
+        flex-wrap: wrap;
+        gap: 6px 8px;
+        padding: 8px 12px;
         border-right: none;
         border-bottom: 1px solid var(--border-light);
-        flex-wrap: wrap;
     }
 
     .sidebar-brand {
         padding: 0;
+        flex: 0 0 auto;
     }
 
+        .sidebar-brand .brand-sub {
+            display: none;
+        }
+
+    /* 导航：第二行，横向滚动，保留文字（图标条在窄屏无法辨认） */
     .sidebar-nav {
+        order: 3;
+        flex: 1 0 100%;
+        /* 不加 min-width: 0，导航条的 min-content 宽度会撑破整页 */
+        min-width: 0;
         flex-direction: row;
-        flex: 1;
+        align-items: center;
+        gap: 2px;
+        overflow-x: auto;
+        padding-bottom: 2px;
+    }
+
+        .sidebar-nav .nav-section {
+            display: none;
+        }
+
+    .nav-link {
+        padding: 6px 9px;
     }
 
     .sidebar-bottom {
         flex-direction: row;
-        border-top: none;
+        align-items: center;
+        gap: 2px;
+        margin-left: auto;
+        margin-top: 0;
         padding-top: 0;
+        border-top: none;
     }
 
-    .user-box {
-        max-width: 140px;
-    }
+        /* 底部条在窄屏只留图标：文字与开关都由上面的导航条承担 */
+        .sidebar-bottom .collapse-hide,
+        .sidebar-bottom .theme-label,
+        .sidebar-bottom .switch,
+        .sidebar-bottom .user-meta {
+            display: none;
+        }
 
-    .main {
-        padding: 16px;
-    }
-
-    .toolbar {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .toolbar-divider {
-        width: auto;
-        height: 1px;
-        align-self: stretch;
-        margin: 4px 0;
-    }
-
-    .toolbar-group {
-        flex-wrap: wrap;
-    }
-
-    .toolbar-spacer {
+    .sidebar-collapse-btn {
         display: none;
     }
 
-    .filter-group {
+    .app-shell.sidebar-collapsed .sidebar {
+        width: 100%;
+        padding: 8px 12px;
+    }
+
+        .app-shell.sidebar-collapsed .brand-text,
+        .app-shell.sidebar-collapsed .collapse-hide,
+        .app-shell.sidebar-collapsed .nav-section {
+            display: revert;
+        }
+
+        .app-shell.sidebar-collapsed .nav-link,
+        .app-shell.sidebar-collapsed .side-action {
+            justify-content: flex-start;
+            padding: 6px 9px;
+        }
+
+            .app-shell.sidebar-collapsed .nav-link::after {
+                display: none;
+            }
+
+    .user-card {
+        background: transparent;
+        padding: 0;
+        margin: 0;
+    }
+
+    .main {
+        padding: 16px 14px 28px;
+        max-width: none;
+    }
+
+    .page-header {
+        margin-bottom: 12px;
+    }
+
+    .page-sub {
+        padding-left: 0;
+    }
+
+    /* 工具栏：两行都变成「可换行的整行」，右侧控件组独占一行 */
+    .toolbar {
+        padding: 10px;
+        gap: 8px;
+    }
+
+    .toolbar-divider {
+        display: none;
+    }
+
+    .toolbar-right {
         margin-left: 0;
         width: 100%;
     }
 
-        .filter-group input[type="date"] {
+    .toolbar-group {
+        gap: 6px;
+    }
+
+    .search-box {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .search-input {
+        width: 100%;
+    }
+
+    .table-select {
+        max-width: 100%;
+    }
+
+    .filter-group input[type="date"] {
+        flex: 1;
+        min-width: 0;
+    }
+
+    #tableContainer {
+        max-height: none;
+    }
+
+    /* 看板：卡片头部与工具行换行排列，分段控件退到下一行靠左 */
+    .dash-card-toolbar {
+        gap: 8px 10px;
+    }
+
+    .dash-card-toolbar .spacer {
+        display: none;
+    }
+
+    .seg {
+        margin-left: 0;
+    }
+
+    .chart-meta {
+        flex-wrap: wrap;
+    }
+
+    .chart-scroll {
+        padding: 2px 10px 8px;
+    }
+}
+
+@media (max-width: 640px) {
+    .page-header h1 {
+        font-size: 15px;
+    }
+
+    /* 看板：单列堆叠，图表高度收一点，避免一屏只看到半张图 */
+    .stats-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+    }
+
+    .stat-card .value {
+        font-size: 24px;
+    }
+
+    .dash-card-head {
+        padding: 12px 12px 10px;
+    }
+
+    .dash-card-toolbar {
+        padding: 0 12px 10px;
+    }
+
+    .field {
+        flex: 1 1 46%;
+        min-width: 0;
+    }
+
+        .field select {
             flex: 1;
+            min-width: 0;
+            max-width: none;
         }
+
+    .chart-meta {
+        padding: 8px 12px 0;
+    }
+
+    /* 图表在手机上按窄屏可用宽度重算，柱宽会自动收到下限 */
+    #chartContainer {
+        height: 320px;
+    }
+
+    .summary-card th,
+    .summary-card td {
+        padding: 0 12px;
+    }
+
+    .summary-card .ratio {
+        width: 44px;
+    }
+
+    /* 手机宽度下工具组独占整行，内部自行换行，不再横向溢出 */
+    .toolbar-group {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .table-select {
+        min-width: 0;
+        flex: 1 1 140px;
+    }
+
+    .page-actions {
+        width: 100%;
+    }
+
+    .btn {
+        padding: 0 10px;
+    }
+
+    .ghost-row {
+        padding-left: 14px;
+    }
+
+    .stats-bar {
+        gap: 10px;
+    }
+
+    /* 快捷键提示在窄屏没有意义，先让位给数据本身 */
+    .stat-hint {
+        display: none;
+    }
+
+    .selection-bar,
+    .range-bar {
+        margin: 8px 0 0;
+    }
 }

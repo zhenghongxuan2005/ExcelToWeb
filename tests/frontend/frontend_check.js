@@ -36,6 +36,9 @@ function makeSandbox(knownIds) {
         querySelectorAll() { return []; }, querySelector() { return null; },
         createElement() { return makeEl(); }, createElementNS() { return makeEl(); },
         createTextNode(t) { return { textContent: t }; },
+        // 兜底资源的页面会调 document.write 注入 <script>；沙箱里不需要真的写入，
+        // 但必须存在，否则整页脚本会在加载期中断（dashboard.html 的 echarts 兜底即如此）
+        write() {},
         body: makeEl(), head: makeEl(), documentElement: makeEl()
     };
     const store = {};
@@ -51,6 +54,8 @@ function makeSandbox(knownIds) {
         requestAnimationFrame: cb => setTimeout(cb, 0),
         XMLHttpRequest: function () {},
         Blob: function () {}, URL: { createObjectURL: () => '', revokeObjectURL() {} },
+        // 浏览器标准对象，Node 里同样是全局可用的；缺了它 login.html 查查询串会中断
+        URLSearchParams,
         Element: function () {}, Node: function () {}
     };
     sandbox.window = sandbox;

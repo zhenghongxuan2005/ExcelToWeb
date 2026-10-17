@@ -26,6 +26,15 @@ public class AuthResponse
 
     /// <summary>会话族标识。前端保存后用于在会话列表里标记「当前会话」</summary>
     public string FamilyId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 账号类型：local = 本地账号密码，windows = Windows 集成身份验证自动建档。
+    /// 设置页的「账号类型 / 密码状态」直接展示这个字段，前端不再靠用户名格式猜。
+    /// </summary>
+    public string AuthType { get; set; } = "local";
+
+    /// <summary>是否设置了本地密码（Windows 自动建档的账号为 false，不能用密码登录）</summary>
+    public bool HasPassword { get; set; }
 }
 
 /// <summary>刷新令牌请求：用长效令牌换取新的 access + refresh 对（轮换）</summary>

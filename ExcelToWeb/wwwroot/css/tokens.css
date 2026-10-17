@@ -4,6 +4,8 @@
    说明：
    - 所有页面/组件只使用这里定义的变量，避免颜色、圆角、阴影散落在各处
    - 暗色模式下除了替换颜色，也会提高文字与边框的对比度
+   - 视觉基调：白底 + 发丝级描边 + 极轻阴影，信息密度优先，
+     颜色只用于表达状态（主色=可操作，绿=成功，红=危险，灰=次要）
    - 文件末尾是全局无障碍与动效偏好设置
    ================================================================ */
 
@@ -12,53 +14,61 @@
     color-scheme: light;
 
     /* --- 品牌与语义色 --- */
-    --primary: #2b59ff;
-    --primary-hover: #1c46e8;
-    --primary-soft: #edf2ff;
-    --primary-softer: #f6f9ff;
+    /* 主色沿用人机界面基线里的靛蓝（非通用蓝），和侧栏激活态、选中行同一套色相 */
+    --primary: #5e6ad2;
+    --primary-hover: #4f59bd;
+    --primary-soft: #eef0fb;
+    --primary-softer: #f6f7fd;
+    --primary-line: #dbdef5;
 
-    --success: #0f9d4d;
-    --success-hover: #0b8540;
+    --success: #1a7f5a;
+    --success-hover: #146b4b;
+    --success-line: #cbe5da;
 
-    --danger: #e02d3c;
-    --danger-hover: #c4212f;
+    --danger: #c2444b;
+    --danger-hover: #a93a41;
+    --danger-line: #f0d4d7;
 
-    --warning: #b45309;
-    --info: #2b59ff;
+    --warning: #b26a12;
+    --info: #5e6ad2;
 
-    --purple: #7c53e8;
+    --purple: #7c5cf0;
 
     /* --- 文字层级（1 最深，4 最浅） --- */
-    --text-1: #0a1a33;
-    --text-2: #45556e;
-    --text-3: #6b7b93;
-    --text-4: #9aabbf;
+    --text-1: #1c2433;
+    --text-2: #4a5568;
+    --text-3: #78839a;
+    --text-4: #a0aabb;
 
     /* --- 背景层级 --- */
-    --bg-page: #edf1f8;
+    --bg-page: #f4f6fa;
     --bg-card: #ffffff;
-    --bg-soft: #f1f5fb;
-    --bg-head: #f7faff;
+    --bg-soft: #f5f6fa;
+    --bg-head: #fafbfd;
     --bg-sidebar: #ffffff;
 
     /* --- 描边 --- */
-    --border: #dbe2ee;
-    --border-light: #edf1f8;
-    --border-strong: #c2cde0;
+    --border: #e9ecf2;
+    --border-light: #eef0f5;
+    --border-strong: #d6dbe6;
+    /* 表单控件描边：比卡片描边略深一档，白底输入框/下拉框才看得出边界 */
+    --border-field: #e0e5ef;
+    /* 表格行分隔线：比卡片描边更淡，长表格不至于变成「棋盘」 */
+    --border-row: #f1f3f8;
 
-    /* --- 遮罩与阴影梯度（分层环境阴影，更接近真实光照） --- */
-    --overlay: rgba(10, 26, 51, 0.42);
-    --shadow-xs: 0 1px 2px rgba(10, 26, 51, 0.05);
-    --shadow-card: 0 1px 2px rgba(10, 26, 51, 0.04), 0 8px 28px rgba(10, 26, 51, 0.06);
-    --shadow-pop: 0 2px 6px rgba(10, 26, 51, 0.06), 0 12px 32px rgba(10, 26, 51, 0.14);
-    --shadow-modal: 0 4px 12px rgba(10, 26, 51, 0.08), 0 24px 64px rgba(10, 26, 51, 0.22);
+    /* --- 遮罩与阴影：只保留「浮起」所需的层次，常态组件靠描边区分 --- */
+    --overlay: rgba(17, 26, 43, 0.4);
+    --shadow-xs: 0 1px 2px rgba(17, 26, 43, 0.04);
+    --shadow-card: 0 1px 2px rgba(17, 26, 43, 0.04);
+    --shadow-pop: 0 2px 6px rgba(17, 26, 43, 0.06), 0 12px 32px rgba(17, 26, 43, 0.1);
+    --shadow-modal: 0 4px 12px rgba(17, 26, 43, 0.08), 0 24px 64px rgba(17, 26, 43, 0.18);
 
     /* --- 圆角梯度 --- */
-    --radius-xs: 6px;
-    --radius-sm: 9px;
-    --radius-md: 13px;
-    --radius-lg: 17px;
-    --radius-xl: 22px;
+    --radius-xs: 4px;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
     --radius-full: 999px;
 
     /* --- 间距梯度（4 的倍数） --- */
@@ -69,83 +79,96 @@
     --space-5: 24px;
     --space-6: 32px;
 
-    /* --- 动效时长与弹簧曲线 --- */
-    --transition-fast: 0.15s ease;
-    --transition-base: 0.22s ease;
-    --transition-slow: 0.32s ease;
+    /* --- 动效时长与曲线 --- */
+    --transition-fast: 0.14s ease;
+    --transition-base: 0.2s ease;
+    --transition-slow: 0.3s ease;
     --ease-spring: cubic-bezier(0.34, 1.4, 0.44, 1);
     --ease-out: cubic-bezier(0.22, 0.61, 0.21, 1);
 
     /* --- 布局尺寸 --- */
-    --sidebar-w: 228px;
-    --sidebar-w-collapsed: 68px;
+    --sidebar-w: 220px;
+    --sidebar-w-collapsed: 64px;
+    /* 工具栏两类控件统一高度，横排时不会参差 */
+    --control-h: 32px;
+    --control-h-sm: 28px;
 
-    /* --- 品牌渐变（图标底色等复用） --- */
-    --grad-brand: linear-gradient(135deg, var(--primary), var(--purple));
-    --grad-brand-soft: linear-gradient(135deg, var(--primary-soft), color-mix(in srgb, var(--purple) 10%, var(--primary-soft)));
+    /* --- 品牌渐变（仅图标底色复用） --- */
+    --grad-brand: linear-gradient(140deg, #7c86e8 0%, #5e6ad2 58%, #4b55bd 100%);
+    --grad-brand-soft: linear-gradient(140deg, #eef0fb, #f4f0ff);
 
-    --focus-ring: 0 0 0 3px rgba(43, 89, 255, 0.16);
+    --focus-ring: 0 0 0 3px rgba(94, 106, 210, 0.16);
 }
 
 /* ===== 设计令牌（暗色） ===== */
 html[data-theme="dark"] {
     color-scheme: dark;
 
-    --primary: #5c82ff;
-    --primary-hover: #7a99ff;
-    --primary-soft: #1b2a52;
-    --primary-softer: #141f3a;
+    --primary: #8e97ea;
+    --primary-hover: #a3abf3;
+    --primary-soft: #1d2340;
+    --primary-softer: #171c33;
+    --primary-line: #333a63;
 
     /* 暗色下语义色整体提亮，否则在深底上几乎看不出差别 */
-    --success: #2ab968;
-    --success-hover: #3dcc7c;
+    --success: #3fbb8c;
+    --success-hover: #57cd9e;
+    --success-line: #1f4a3a;
 
-    --danger: #f04c5a;
-    --danger-hover: #ff6470;
+    --danger: #e8828a;
+    --danger-hover: #f59aa1;
+    --danger-line: #4a2830;
 
-    --warning: #e0a03a;
-    --info: #7a99ff;
+    --warning: #dfa758;
+    --info: #8e97ea;
 
     --purple: #9b7bf0;
 
-    --danger-soft: #3d1a20;
-    --success-soft: #10291c;
+    --danger-soft: #2e1a1f;
+    --success-soft: #142a21;
 
-    --text-1: #e9eFFC;
-    --text-2: #b3c2d9;
-    --text-3: #8195b3;
-    --text-4: #5d7294;
+    --text-1: #e8edf7;
+    --text-2: #b1bccd;
+    --text-3: #7f8da3;
+    --text-4: #5c6a80;
 
-    --bg-page: #0b111d;
-    --bg-card: #141d2e;
-    --bg-soft: #1b2639;
-    --bg-head: #182234;
-    --bg-sidebar: #101827;
+    --bg-page: #0c111c;
+    --bg-card: #131a27;
+    --bg-soft: #1a2231;
+    --bg-head: #131a27;
+    --bg-sidebar: #10161f;
 
-    --border: #2a3a56;
-    --border-light: #1f2c44;
-    --border-strong: #3d5170;
+    --border: #26303f;
+    --border-light: #1f2836;
+    --border-strong: #3a4658;
+    --border-field: #2c3748;
+    --border-row: #1d2634;
 
     --overlay: rgba(2, 6, 14, 0.62);
-    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.32);
-    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.28), 0 10px 32px rgba(0, 0, 0, 0.36);
-    --shadow-pop: 0 2px 8px rgba(0, 0, 0, 0.3), 0 14px 36px rgba(0, 0, 0, 0.48);
-    --shadow-modal: 0 4px 14px rgba(0, 0, 0, 0.36), 0 26px 68px rgba(0, 0, 0, 0.58);
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.24);
+    --shadow-pop: 0 2px 8px rgba(0, 0, 0, 0.3), 0 14px 36px rgba(0, 0, 0, 0.46);
+    --shadow-modal: 0 4px 14px rgba(0, 0, 0, 0.36), 0 26px 68px rgba(0, 0, 0, 0.54);
 
-    --focus-ring: 0 0 0 3px rgba(92, 130, 255, 0.28);
+    --grad-brand: linear-gradient(140deg, #6f95ff 0%, #4a74f0 55%, #3a5ed8 100%);
+    --grad-brand-soft: linear-gradient(140deg, #1b2540, #241f3f);
+
+    --focus-ring: 0 0 0 3px rgba(142, 151, 234, 0.26);
 }
 
 /* 亮色下的浅底语义色（放在暗色块之后，靠选择器优先级让暗色值仍然生效） */
 :root {
-    --danger-soft: #fdf0f1;
-    --success-soft: #e7f8ef;
-    --warning-soft: #fff8ec;
-    --info-soft: #edf2ff;
+    --danger-soft: #fdf3f4;
+    --success-soft: #eaf8f1;
+    --warning-soft: #fff8ea;
+    --info-soft: #eef3ff;
 }
 
 html[data-theme="dark"] {
-    --warning-soft: #382a10;
-    --info-soft: #1b2a52;
+    --danger-soft: #2e1a1f;
+    --success-soft: #142a21;
+    --warning-soft: #33280f;
+    --info-soft: #1a2440;
 }
 
 /* ===== 全局重置 ===== */
@@ -156,12 +179,12 @@ html[data-theme="dark"] {
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", Roboto, "Helvetica Neue", Arial, sans-serif;
-    /* 页面底层铺一层极淡的品牌色顶光，让卡片浮在「有纵深」的画布上 */
-    background:
-        radial-gradient(ellipse 65% 42% at 82% -8%, color-mix(in srgb, var(--primary) 6%, transparent), transparent 62%),
-        var(--bg-page);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg-page);
     color: var(--text-1);
+    font-size: 14px;
+    line-height: 1.5;
     min-height: 100vh;
     transition: background var(--transition-base), color var(--transition-base);
     -webkit-font-smoothing: antialiased;
@@ -178,14 +201,21 @@ table,
     font-variant-numeric: tabular-nums;
 }
 
+/* 勾选框 / 单选框统一品牌色（行选择、列显示等处的原生控件不再各长各样） */
+input[type="checkbox"],
+input[type="radio"] {
+    accent-color: var(--primary);
+}
+
 /* 标题收紧字距，视觉更精致 */
 h1, h2, h3, h4 {
-    letter-spacing: -0.015em;
+    letter-spacing: -0.01em;
+    font-weight: 600;
 }
 
 /* 文本选区跟随品牌色 */
 ::selection {
-    background: color-mix(in srgb, var(--primary) 24%, transparent);
+    background: color-mix(in srgb, var(--primary) 22%, transparent);
     color: inherit;
 }
 

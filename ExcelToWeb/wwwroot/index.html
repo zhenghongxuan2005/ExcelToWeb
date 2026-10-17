@@ -25,32 +25,41 @@
         <aside class="sidebar">
             <div class="sidebar-brand">
                 <div class="brand-icon"><svg class="icon"><use href="#i-table"/></svg></div>
-                <span class="brand-name">ExcelToWeb</span>
+                <div class="brand-text">
+                    <span class="brand-name">ExcelToWeb</span>
+                    <span class="brand-sub collapse-hide">表格数据工作台</span>
+                </div>
             </div>
 
             <nav class="sidebar-nav">
+                <p class="nav-section collapse-hide">工作区</p>
                 <a class="nav-link" href="/" data-page="index" data-label="表格编辑"><svg class="icon"><use href="#i-table"/></svg><span class="collapse-hide">表格编辑</span></a>
                 <a class="nav-link" href="/tables.html" data-page="tables" data-label="表格管理"><svg class="icon"><use href="#i-columns"/></svg><span class="collapse-hide">表格管理</span></a>
                 <a class="nav-link" href="/dashboard.html" data-page="dashboard" data-label="数据看板"><svg class="icon"><use href="#i-chart"/></svg><span class="collapse-hide">数据看板</span></a>
                 <a class="nav-link" href="/audit.html" data-page="audit" data-label="审计中心"><svg class="icon"><use href="#i-clock"/></svg><span class="collapse-hide">审计中心</span></a>
                 <a class="nav-link" href="/trash.html" data-page="trash" data-label="回收站"><svg class="icon"><use href="#i-trash"/></svg><span class="collapse-hide">回收站</span></a>
+                <p class="nav-section collapse-hide">系统</p>
                 <a class="nav-link" href="/help.html" data-page="help" data-label="使用帮助"><svg class="icon"><use href="#i-help"/></svg><span class="collapse-hide">使用帮助</span></a>
                 <a class="nav-link" href="/settings.html" data-page="settings" data-label="设置"><svg class="icon"><use href="#i-settings"/></svg><span class="collapse-hide">设置</span></a>
             </nav>
 
             <div class="sidebar-bottom">
-                <button class="btn btn-outline btn-sm sidebar-collapse-btn" id="sidebarToggle"
+                <button class="side-action sidebar-collapse-btn" id="sidebarToggle"
                         aria-label="折叠侧边栏" title="折叠侧边栏" aria-expanded="true">
                     <svg class="icon"><use href="#i-chevron-left"/></svg><span class="collapse-label collapse-hide">折叠侧边栏</span>
                 </button>
-                <button class="btn btn-outline btn-sm" id="themeToggle" aria-label="切换主题">
+                <button class="side-action" id="themeToggle" aria-label="切换主题">
                     <svg class="icon"><use href="#i-moon"/></svg><span class="theme-label collapse-hide">深色模式</span>
+                    <span class="switch" aria-hidden="true"></span>
                 </button>
-                <div class="user-box">
-                    <svg class="icon icon-sm"><use href="#i-user"/></svg>
-                    <span id="userInfo"></span>
+                <div class="user-card">
+                    <div class="user-avatar"><svg class="icon icon-sm"><use href="#i-user"/></svg></div>
+                    <div class="user-meta">
+                        <span class="user-name" id="userInfo"></span>
+                        <span class="user-role">管理员 · 本机</span>
+                    </div>
                 </div>
-                <button class="btn btn-outline btn-sm" onclick="handleLogout()">
+                <button class="side-action" onclick="handleLogout()">
                     <svg class="icon"><use href="#i-logout"/></svg><span class="collapse-hide">退出登录</span>
                 </button>
             </div>
@@ -59,103 +68,93 @@
         <!-- ===== 主内容 ===== -->
         <main class="main" id="mainContent">
             <div class="page-header">
-                <h1><svg class="icon"><use href="#i-table"/></svg>数据表格</h1>
-                <span class="status-pill" id="statusText" role="status" aria-live="polite">就绪</span>
+                <div class="page-title">
+                    <h1><svg class="icon"><use href="#i-table"/></svg>数据表格</h1>
+                    <p class="page-sub" id="pageSub">尚未选择表格 · 上传 Excel 或从上方下拉框选择</p>
+                </div>
+                <div class="page-actions">
+                    <span class="status-pill" id="statusText" role="status" aria-live="polite">就绪</span>
+                    <span class="meta-pill" id="tableMeta">0 行 · 0 列</span>
+                </div>
             </div>
 
-            <!-- ===== 工具栏 ===== -->
+            <!-- ===== 工具栏：第一行文件级、第二行数据级 ===== -->
             <div class="toolbar">
-                <!-- 文件组 -->
-                <div class="toolbar-group">
-                    <input type="file" id="fileInput" accept=".xlsx,.csv" style="display:none;">
-                    <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
-                        <svg class="icon"><use href="#i-upload"/></svg>上传 Excel
-                    </button>
-                    <select id="tableSelector" class="table-select" onchange="switchTable()">
-                        <option value="">-- 请选择表格 --</option>
-                    </select>
-                    <button class="btn btn-danger" onclick="deleteCurrentTable()" title="删除当前表格">
-                        <svg class="icon"><use href="#i-trash"/></svg>删除表格
-                    </button>
-                </div>
+                <div class="toolbar-row">
+                    <div class="toolbar-group">
+                        <input type="file" id="fileInput" accept=".xlsx,.csv" style="display:none;">
+                        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                            <svg class="icon"><use href="#i-upload"/></svg>上传 Excel
+                        </button>
+                        <select id="tableSelector" class="table-select" onchange="switchTable()">
+                            <option value="">-- 请选择表格 --</option>
+                        </select>
+                        <button class="btn btn-danger" onclick="deleteCurrentTable()" title="删除当前表格">
+                            <svg class="icon"><use href="#i-trash"/></svg>删除表格
+                        </button>
+                    </div>
 
-                <div class="toolbar-divider"></div>
-
-                <!-- 编辑组 -->
-                <div class="toolbar-group">
-                    <button class="btn" onclick="addRow()"><svg class="icon"><use href="#i-plus"/></svg>新增行</button>
-                    <button class="btn" onclick="batchEdit()"><svg class="icon"><use href="#i-edit"/></svg>批量编辑</button>
-                    <button class="btn btn-danger" onclick="deleteSelectedRows()"><svg class="icon"><use href="#i-trash"/></svg>删除选中</button>
-                </div>
-
-                <div class="toolbar-divider"></div>
-
-                <!-- 数据组 -->
-                <div class="toolbar-group">
-                    <button class="btn btn-success" onclick="saveData()"><svg class="icon"><use href="#i-save"/></svg>保存</button>
-                    <div class="dropdown">
-                        <button class="btn btn-purple"><svg class="icon"><use href="#i-download"/></svg>导出<svg class="icon icon-sm"><use href="#i-chevron-down"/></svg></button>
-                        <div class="dropdown-menu">
-                            <button class="dropdown-item" onclick="exportExcel()"><svg class="icon icon-sm"><use href="#i-file"/></svg>导出 Excel</button>
-                            <button class="dropdown-item" onclick="exportCsv()"><svg class="icon icon-sm"><use href="#i-file"/></svg>导出 CSV</button>
-                            <button class="dropdown-item" onclick="exportViewCsv()"><svg class="icon icon-sm"><use href="#i-filter"/></svg>导出当前视图 CSV</button>
-                            <button class="dropdown-item" onclick="downloadTemplate()"><svg class="icon icon-sm"><use href="#i-download"/></svg>下载导入模板</button>
+                    <div class="toolbar-right">
+                        <div class="search-box">
+                            <svg class="icon icon-sm"><use href="#i-search"/></svg>
+                            <input type="text" id="globalSearch" class="search-input" placeholder="搜索全表，含表头与单元格" autocomplete="off"
+                                   oninput="onSearchInput(this.value)">
+                            <button type="button" class="search-clear" id="searchClear" title="清除搜索" onclick="clearSearch()">
+                                <svg class="icon icon-sm"><use href="#i-x"/></svg>
+                            </button>
                         </div>
-                    </div>
-                    <button class="btn" onclick="refreshData()"><svg class="icon"><use href="#i-refresh"/></svg>刷新</button>
-                    <button class="btn" onclick="openPivotModal()" title="按行分组、列展开，对某一列做汇总"><svg class="icon"><use href="#i-sigma"/></svg>透视汇总</button>
-                </div>
-
-                <div class="toolbar-divider"></div>
-
-                <!-- 设置组 -->
-                <div class="dropdown">
-                    <button class="btn btn-outline"><svg class="icon"><use href="#i-settings"/></svg>设置<svg class="icon icon-sm"><use href="#i-chevron-down"/></svg></button>
-                    <div class="dropdown-menu">
-                        <button class="dropdown-item" onclick="openColumnModal()"><svg class="icon icon-sm"><use href="#i-columns"/></svg>列管理（增删改移）</button>
-                        <button class="dropdown-item" onclick="openRuleModal()"><svg class="icon icon-sm"><use href="#i-settings"/></svg>条件格式规则</button>
-                        <button class="dropdown-item" onclick="openValidationModal()"><svg class="icon icon-sm"><use href="#i-check"/></svg>数据校验规则</button>
-                        <button class="dropdown-item" onclick="openHistoryModal()"><svg class="icon icon-sm"><use href="#i-clock"/></svg>变更历史</button>
-                        <button class="dropdown-item" onclick="toggleAggregateRow()"><svg class="icon icon-sm"><use href="#i-sigma"/></svg>显示 / 关闭汇总行</button>
-                        <button class="dropdown-item" onclick="clearAll()"><svg class="icon icon-sm"><use href="#i-x-circle"/></svg>清空当前数据</button>
+                        <span class="search-count" id="searchCount"></span>
+                        <button class="btn btn-soft" onclick="applyDateFilter()"><svg class="icon"><use href="#i-filter"/></svg>筛选</button>
                     </div>
                 </div>
 
-                <div class="toolbar-spacer"></div>
+                <div class="toolbar-row">
+                    <div class="toolbar-group">
+                        <button class="btn btn-soft-success" onclick="saveData()"><svg class="icon"><use href="#i-save"/></svg>保存</button>
+                        <div class="dropdown">
+                            <button class="btn"><svg class="icon"><use href="#i-download"/></svg>导出<svg class="icon icon-sm"><use href="#i-chevron-down"/></svg></button>
+                            <div class="dropdown-menu">
+                                <button class="dropdown-item" onclick="exportExcel()"><svg class="icon icon-sm"><use href="#i-file"/></svg>导出 Excel</button>
+                                <button class="dropdown-item" onclick="exportCsv()"><svg class="icon icon-sm"><use href="#i-file"/></svg>导出 CSV</button>
+                                <button class="dropdown-item" onclick="exportViewCsv()"><svg class="icon icon-sm"><use href="#i-filter"/></svg>导出当前视图 CSV</button>
+                                <button class="dropdown-item" onclick="downloadTemplate()"><svg class="icon icon-sm"><use href="#i-download"/></svg>下载导入模板</button>
+                            </div>
+                        </div>
+                        <button class="btn" onclick="refreshData()"><svg class="icon"><use href="#i-refresh"/></svg>刷新</button>
+                        <button class="btn" onclick="openPivotModal()" title="按行分组、列展开，对某一列做汇总"><svg class="icon"><use href="#i-sigma"/></svg>透视汇总</button>
+                        <div class="dropdown">
+                            <button class="btn"><svg class="icon"><use href="#i-settings"/></svg>设置<svg class="icon icon-sm"><use href="#i-chevron-down"/></svg></button>
+                            <div class="dropdown-menu">
+                                <button class="dropdown-item" onclick="openColumnModal()"><svg class="icon icon-sm"><use href="#i-columns"/></svg>列管理（增删改移）</button>
+                                <button class="dropdown-item" onclick="openRuleModal()"><svg class="icon icon-sm"><use href="#i-settings"/></svg>条件格式规则</button>
+                                <button class="dropdown-item" onclick="openValidationModal()"><svg class="icon icon-sm"><use href="#i-check"/></svg>数据校验规则</button>
+                                <button class="dropdown-item" onclick="openHistoryModal()"><svg class="icon icon-sm"><use href="#i-clock"/></svg>变更历史</button>
+                                <button class="dropdown-item" onclick="toggleAggregateRow()"><svg class="icon icon-sm"><use href="#i-sigma"/></svg>显示 / 关闭汇总行</button>
+                                <button class="dropdown-item" onclick="clearAll()"><svg class="icon icon-sm"><use href="#i-x-circle"/></svg>清空当前数据</button>
+                            </div>
+                        </div>
 
-                <!-- 全局搜索 -->
-                <div class="search-box">
-                    <svg class="icon icon-sm"><use href="#i-search"/></svg>
-                    <input type="text" id="globalSearch" class="search-input" placeholder="全表搜索..." autocomplete="off"
-                           oninput="onSearchInput(this.value)">
-                    <button type="button" class="search-clear" id="searchClear" title="清除搜索" onclick="clearSearch()">
-                        <svg class="icon icon-sm"><use href="#i-x"/></svg>
-                    </button>
-                </div>
-                <span class="search-count" id="searchCount"></span>
+                        <span class="toolbar-divider"></span>
 
-                <!-- 列显示 / 列宽 -->
-                <div class="dropdown">
-                    <button class="btn btn-outline btn-sm"><svg class="icon icon-sm"><use href="#i-columns"/></svg>列</button>
-                    <div class="dropdown-menu dropdown-menu-scroll" id="columnMenu"></div>
-                </div>
+                        <button class="btn" onclick="addRow()"><svg class="icon"><use href="#i-plus"/></svg>新增行</button>
+                        <button class="btn btn-soft" onclick="batchEdit()"><svg class="icon"><use href="#i-edit"/></svg>批量编辑</button>
+                        <button class="btn btn-danger" onclick="deleteSelectedRows()"><svg class="icon"><use href="#i-trash"/></svg>删除选中<span id="selCount"></span></button>
+                    </div>
 
-                <!-- 筛选组 -->
-                <div class="filter-group">
-                    <input type="date" id="filterDate">
-                    <button class="btn btn-primary btn-sm" onclick="applyDateFilter()"><svg class="icon icon-sm"><use href="#i-filter"/></svg>筛选</button>
-                    <button class="btn btn-outline btn-sm" onclick="clearDateFilter()">全部</button>
-                </div>
-
-                <!-- 每页行数 -->
-                <div class="page-size-group">
-                    <label class="page-size-label" for="pageSizeSelect">每页</label>
-                    <select id="pageSizeSelect" class="table-select table-select-sm" onchange="setPageSize(this.value)">
-                        <option value="0">全部</option>
-                        <option value="50">50</option>
-                        <option value="100">100</option>
-                        <option value="500">500</option>
-                    </select>
+                    <div class="toolbar-right">
+                        <div class="dropdown">
+                            <button class="btn btn-sm"><svg class="icon icon-sm"><use href="#i-columns"/></svg>列</button>
+                            <div class="dropdown-menu dropdown-menu-scroll" id="columnMenu"></div>
+                        </div>
+                        <input type="date" id="filterDate" aria-label="按日期筛选">
+                        <button class="btn btn-sm" onclick="clearDateFilter()">全部</button>
+                        <select id="pageSizeSelect" class="table-select table-select-sm" onchange="setPageSize(this.value)" aria-label="每页行数">
+                            <option value="0">全部</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="500">500</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 

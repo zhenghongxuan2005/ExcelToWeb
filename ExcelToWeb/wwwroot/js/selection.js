@@ -60,8 +60,15 @@ function formatNumber(n) {
     return String(Math.round(n * 100) / 100);
 }
 
+/** 把「已选 N 行」同步到工具栏的删除按钮上（数量为 0 时不显示后缀） */
+function syncSelectionCount(count) {
+    const label = document.getElementById('selCount');
+    if (label) label.textContent = count > 0 ? ` · ${count}` : '';
+}
+
 /** 刷新选中统计面板（由勾选框变化触发） */
 function updateSelectionStats() {
+    syncSelectionCount(getSelectedIndexes().length);
     const host = document.getElementById('selectionStats');
     if (!host) return;
     host.innerHTML = buildSelectionStatsHtml();
@@ -69,6 +76,7 @@ function updateSelectionStats() {
 
 /** 清空选中统计面板 */
 function clearSelectionStats() {
+    syncSelectionCount(0);
     const host = document.getElementById('selectionStats');
     if (host) host.innerHTML = '';
 }

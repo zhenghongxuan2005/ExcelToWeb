@@ -1,0 +1,112 @@
+/* ================================================================
+   ExcelToWeb 样式模块：dash-table.css —— 看板「分组汇总」表
+   ----------------------------------------------------------------
+   与主表格页不同：这里是只读的汇总结果，所以没有斑马纹、没有单元格编辑态，
+   行高固定、数字右对齐、最后一列用细进度条表达占比。
+   （由 dash.css 拆出；style.css 以 @import 汇总，加载顺序即层叠顺序）
+   ================================================================ */
+
+.summary-card .dash-card-head {
+    border-bottom: 1px solid var(--border-row);
+}
+
+/* 表头右侧的合计：小字「合计」+ 大字金额 */
+.summary-total {
+    margin-left: auto;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-1);
+    white-space: nowrap;
+}
+
+    .summary-total span {
+        margin-right: 4px;
+        font-size: 12px;
+        font-weight: 400;
+        color: var(--text-4);
+    }
+
+.table-scroll {
+    overflow-x: auto;
+}
+
+.summary-card table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+}
+
+.summary-card th {
+    padding: 9px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-3);
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border-row);
+}
+
+.summary-card td {
+    height: 44px;
+    padding: 0 16px;
+    color: var(--text-2);
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border-row);
+}
+
+    .summary-card td.dim {
+        font-weight: 600;
+        color: var(--text-1);
+    }
+
+    .summary-card .num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .summary-card td.strong {
+        font-weight: 600;
+        color: var(--text-1);
+    }
+
+    .summary-card tbody tr:hover td {
+        background: var(--bg-head);
+    }
+
+    /* 合计行：加一条略重的顶线，和明细行区分开 */
+    .summary-card tfoot td {
+        height: 46px;
+        border-bottom: none;
+        border-top: 1px solid var(--border);
+        font-weight: 600;
+        color: var(--text-1);
+    }
+
+/* 占比：细进度条 + 百分比，一眼看出各组的量级关系 */
+.ratio {
+    display: inline-block;
+    width: 68px;
+    height: 5px;
+    border-radius: var(--radius-full);
+    /* 轨道用 --border 而不是 --border-light：浅到看不见就等于没画 */
+    background: var(--border);
+    overflow: hidden;
+    vertical-align: middle;
+}
+
+    .ratio i {
+        display: block;
+        height: 100%;
+        border-radius: var(--radius-full);
+        background: var(--primary);
+    }
+
+.ratio-num {
+    display: inline-block;
+    width: 46px;
+    margin-left: 8px;
+    font-size: 12px;
+    color: var(--text-3);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}

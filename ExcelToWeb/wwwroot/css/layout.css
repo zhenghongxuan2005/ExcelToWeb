@@ -1,161 +1,25 @@
 /* ================================================================
-   ExcelToWeb 样式模块：layout.css —— 应用外壳：侧边栏 + 主内容
+   ExcelToWeb 样式模块：layout.css —— 主内容区、页头、状态胶囊
+   侧边栏见 sidebar.css；窄屏断点见 pages.css
    （由 style.css 拆分而来；style.css 以 @import 汇总，加载顺序即层叠顺序）
    ================================================================ */
 
-/* ================================================================
-   布局：侧边栏 + 主内容
-   ================================================================ */
+/* 应用外壳：两栏布局的容器，侧边栏固定宽度、主内容自适应
+   底色用画布灰而不是白：卡片本身是白的，白底白卡会糊成一片（设置页的卡片无描边） */
 .app-shell {
     display: flex;
     min-height: 100vh;
+    background: var(--bg-page);
 }
 
-.sidebar {
-    width: 228px;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    background: var(--bg-sidebar);
-    border-right: 1px solid var(--border-light);
-    padding: 20px 14px;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    transition: background 0.25s ease, border-color 0.25s ease;
-}
-
-.sidebar-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 4px 8px 22px;
-}
-
-    .sidebar-brand .brand-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 11px;
-        background: var(--grad-brand);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        flex-shrink: 0;
-        box-shadow: 0 3px 10px color-mix(in srgb, var(--primary) 38%, transparent),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.28);
-        transition: transform var(--transition-base) var(--ease-spring),
-                    box-shadow var(--transition-base);
-    }
-
-    .sidebar-brand:hover .brand-icon {
-        transform: translateY(-1px) rotate(-3deg);
-        box-shadow: 0 6px 16px color-mix(in srgb, var(--primary) 44%, transparent),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.28);
-    }
-
-    .sidebar-brand .brand-name {
-        font-size: 16px;
-        font-weight: 700;
-        color: var(--text-1);
-        letter-spacing: 0.2px;
-    }
-
-.sidebar-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    flex: 1;
-}
-
-/* 导航项：激活态为「滑入的品牌色胶囊 + 左侧指示条」 */
-.nav-link {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: var(--radius-sm);
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-2);
-    text-decoration: none;
-    transition: background 0.15s ease, color 0.15s ease;
-}
-
-    .nav-link .icon {
-        transition: transform var(--transition-fast) var(--ease-spring);
-    }
-
-    .nav-link:hover {
-        background: var(--bg-soft);
-        color: var(--text-1);
-    }
-
-        .nav-link:hover .icon {
-            transform: scale(1.08);
-        }
-
-    .nav-link::before {
-        content: "";
-        position: absolute;
-        left: -14px;
-        top: 50%;
-        width: 3.5px;
-        height: 0;
-        border-radius: var(--radius-full);
-        background: var(--grad-brand);
-        transform: translateY(-50%);
-        transition: height var(--transition-base) var(--ease-spring);
-    }
-
-    .nav-link.active {
-        background: linear-gradient(90deg, var(--primary-soft), color-mix(in srgb, var(--primary-soft) 55%, transparent));
-        color: var(--primary);
-        font-weight: 600;
-    }
-
-        .nav-link.active::before {
-            height: 20px;
-        }
-
-.sidebar-bottom {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    border-top: 1px solid var(--border-light);
-    padding-top: 14px;
-}
-
-.user-box {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    border-radius: var(--radius-sm);
-    background: var(--bg-soft);
-    border: 1px solid var(--border-light);
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-2);
-    overflow: hidden;
-}
-
-    .user-box .icon {
-        color: var(--primary);
-    }
-
-    .user-box span {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
+/* ================================================================
+   主内容
+   ================================================================ */
 .main {
     flex: 1;
     min-width: 0;
-    padding: 24px 28px 40px;
-    max-width: 1500px;
+    padding: 18px 24px 28px;
+    max-width: 1560px;
     /* 供拖拽上传的遮罩层定位使用；不影响布局 */
     position: relative;
 }
@@ -164,192 +28,110 @@
 .main.is-dragover::after {
     content: "松开鼠标即可导入 Excel";
     position: absolute;
-    inset: 14px;
+    inset: 12px;
     z-index: 200;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 500;
     color: var(--primary);
-    background: color-mix(in srgb, var(--primary-soft) 82%, transparent);
-    border: 2px dashed var(--primary);
+    background: color-mix(in srgb, var(--primary-soft) 88%, transparent);
+    border: 1px dashed var(--primary);
     border-radius: var(--radius-lg);
     pointer-events: none;
 }
 
+/* ================================================================
+   页头：左侧「标题 + 副标题」，右侧状态与操作
+   ================================================================ */
 .page-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 18px;
+    align-items: flex-start;
+    gap: 12px 16px;
+    margin-bottom: 14px;
     flex-wrap: wrap;
 }
 
+    .page-title {
+        min-width: 0;
+    }
+
     .page-header h1 {
-        font-size: 21px;
-        font-weight: 700;
+        font-size: 16px;
+        font-weight: 600;
         color: var(--text-1);
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 8px;
+        line-height: 1.4;
     }
 
-        /* 页头图标统一做成品牌渐变徽章，六个页面观感一致 */
+        /* 页头图标只做「标识」，不再用渐变徽章压过标题本身 */
         .page-header h1 > .icon {
-            width: 34px;
-            height: 34px;
-            padding: 7px;
-            border-radius: 10px;
-            background: var(--grad-brand);
-            color: #fff;
-            box-shadow: 0 3px 10px color-mix(in srgb, var(--primary) 30%, transparent),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+            width: 18px;
+            height: 18px;
+            color: var(--primary);
+            stroke-width: 2;
         }
 
+    /* 副标题：表格来源 / 最后保存时间等上下文 */
+    .page-sub {
+        margin-top: 3px;
+        padding-left: 26px;
+        font-size: 12px;
+        color: var(--text-4);
+        line-height: 1.5;
+    }
+
+    .page-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+/* 状态胶囊：左侧一个状态点，文字保持中性色，只有点表达「好/坏」 */
 .status-pill {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: 6px;
+    height: 26px;
+    padding: 0 10px;
     font-size: 12px;
-    font-weight: 500;
-    color: var(--text-2);
+    font-weight: 400;
+    color: var(--text-3);
     background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 5px 14px;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-full);
     white-space: nowrap;
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
-    box-shadow: var(--shadow-xs);
 }
 
-/* 主表格页的状态胶囊带「呼吸灯」圆点，一眼看出系统处于就绪/工作状态 */
+/* 主表格页的状态胶囊带状态点（如「已保存」） */
 #statusText::before {
     content: "";
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
     flex-shrink: 0;
     border-radius: 50%;
     background: var(--success);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 18%, transparent);
-    animation: statusPulse 2.4s ease-in-out infinite;
 }
 
-@keyframes statusPulse {
-    0%, 100% {
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 18%, transparent);
-    }
-
-    50% {
-        box-shadow: 0 0 0 5px color-mix(in srgb, var(--success) 8%, transparent);
-    }
+/* 纯元信息胶囊（行数 / 列数），不带状态点 */
+.meta-pill {
+    display: inline-flex;
+    align-items: center;
+    height: 26px;
+    padding: 0 10px;
+    font-size: 12px;
+    color: var(--text-3);
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-full);
+    white-space: nowrap;
 }
 
-/* ================================================================
-   侧边栏折叠（图标模式）
-   ----------------------------------------------------------------
-   折叠状态挂在 .app-shell 上（.app-shell.sidebar-collapsed），
-   只隐藏文字与次要元素，导航图标保持居中可用；悬停时用气泡提示标题。
-   ================================================================ */
-.sidebar {
-    transition: width var(--transition-base), background var(--transition-base), border-color var(--transition-base);
-}
-
-.sidebar-collapse-btn {
-    justify-content: flex-start;
-}
-
-/* 折叠后：整体收窄 */
-.app-shell.sidebar-collapsed .sidebar {
-    width: var(--sidebar-w-collapsed);
-    padding-left: 10px;
-    padding-right: 10px;
-}
-
-/* 折叠后：隐藏文字，只留图标（.collapse-hide 标记所有会被折叠隐藏的文本） */
-.app-shell.sidebar-collapsed .brand-name,
-.app-shell.sidebar-collapsed .collapse-hide,
-.app-shell.sidebar-collapsed .user-box span {
-    display: none;
-}
-
-/* 折叠态下指示条会超出收窄的侧栏，隐藏 */
-.app-shell.sidebar-collapsed .nav-link::before {
-    display: none;
-}
-
-.app-shell.sidebar-collapsed .sidebar-brand,
-.app-shell.sidebar-collapsed .user-box {
-    justify-content: center;
-    padding-left: 0;
-    padding-right: 0;
-}
-
-.app-shell.sidebar-collapsed .nav-link,
-.app-shell.sidebar-collapsed .sidebar-bottom .btn {
-    justify-content: center;
-    padding-left: 0;
-    padding-right: 0;
-}
-
-/* 折叠后的悬停气泡提示（内容取自 data-label） */
-.app-shell.sidebar-collapsed .nav-link {
-    position: relative;
-}
-
-    .app-shell.sidebar-collapsed .nav-link::after {
-        content: attr(data-label);
-        position: absolute;
-        left: calc(100% + 10px);
-        top: 50%;
-        transform: translateY(-50%);
-        padding: 5px 10px;
-        background: var(--text-1);
-        color: var(--bg-card);
-        border-radius: var(--radius-xs);
-        font-size: 12px;
-        font-weight: 500;
-        white-space: nowrap;
-        box-shadow: var(--shadow-pop);
-        opacity: 0;
-        visibility: hidden;
-        pointer-events: none;
-        transition: opacity var(--transition-fast), visibility var(--transition-fast);
-        z-index: 120;
-    }
-
-    .app-shell.sidebar-collapsed .nav-link:hover::after {
-        opacity: 1;
-        visibility: visible;
-    }
-
-/* 窄屏下侧边栏会变成横向工具条，折叠能力无意义，直接还原并隐藏折叠按钮 */
-@media (max-width: 960px) {
-    .sidebar-collapse-btn {
-        display: none;
-    }
-
-    .app-shell.sidebar-collapsed .sidebar {
-        width: 100%;
-        padding-left: 14px;
-        padding-right: 14px;
-    }
-
-    .app-shell.sidebar-collapsed .brand-name,
-    .app-shell.sidebar-collapsed .collapse-hide,
-    .app-shell.sidebar-collapsed .user-box span {
-        display: revert;
-    }
-
-    .app-shell.sidebar-collapsed .nav-link {
-        justify-content: flex-start;
-        padding: 10px 12px;
-    }
-
-        .app-shell.sidebar-collapsed .nav-link::after {
-            display: none;
-        }
-}

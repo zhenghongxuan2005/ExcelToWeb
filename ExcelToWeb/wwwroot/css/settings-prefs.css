@@ -1,0 +1,224 @@
+/* ================================================================
+   ExcelToWeb 样式模块：settings-prefs.css —— 设置页（二）：偏好设置 / 关于 / 窄屏
+   依赖 settings.css 的卡片外壳（.panel / .panel-title / .panel-hint），必须紧跟其后加载
+   ================================================================ */
+
+/* ================================================================
+   偏好设置：标签列 128px + 控件 + 右说明
+   ================================================================ */
+.pref-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 30px;
+}
+
+    .pref-row + .pref-row {
+        margin-top: 16px;
+    }
+
+.pref-label {
+    width: 128px;
+    flex: none;
+    font-size: 13px;
+    color: var(--text-1);
+}
+
+.pref-hint {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--text-4);
+}
+
+/* 下拉：132 x 30，白底细描边，箭头沿用工具栏那套内联 SVG */
+.pref-select {
+    width: 132px;
+    height: 30px;
+    flex: none;
+    padding: 0 26px 0 12px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--text-1);
+    background-color: var(--bg-card);
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2378849a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 9px center;
+    border: 1px solid var(--border-field);
+    border-radius: var(--radius-sm);
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+    .pref-select:hover {
+        border-color: var(--border-strong);
+    }
+
+    .pref-select:focus {
+        border-color: var(--primary);
+        box-shadow: var(--focus-ring);
+    }
+
+/* 分段控件：底层灰槽 + 选中项白底靛蓝字 */
+.segmented {
+    display: inline-flex;
+    height: 30px;
+    padding: 2px;
+    flex: none;
+    border-radius: var(--radius-md);
+    background: var(--bg-soft);
+}
+
+    .segmented button {
+        height: 26px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: var(--radius-sm);
+        background: transparent;
+        color: var(--text-3);
+        font-family: inherit;
+        font-size: 12px;
+        cursor: pointer;
+        transition: background var(--transition-fast), color var(--transition-fast);
+    }
+
+        .segmented button:hover {
+            color: var(--text-2);
+        }
+
+        .segmented button[aria-pressed="true"] {
+            background: var(--bg-card);
+            color: var(--primary);
+            font-weight: 500;
+            box-shadow: var(--shadow-xs);
+        }
+
+/* 开关：32 x 18，纯 CSS 滑块（侧栏的 .switch 由主题驱动，这里用 .toggle 独立） */
+.toggle {
+    position: relative;
+    width: 32px;
+    height: 18px;
+    flex: none;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: var(--border-strong);
+    cursor: pointer;
+    transition: background var(--transition-base);
+}
+
+    .toggle::after {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(17, 26, 43, 0.24);
+        transition: transform var(--transition-base) var(--ease-out);
+    }
+
+    .toggle[aria-checked="true"] {
+        background: var(--primary);
+    }
+
+        .toggle[aria-checked="true"]::after {
+            transform: translateX(14px);
+        }
+
+/* 偏好设置底部：分隔线 + 恢复默认 */
+.pref-footer {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-row);
+}
+
+    .pref-footer .panel-hint {
+        margin-top: 13px;
+    }
+
+/* ================================================================
+   关于：标签列 80px，值左对齐（不用右对齐，长 UA 换行才整齐）
+   ================================================================ */
+.about-row {
+    display: flex;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+    .about-row + .about-row {
+        margin-top: 12px;
+    }
+
+    .about-row dt {
+        width: 80px;
+        flex: none;
+        color: var(--text-4);
+    }
+
+    .about-row dd {
+        flex: 1;
+        min-width: 0;
+        color: var(--text-1);
+        word-break: break-word;
+    }
+
+        .about-row dd.is-small {
+            font-size: 11.5px;
+            line-height: 1.55;
+            color: var(--text-2);
+        }
+
+.about-link {
+    color: var(--primary);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+    .about-link:hover {
+        text-decoration: underline;
+    }
+
+/* ================================================================
+   窄屏（760px 以下）：全部单列，标签移到控件上方
+   放在本文件末尾，可同时覆盖 settings.css 里的 .form-row
+   ================================================================ */
+@media (max-width: 760px) {
+    .settings-head {
+        padding-top: 14px;
+    }
+
+    .settings-grid-3 {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .form-row,
+    .pref-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+    }
+
+    .pref-label {
+        width: auto;
+    }
+
+    .pref-select,
+    .segmented {
+        width: 100%;
+    }
+
+        .segmented button {
+            flex: 1;
+        }
+
+    .panel {
+        padding: 16px;
+    }
+}

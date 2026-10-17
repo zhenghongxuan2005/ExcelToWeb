@@ -1,6 +1,8 @@
 /* ================================================================
-   ExcelToWeb 样式模块：console.css —— 二级页面：页头附加区、设置页分栏面板、偏好与响应式
-   表格管理卡片见 cards.css，帮助页排版见 doc.css
+   ExcelToWeb 样式模块：console.css —— 二级页面公用部件
+   页头附加区、表格字号档位、其余二级页响应式
+   表格管理卡片见 cards.css，帮助页排版见 doc.css，
+   设置页（卡片网格 / 表单 / 会话 / 偏好 / 关于）见 settings.css
    （由 style.css 以 @import 汇总，加载顺序即层叠顺序）
    ================================================================ */
 
@@ -19,88 +21,22 @@
 }
 
 /* ================================================================
-   设置页：分栏面板
+   偏好设置：表格字号
+   通过根元素属性统一切换，避免各处硬编码
+   紧凑 13px / 标准（无属性）14px / 舒适 15px
    ================================================================ */
-.settings-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-    gap: 16px;
-    align-items: start;
-}
-
-.panel {
-    padding: 22px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-card);
-}
-
-.panel-title {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    margin: 0 0 16px;
-    padding-bottom: 13px;
-    border-bottom: 1px solid var(--border-light);
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text-1);
-}
-
-    /* 面板标题图标：品牌浅色徽章 */
-    .panel-title .icon {
-        width: 26px;
-        height: 26px;
-        padding: 5px;
-        border-radius: 8px;
-        background: var(--grad-brand-soft);
-        color: var(--primary);
-        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 12%, transparent);
-    }
-
-.panel-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    padding: 7px 0;
+html[data-text-size="compact"] table {
     font-size: 13px;
 }
 
-.panel-label {
-    color: var(--text-3);
-    flex-shrink: 0;
+html[data-text-size="compact"] .cell-input {
+    font-size: 12.5px;
 }
 
-.panel-value {
-    color: var(--text-1);
-    font-weight: 500;
-    text-align: right;
-}
-
-.panel-value-wrap {
-    word-break: break-all;
-    font-weight: 400;
+html[data-text-size="compact"] thead th {
     font-size: 12px;
-    color: var(--text-2);
 }
 
-.panel-hint {
-    margin: 10px 0 0;
-    font-size: 12px;
-    line-height: 1.6;
-    color: var(--text-4);
-}
-
-.panel .field:last-of-type {
-    margin-bottom: 14px;
-}
-
-/* ================================================================
-   偏好设置：大号字号
-   通过根元素属性统一切换表格字号，避免各处硬编码
-   ================================================================ */
 html[data-text-size="large"] table {
     font-size: 15px;
 }
@@ -114,55 +50,10 @@ html[data-text-size="large"] thead th {
 }
 
 /* ================================================================
-   会话管理：活跃会话行（settings 页）
-   ================================================================ */
-.session-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border-light);
-}
-
-    .session-row:last-of-type {
-        border-bottom: none;
-    }
-
-.session-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    min-width: 0;
-}
-
-.session-ip {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-1);
-}
-
-.session-time {
-    font-size: 12px;
-    color: var(--text-3);
-}
-
-.session-badge {
-    padding: 1px 8px;
-    border-radius: var(--radius-full);
-    background: var(--primary-soft);
-    color: var(--primary);
-    font-size: 11px;
-    font-weight: 500;
-}
-
-/* ================================================================
    响应式：二级页面
    ================================================================ */
 @media (max-width: 900px) {
-    .table-grid,
-    .settings-grid {
+    .table-grid {
         grid-template-columns: 1fr;
     }
 

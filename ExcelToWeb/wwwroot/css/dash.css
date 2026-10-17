@@ -1,0 +1,382 @@
+/* ================================================================
+   ExcelToWeb 样式模块：dash.css —— 数据看板（页头 / 统计卡 / 卡片外壳 / 图表区）
+   ----------------------------------------------------------------
+   视觉基线（对照 design/数据看板-1440.png 校准）：
+     白卡 + 发丝描边 + 近零阴影；数字大而克制，颜色只留给语义与图表本身。
+   汇总表见 dash-table.css；窄屏断点统一在 pages.css。
+   （style.css 以 @import 汇总，加载顺序即层叠顺序）
+   ================================================================ */
+
+/* ===== 页头右侧的「数据截至」 ===== */
+.dash-updated {
+    font-size: 12px;
+    color: var(--text-4);
+    white-space: nowrap;
+}
+
+/* ================================================================
+   统计卡
+   ================================================================ */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+/* 每张卡用 --card-accent 决定自己的强调色（图标徽章 / 悬停描边） */
+.stat-card {
+    --card-accent: var(--primary);
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 15px 16px 14px;
+    box-shadow: var(--shadow-card);
+    transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+    /* 悬停只换描边，不做位移：一排卡一起上浮会让整页跟着抖 */
+    .stat-card:hover {
+        border-color: color-mix(in srgb, var(--card-accent) 34%, var(--border));
+        box-shadow: var(--shadow-xs);
+    }
+
+    .stat-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .stat-icon {
+        width: 22px;
+        height: 22px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-sm);
+        background: color-mix(in srgb, var(--card-accent) 12%, transparent);
+        color: var(--card-accent);
+    }
+
+        .stat-icon .icon {
+            width: 13px;
+            height: 13px;
+            stroke-width: 2;
+        }
+
+    .stat-card .label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-3);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .stat-card .value {
+        margin-top: 9px;
+        font-size: 28px;
+        font-weight: 700;
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+        color: var(--text-1);
+    }
+
+    .stat-card .stat-foot {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: auto;
+        padding-top: 10px;
+        min-height: 16px;
+        font-size: 12px;
+        color: var(--text-4);
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+.value-unit {
+    margin-left: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0;
+    color: var(--text-4);
+}
+
+/* 完成率点阵：6 个点表示进度，比再画一根进度条更轻 */
+.rate-dots {
+    display: inline-flex;
+    gap: 3px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+    .rate-dots i {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--border);
+    }
+
+        .rate-dots i.is-on {
+            background: var(--success);
+        }
+
+/* 四张卡各自的强调色：蓝 / 绿 / 紫 / 琥珀 */
+.stat-accent-blue {
+    --card-accent: var(--primary);
+}
+
+.stat-accent-green {
+    --card-accent: var(--success);
+}
+
+.stat-accent-purple {
+    --card-accent: var(--purple);
+}
+
+.stat-accent-amber {
+    --card-accent: var(--warning);
+}
+
+/* ================================================================
+   看板通用卡片：标题头 + 工具行 + 内容
+   ================================================================ */
+.dash-card {
+    margin-bottom: 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+}
+
+.dash-card-head {
+    display: flex;
+    align-items: center;
+    gap: 10px 16px;
+    flex-wrap: wrap;
+    padding: 13px 16px;
+}
+
+.dash-card-title-group {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+.dash-card-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-1);
+    white-space: nowrap;
+}
+
+    .dash-card-title .icon {
+        width: 15px;
+        height: 15px;
+        color: var(--text-3);
+    }
+
+.dash-card-sub {
+    font-size: 12px;
+    color: var(--text-4);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 空状态在卡片内时不需要额外留白 */
+.dash-card .empty-state {
+    padding: 44px 16px;
+}
+
+/* ===== 图表类型分段控件 ===== */
+.seg {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+    padding: 2px;
+    background: var(--bg-soft);
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+}
+
+.seg-btn {
+    width: 28px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-4);
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+    .seg-btn .icon {
+        width: 15px;
+        height: 15px;
+    }
+
+    .seg-btn:hover {
+        color: var(--text-2);
+    }
+
+    .seg-btn.is-on {
+        background: var(--bg-card);
+        color: var(--primary);
+        box-shadow: var(--shadow-xs);
+    }
+
+    .seg-btn:focus-visible {
+        outline: none;
+        box-shadow: var(--focus-ring);
+    }
+
+/* ===== 工具行：分组 / 指标下拉 + 右侧状态 ===== */
+.dash-card-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px 14px;
+    flex-wrap: wrap;
+    padding: 0 16px 12px;
+    border-bottom: 1px solid var(--border-row);
+}
+
+    .dash-card-toolbar .spacer {
+        flex: 1 1 auto;
+    }
+
+.field {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--text-3);
+    white-space: nowrap;
+}
+
+    .field select {
+        height: var(--control-h-sm);
+        max-width: 168px;
+        padding: 0 8px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--bg-card);
+        color: var(--text-1);
+        font-size: 12.5px;
+        font-family: inherit;
+        cursor: pointer;
+        outline: none;
+        transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+        .field select:hover {
+            border-color: var(--border-strong);
+        }
+
+        .field select:focus {
+            border-color: var(--primary);
+            box-shadow: var(--focus-ring);
+        }
+
+/* 「对数轴」开关：只在极值悬殊时出现，常态视图与设计稿一致 */
+.chip-btn {
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    background: var(--bg-card);
+    color: var(--text-3);
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+    .chip-btn[hidden] {
+        display: none;
+    }
+
+    .chip-btn:hover:not(:disabled) {
+        border-color: var(--border-strong);
+        color: var(--text-1);
+    }
+
+    .chip-btn.is-on {
+        background: var(--primary-soft);
+        border-color: var(--primary-line);
+        color: var(--primary);
+        font-weight: 500;
+    }
+
+    .chip-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+.chart-count {
+    font-size: 12px;
+    color: var(--text-4);
+    white-space: nowrap;
+}
+
+/* ================================================================
+   图表区
+   ================================================================ */
+.chart-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px 0;
+    font-size: 12px;
+    color: var(--text-4);
+}
+
+    .chart-meta > span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+.chart-avg {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+/* 横向滚动的画布容器：分组多时 #chartContainer 被撑宽，这里出滚动条 */
+.chart-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 2px 14px 10px;
+}
+
+    /* 滚动条细一点，避免压住横轴标签 */
+    .chart-scroll::-webkit-scrollbar {
+        height: 8px;
+    }
+
+#chartContainer {
+    /* 宽高由 chart-render.js 按分组数写入行内样式，这里只是兜底值 */
+    width: 100%;
+    height: 400px;
+}
