@@ -32,11 +32,23 @@ function chartClamp(value, lo, hi) {
     return Math.min(hi, Math.max(lo, value));
 }
 
-/** 千分位；过万自动改「万 / 亿」，避免长数字把坐标轴挤变形（12500 → 12,500，125000 → 12.5万） */
+/**
+ * 千分位；过万自动改「万 / 亿」，避免长数字把坐标轴挤变形（12500 → 12,500，125000 → 12.5万）。
+ * 英文侧用同一套阈值思路但换单位（12.5K / 1.2M / 1.2B），否则坐标轴上会混进中文字。
+ * 不依赖 I18n 也能跑：单测沙箱里没有 i18n.js，此时按中文口径（与后端日志一致）。
+ */
 function formatCompact(value) {
     const n = Number(value);
     if (!isFinite(n)) return '0';
     const abs = Math.abs(n);
+    const en = typeof I18n !== 'undefined' && I18n.locale && I18n.locale() === 'en-US';
+
+    if (en) {
+        if (abs >= 1e9) return trimZero((n / 1e9).toFixed(1)) + 'B';
+        if (abs >= 1e6) return trimZero((n / 1e6).toFixed(1)) + 'M';
+        if (abs >= 1e4) return trimZero((n / 1e3).toFixed(1)) + 'K';
+        return Math.round(n).toLocaleString('en-US');
+    }
     if (abs >= 1e8) return trimZero((n / 1e8).toFixed(1)) + '亿';
     if (abs >= 1e5) return trimZero((n / 1e4).toFixed(1)) + '万';
     return Math.round(n).toLocaleString('zh-CN');
@@ -197,6 +209,17 @@ function barAlpha(value, stats) {
     return chartClamp(0.42 + ratio * 0.58, 0.42, 1);
 }
 
+/**
+ * 饼图里合并出来的那一片叫什么：中文「其他 9 组」/ 英文「Other (9 groups)」。
+ * 它是画出来的标签而不是数据，所以必须按当前语言生成（chart.js 不依赖 utils.js，
+ * 这里自带兜底：i18n 未加载时退回中文原文）。
+ */
+function pieOtherLabel(count) {
+    return typeof I18n !== 'undefined' && I18n.t
+        ? I18n.t('其他 {n} 组', { n: count })
+        : '其他 ' + count + ' 组';
+}
+
 /** 饼图扇区：超过 pieMax 时保留最大的若干个，其余合并成「其他」，避免丝状扇区与标签打架 */
 function pieSlices(categories, values) {
     const items = (categories || []).map((name, i) => ({ name: name, value: Number(values[i]) || 0 }));
@@ -206,7 +229,7 @@ function pieSlices(categories, values) {
     const head = sorted.slice(0, CHART_LIMITS.pieMax - 1);
     const restSum = sorted.slice(CHART_LIMITS.pieMax - 1).reduce((sum, it) => sum + it.value, 0);
     // isOther：让渲染层把「其他」画成中性灰，跟真实分组区分开
-    head.push({ name: '其他 ' + (items.length - head.length) + ' 组', value: restSum, isOther: true });
+    head.push({ name: pieOtherLabel(items.length - head.length), value: restSum, isOther: true });
     return head;
 }
 

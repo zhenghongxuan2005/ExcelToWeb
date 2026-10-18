@@ -31,7 +31,7 @@ function fetchDashboardData() {
     fetchTableList()
         .then(tables => {
             if (!tables || tables.length === 0) {
-                showEmptyState('暂无数据，请先上传 Excel 文件');
+                showEmptyState(tt('暂无数据，请先上传 Excel 文件'));
                 return;
             }
             tablesCache = tables;
@@ -41,7 +41,7 @@ function fetchDashboardData() {
             loadData(tableId);
         })
         .catch(err => {
-            showEmptyState('加载数据失败：' + err.message);
+            showEmptyState(tt('加载数据失败：{msg}', { msg: err.message }));
             console.error('fetchDashboardData 错误:', err);
         });
 }
@@ -62,11 +62,11 @@ function loadData(id) {
                 rows = data.rows;
                 renderDashboard();
             } else {
-                showEmptyState('该表格没有数据');
+                showEmptyState(tt('该表格没有数据'));
             }
         })
         .catch(err => {
-            showEmptyState('加载数据失败：' + err.message);
+            showEmptyState(tt('加载数据失败：{msg}', { msg: err.message }));
             console.error('loadData 错误:', err);
         });
 }
@@ -124,8 +124,9 @@ function identifyDimensions() {
 
 function groupData(dim, metric) {
     const groups = {};
+    const blankLabel = tt('未知');
     for (const row of rows) {
-        const dimVal = row[dim] || '未知';
+        const dimVal = row[dim] || blankLabel;
         const metVal = parseFloat(row[metric]) || 0;
         if (!groups[dimVal]) groups[dimVal] = { count: 0, total: 0, items: [] };
         groups[dimVal].count++;
@@ -148,16 +149,16 @@ function completionInfo(metric) {
     if (statusCol) {
         const done = rows.filter(r => ['是', '已完成', '完成', '已交付'].includes(String(r[statusCol]).trim())).length;
         return {
-            label: '完成率',
+            label: tt('完成率'),
             rate: rows.length ? Math.round((done / rows.length) * 100) : 0,
-            foot: done + ' / ' + rows.length + ' 条已完成'
+            foot: tt('{done} / {total} 条已完成', { done: done, total: rows.length })
         };
     }
     const filled = rows.filter(r => String(r[metric] === undefined || r[metric] === null ? '' : r[metric]).trim() !== '').length;
     return {
-        label: '指标覆盖率',
+        label: tt('指标覆盖率'),
         rate: rows.length ? Math.round((filled / rows.length) * 100) : 0,
-        foot: filled + ' / ' + rows.length + ' 条有值'
+        foot: tt('{filled} / {total} 条有值', { filled: filled, total: rows.length })
     };
 }
 
@@ -186,14 +187,14 @@ function renderDashboard() {
 
     const found = identifyDimensions();
     const tableOptions = dashOptions(tablesCache.map(t => ({ value: t.id, text: t.tableName })), tableId);
-    const tableSelect = dashField('表格', 'dashboardTableSelect', tableOptions, 'onDashboardTableChange(this)');
+    const tableSelect = dashField(tt('表格'), 'dashboardTableSelect', tableOptions, 'onDashboardTableChange(this)');
 
     if (found.dimensions.length === 0 || found.metrics.length === 0) {
         updateDashHead('', 0);
         container.innerHTML = '<div class="dash-card"><div class="dash-card-toolbar">' + tableSelect + '</div>'
             + '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#i-inbox"/></svg></div>'
-            + '<p>数据中未识别到分组维度或数值指标</p>'
-            + '<p class="empty-sub">请确保 Excel 含文本列（如销售员）与数值列（如金额）</p></div></div>';
+            + '<p>' + tt('数据中未识别到分组维度或数值指标') + '</p>'
+            + '<p class="empty-sub">' + tt('请确保 Excel 含文本列（如销售员）与数值列（如金额）') + '</p></div></div>';
         return;
     }
 
@@ -239,13 +240,16 @@ function updateChart() {
 
     // 图表上方那行元信息：指标 · 按维度汇总 ／ 平均线
     const metaText = document.getElementById('chartMetaText');
-    if (metaText) metaText.textContent = metric + ' · 按「' + dim + '」汇总';
+    if (metaText) metaText.textContent = tt('{metric} · 按「{dim}」汇总', { metric: metric, dim: dim });
     const avgText = document.getElementById('chartAvg');
-    if (avgText) avgText.textContent = stats.count ? '— 平均 ' + formatCompact(stats.avg) : '';
+    if (avgText) avgText.textContent = stats.count ? tt('— 平均 {avg}', { avg: formatCompact(stats.avg) }) : '';
     const countText = document.getElementById('chartCount');
-    if (countText) countText.textContent = '共 ' + keys.length + ' 组';
+    if (countText) countText.textContent = tt('共 {n} 组', { n: keys.length });
     const subText = document.getElementById('chartSub');
-    if (subText) subText.textContent = '按「' + dim + '」分组汇总' + (keys.length > 12 ? ' · 可横向滚动' : '');
+    if (subText) {
+        subText.textContent = tt('按「{dim}」分组汇总', { dim: dim })
+            + (keys.length > 12 ? tt(' · 可横向滚动') : '');
+    }
 
     drawChart({
         type: chartType,
@@ -290,8 +294,8 @@ function syncLogToggle(values) {
     btn.classList.toggle('is-on', logScaleOn && advice.usable);
     btn.setAttribute('aria-pressed', String(logScaleOn && advice.usable));
     btn.title = advice.usable
-        ? '最大 / 最小相差 ' + Math.round(advice.ratio) + ' 倍，可切对数轴压缩差距'
-        : '含 0 或负值，无法使用对数轴';
+        ? tt('最大 / 最小相差 {n} 倍，可切对数轴压缩差距', { n: Math.round(advice.ratio) })
+        : tt('含 0 或负值，无法使用对数轴');
 }
 
 function toggleLogScale() {
@@ -304,20 +308,23 @@ function toggleLogScale() {
 // ================================================================
 function updateDashHead(dim, groupCount) {
     const table = tablesCache.find(t => String(t.id) === String(tableId));
-    const tableName = table ? table.tableName : '数据集';
+    const tableName = table ? table.tableName : tt('数据集');
     const sub = document.getElementById('dashSub');
     if (sub) {
-        sub.textContent = tableName + (dim ? ' · 按「' + dim + '」分组' : '') + ' · ' + rows.length + ' 条记录';
+        sub.textContent = tableName
+            + (dim ? tt(' · 按「{dim}」分组', { dim: dim }) : '')
+            + tt(' · {n} 条记录', { n: rows.length });
     }
     const updated = document.getElementById('dashUpdated');
     if (updated) {
-        updated.textContent = '数据截至 ' + (table && table.updatedAt ? formatTime(table.updatedAt) : '—');
+        updated.textContent = tt('数据截至 {time}', {
+            time: table && table.updatedAt ? formatTime(table.updatedAt) : '—'
+        });
     }
 }
 
 // 主题切换后要重画：ECharts 的颜色是画图时取的设计令牌，不重画就还是旧主题的色
-function watchThemeAndResize() {
-    const toggle = document.getElementById('themeToggle');
+function watchThemeAndResize() {    const toggle = document.getElementById('themeToggle');
     if (toggle && toggle.addEventListener) {
         // setTimeout 0：shell.js 的点击处理器先把 data-theme 改好，这里再读新值
         toggle.addEventListener('click', () => setTimeout(() => updateChart(), 0));
@@ -331,6 +338,18 @@ function watchThemeAndResize() {
     }
 }
 
+/**
+ * 语言切换后必须是「重算并重渲染」而不是「就地替换文字」：
+ * 统计卡副标题、汇总表头、图表 tooltip 全是拼出来的，靠翻 DOM 只会留下一半中文。
+ */
+function watchLanguage() {
+    document.addEventListener('i18n:change', () => {
+        disposeChart();
+        if (rows.length) renderDashboard();
+        else fetchDashboardData();
+    });
+}
+
 // 页面加载时检查登录并获取数据
 (function init() {
     if (!localStorage.getItem('token')) {
@@ -338,6 +357,7 @@ function watchThemeAndResize() {
         return;
     }
     watchThemeAndResize();
+    watchLanguage();
     fetchDashboardData();
 })();
 
