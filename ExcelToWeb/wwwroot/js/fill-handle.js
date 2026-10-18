@@ -251,7 +251,7 @@ function updateFillHandle() {
 
     const handle = document.createElement('div');
     handle.className = 'range-fill-handle';
-    handle.title = '拖拽填充：复制单元格，或按等差数列延续序列';
+    handle.title = tt('拖拽填充：复制单元格，或按等差数列延续序列');
     td.appendChild(handle);
     if (handle.addEventListener) handle.addEventListener('mousedown', onFillHandleMouseDown);
 }
@@ -292,7 +292,7 @@ function onFillHandleMouseDown(e) {
 
     _fillDrag = { source: source, target: null };
     document.body.classList.add('is-fill-dragging');
-    setStatus('拖拽填充中…松开鼠标完成');
+    setStatus(tt('拖拽填充中…松开鼠标完成'));
 }
 
 function onFillHandleMouseMove(e) {
@@ -320,8 +320,8 @@ function onFillHandleMouseUp() {
     const result = applyFill(drag.target, drag.source);
     if (!result) return;
 
-    showToast(`✅ 已填充 ${result.cells} 个单元格`, 'success');
-    setStatus(`已填充 ${result.cells} 个单元格`);
+    showToast('✅ ' + tt('已填充 {n} 个单元格', { n: result.cells }), 'success');
+    setStatus(tt('已填充 {n} 个单元格', { n: result.cells }));
 }
 
 /** 接线（app.js 在 range.js 之后调用一次） */

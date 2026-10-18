@@ -13,11 +13,11 @@ let columnDraft = [];
 
 function openColumnModal() {
     if (!currentTableId) {
-        showToast('请先选择一个表格', 'error');
+        showToast(tt('请先选择一个表格'), 'error');
         return;
     }
     if (currentHeaders.length === 0) {
-        showToast('当前表格没有列', 'info');
+        showToast(tt('当前表格没有列'), 'info');
         return;
     }
     columnDraft = currentHeaders.map(h => ({ name: h, original: h, expr: formulaOf(h) }));
@@ -33,13 +33,13 @@ function renderColumnDraft() {
     const list = document.getElementById('columnDraftList');
     if (!list) return;
     if (columnDraft.length === 0) {
-        list.innerHTML = '<p class="modal-sub">暂无列，点击下方「添加列」开始</p>';
+        list.innerHTML = '<p class="modal-sub">' + tt('暂无列，点击下方「添加列」开始') + '</p>';
         return;
     }
     list.innerHTML = columnDraft.map((c, i) => {
         const isNew = !c.original;
         const renamed = c.original && c.name !== c.original;
-        const tag = isNew ? '<span class="col-tag col-tag-new">新</span>'
+        const tag = isNew ? '<span class="col-tag col-tag-new">' + tt('新') + '</span>'
             : renamed ? `<span class="col-tag col-tag-rename" title="${escapeHtml(c.original)}">${escapeHtml(c.original)}</span>`
             : '';
         // 有公式的列在列名后标一个 fx，并把公式原文显示出来 ——
@@ -50,13 +50,13 @@ function renderColumnDraft() {
         return `<div class="col-draft-row">
             <span class="col-draft-index">${i + 1}</span>
             <input type="text" class="col-draft-input" value="${escapeHtml(c.name)}"
-                   placeholder="列名" oninput="onColumnDraftInput(${i}, this.value)">
+                   placeholder="${tt('列名')}" oninput="onColumnDraftInput(${i}, this.value)">
             ${tag}${fxTag}
             <span class="col-draft-ops">
-                <button type="button" class="col-op-btn" title="设置计算列公式" onclick="openFormulaEditor(${i})">fx</button>
-                <button type="button" class="col-op-btn" title="上移" onclick="moveColumnRow(${i}, -1)">↑</button>
-                <button type="button" class="col-op-btn" title="下移" onclick="moveColumnRow(${i}, 1)">↓</button>
-                <button type="button" class="col-op-btn col-op-del" title="删除列" onclick="removeColumnRow(${i})">×</button>
+                <button type="button" class="col-op-btn" title="${tt('设置计算列公式')}" onclick="openFormulaEditor(${i})">fx</button>
+                <button type="button" class="col-op-btn" title="${tt('上移')}" onclick="moveColumnRow(${i}, -1)">↑</button>
+                <button type="button" class="col-op-btn" title="${tt('下移')}" onclick="moveColumnRow(${i}, 1)">↓</button>
+                <button type="button" class="col-op-btn col-op-del" title="${tt('删除列')}" onclick="removeColumnRow(${i})">×</button>
             </span>
         </div>`;
     }).join('');
@@ -96,7 +96,7 @@ function addColumnRow() {
 function removeColumnRow(i) {
     const c = columnDraft[i];
     if (!c) return;
-    if (c.original && !confirm(`删除列「${c.original}」将同时删除该列的所有数据和相关规则，确定吗？`)) return;
+    if (c.original && !confirm(tt('删除列「{col}」将同时删除该列的所有数据和相关规则，确定吗？', { col: c.original }))) return;
     columnDraft.splice(i, 1);
     renderColumnDraft();
 }
@@ -124,7 +124,7 @@ function saveColumnStructure() {
     });
 
     if (columnDraft.length === 0) {
-        showToast('至少保留一列', 'error');
+        showToast(tt('至少保留一列'), 'error');
         return;
     }
 
@@ -132,15 +132,15 @@ function saveColumnStructure() {
     for (const c of columnDraft) {
         c.name = (c.name || '').trim();
         if (!c.name) {
-            showToast('列名不能为空', 'error');
+            showToast(tt('列名不能为空'), 'error');
             return;
         }
         if (c.name.length > 100) {
-            showToast(`列名「${c.name}」超过 100 字符`, 'error');
+            showToast(tt('列名「{name}」超过 100 字符', { name: c.name }), 'error');
             return;
         }
         if (names.includes(c.name)) {
-            showToast(`列名「${c.name}」重复`, 'error');
+            showToast(tt('列名「{name}」重复', { name: c.name }), 'error');
             return;
         }
         names.push(c.name);
@@ -157,18 +157,18 @@ function saveColumnStructure() {
     if (added === 0 && dropped === 0 && renames.length === 0 && !formulaChanged &&
         columnDraft.length === currentHeaders.length &&
         columnDraft.every((c, i) => c.name === currentHeaders[i])) {
-        showToast('列结构没有变化', 'info');
+        showToast(tt('列结构没有变化'), 'info');
         return;
     }
 
     const warnParts = [];
-    if (added) warnParts.push(`新增 ${added} 列`);
-    if (dropped) warnParts.push(`删除 ${dropped} 列（数据与规则一并清除）`);
-    if (renames.length) warnParts.push(`重命名 ${renames.length} 列`);
-    if (formulaChanged) warnParts.push('更新计算列公式');
-    if (dropped > 0 && !confirm(`确认执行：${warnParts.join('，')}？`)) return;
+    if (added) warnParts.push(tt('新增 {n} 列', { n: added }));
+    if (dropped) warnParts.push(tt('删除 {n} 列（数据与规则一并清除）', { n: dropped }));
+    if (renames.length) warnParts.push(tt('重命名 {n} 列', { n: renames.length }));
+    if (formulaChanged) warnParts.push(tt('更新计算列公式'));
+    if (dropped > 0 && !confirm(tt('确认执行：{ops}？', { ops: warnParts.join(tt('，')) }))) return;
 
-    setStatus('更新列结构中...');
+    setStatus(tt('更新列结构中...'));
     updateHeaders(currentTableId, names, renames)
         .then(result => {
             // 公式必须等列结构落地之后再提交：新增的列这时才在服务端存在，
@@ -177,7 +177,7 @@ function saveColumnStructure() {
         })
         .then(result => {
             closeColumnModal();
-            showToast('✅ ' + (result.message || '列结构已更新'), 'success');
+            showToast('✅ ' + (result.message || tt('列结构已更新')), 'success');
             // 隐藏列 / 列宽里已失效的键清理掉
             const nameSet = new Set(names);
             hiddenColumns = hiddenColumns.filter(h => nameSet.has(h));
@@ -186,5 +186,5 @@ function saveColumnStructure() {
             }
             refreshData();
         })
-        .catch(err => showToast('❌ 更新失败：' + err.message, 'error'));
+        .catch(err => showToast('❌ ' + tt('更新失败：{msg}', { msg: err.message }), 'error'));
 }

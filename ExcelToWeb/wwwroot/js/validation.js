@@ -5,7 +5,7 @@
 
 function openValidationModal() {
     if (!currentTableId) {
-        showToast('请先上传一个 Excel 文件', 'error');
+        showToast(tt('请先上传一个 Excel 文件'), 'error');
         return;
     }
 
@@ -32,7 +32,7 @@ function openValidationModal() {
             renderValidationRuleList();
             document.getElementById('validationModal').style.display = 'flex';
         })
-        .catch(err => showToast('❌ 加载校验规则失败：' + err.message, 'error'));
+        .catch(err => showToast('❌ ' + tt('加载校验规则失败：{msg}', { msg: err.message }), 'error'));
 }
 
 function closeValidationModal() {
@@ -44,43 +44,43 @@ function renderValidationRuleList() {
     if (!container) return;
 
     let html = '<table class="rule-table"><thead><tr>';
-    html += '<th>列名</th>';
-    html += '<th style="text-align:center; width:48px;">必填</th>';
-    html += '<th style="text-align:center; width:48px;">唯一</th>';
-    html += '<th style="width:88px;">类型</th>';
-    html += '<th>限制</th>';
-    html += '<th style="width:210px;">引用来源</th>';
+    html += '<th>' + tt('列名') + '</th>';
+    html += '<th style="text-align:center; width:48px;">' + tt('必填') + '</th>';
+    html += '<th style="text-align:center; width:48px;">' + tt('唯一') + '</th>';
+    html += '<th style="width:88px;">' + tt('类型') + '</th>';
+    html += '<th>' + tt('限制') + '</th>';
+    html += '<th style="width:210px;">' + tt('引用来源') + '</th>';
     html += '</tr></thead><tbody>';
 
     currentValidationRules.forEach((rule, i) => {
         html += '<tr>';
         html += `<td><strong>${escapeHtml(rule.columnName)}</strong></td>`;
         html += `<td class="cell-center"><input type="checkbox" class="rule-required" data-index="${i}" ${rule.required ? 'checked' : ''} /></td>`;
-        html += `<td class="cell-center"><input type="checkbox" class="rule-unique" data-index="${i}" ${rule.unique ? 'checked' : ''} title="该列取值在整张表内不允许重复" /></td>`;
+        html += `<td class="cell-center"><input type="checkbox" class="rule-unique" data-index="${i}" ${rule.unique ? 'checked' : ''} title="${tt('该列取值在整张表内不允许重复')}" /></td>`;
         html += `<td><select class="select-sm rule-datatype" style="width:100%;" data-index="${i}">`;
-        html += `<option value="text"${rule.dataType === 'text' ? ' selected' : ''}>文本</option>`;
-        html += `<option value="number"${rule.dataType === 'number' ? ' selected' : ''}>数字</option>`;
-        html += `<option value="date"${rule.dataType === 'date' ? ' selected' : ''}>日期</option>`;
-        html += `<option value="email"${rule.dataType === 'email' ? ' selected' : ''}>邮箱</option>`;
+        html += `<option value="text"${rule.dataType === 'text' ? ' selected' : ''}>${tt('文本')}</option>`;
+        html += `<option value="number"${rule.dataType === 'number' ? ' selected' : ''}>${tt('数字')}</option>`;
+        html += `<option value="date"${rule.dataType === 'date' ? ' selected' : ''}>${tt('日期')}</option>`;
+        html += `<option value="email"${rule.dataType === 'email' ? ' selected' : ''}>${tt('邮箱')}</option>`;
         html += '</select></td>';
         html += '<td><div style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;">';
-        html += `<input type="number" class="input-sm rule-min" style="width:70px;" placeholder="最小值" value="${rule.minValue ?? ''}" data-index="${i}" />`;
+        html += `<input type="number" class="input-sm rule-min" style="width:70px;" placeholder="${tt('最小值')}" value="${rule.minValue ?? ''}" data-index="${i}" />`;
         html += '<span style="color:var(--text-3);">~</span>';
-        html += `<input type="number" class="input-sm rule-max" style="width:70px;" placeholder="最大值" value="${rule.maxValue ?? ''}" data-index="${i}" />`;
-        html += `<input type="text" class="input-sm rule-allowed" style="flex:1; min-width:110px; width:auto;" placeholder="允许值(逗号分隔)" value="${rule.allowedValues || ''}" data-index="${i}" />`;
+        html += `<input type="number" class="input-sm rule-max" style="width:70px;" placeholder="${tt('最大值')}" value="${rule.maxValue ?? ''}" data-index="${i}" />`;
+        html += `<input type="text" class="input-sm rule-allowed" style="flex:1; min-width:110px; width:auto;" placeholder="${tt('允许值(逗号分隔)')}" value="${rule.allowedValues || ''}" data-index="${i}" />`;
         html += '</div></td>';
 
         // 引用来源：表 + 列（取自 allTables，表信息里带 headers）
         html += '<td><div style="display:flex; gap:4px;">';
         html += `<select class="select-sm rule-ref-table" style="width:50%;" data-index="${i}">`;
-        html += '<option value="">不引用</option>';
+        html += '<option value="">' + tt('不引用') + '</option>';
         (allTables || []).forEach(t => {
             const sel = rule.refTableId === t.id ? ' selected' : '';
             html += `<option value="${t.id}"${sel}>${escapeHtml(t.tableName)}</option>`;
         });
         html += '</select>';
         html += `<select class="select-sm rule-ref-column" style="width:50%;" data-index="${i}">`;
-        html += '<option value="">选择列</option>';
+        html += '<option value="">' + tt('选择列') + '</option>';
         const refTable = (allTables || []).find(t => t.id === rule.refTableId);
         if (refTable && refTable.headers) {
             refTable.headers.forEach(h => {
@@ -150,7 +150,7 @@ function renderValidationRuleList() {
 function addValidationRule() {
     currentValidationRules.push({
         tableId: currentTableId,
-        columnName: '新列_' + (currentValidationRules.length + 1),
+        columnName: tt('新列_{n}', { n: currentValidationRules.length + 1 }),
         required: false,
         dataType: 'text',
         minValue: null,
@@ -188,16 +188,16 @@ function saveValidationRules() {
     // 引用了表但没选列的规则没有意义，保存前拦截
     const badRef = currentValidationRules.find(r => r.refTableId && !r.refColumnName);
     if (badRef) {
-        showToast(`列「${badRef.columnName}」选择了引用表，但还没选引用列`, 'error');
+        showToast(tt('列「{col}」选择了引用表，但还没选引用列', { col: badRef.columnName }), 'error');
         return;
     }
 
     saveValidationRulesApi(currentValidationRules)
         .then(result => {
-            showToast('✅ ' + (result.message || '保存成功'), 'success');
+            showToast('✅ ' + (result.message || tt('保存成功')), 'success');
             closeValidationModal();
             // 引用下拉的数据源已变化，重取引用值并刷新表格建议列表
             if (typeof loadRefValues === 'function') loadRefValues().then(() => renderTable());
         })
-        .catch(err => showToast('❌ 保存失败：' + err.message, 'error'));
+        .catch(err => showToast('❌ ' + tt('保存失败：{msg}', { msg: err.message }), 'error'));
 }

@@ -28,7 +28,7 @@ let pivotLastRequest = null;
 
 function openPivotModal() {
     if (!currentTableId || currentHeaders.length === 0) {
-        showToast('请先上传并打开一个表格', 'error');
+        showToast(tt('请先上传并打开一个表格'), 'error');
         return;
     }
 
@@ -49,7 +49,7 @@ function closePivotModal() {
 function resetPivot() {
     pivotLastRequest = null;
     renderPivotEmpty();
-    setPivotHint('选好行 / 列 / 值字段后点「生成预览」。', false);
+    setPivotHint(tt('选好行 / 列 / 值字段后点「生成预览」。'), false);
 }
 
 // ================================================================
@@ -81,7 +81,7 @@ function currentPivotValue(sel) {
 
 /** allowEmpty 为真时多一个「不分组」选项（行 / 列维度可以不用） */
 function fillPivotSelect(sel, headers, allowEmpty, keep) {
-    const options = allowEmpty ? ['<option value="">不分组</option>'] : [];
+    const options = allowEmpty ? ['<option value="">' + tt('不分组') + '</option>'] : [];
     for (const name of headers) {
         options.push(`<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`);
     }
@@ -113,32 +113,32 @@ function readPivotRequest() {
 function runPivot() {
     const req = readPivotRequest();
     if (!req.valueField) {
-        showToast('请先选择要汇总的列', 'error');
+        showToast(tt('请先选择要汇总的列'), 'error');
         return;
     }
     // 服务端也会拦这一条，但当场说是能省一趟往返的
     if (req.rowField && req.rowField === req.colField) {
-        showToast('行字段与列字段不能是同一列', 'error');
+        showToast(tt('行字段与列字段不能是同一列'), 'error');
         return;
     }
 
     const seq = ++pivotSeq;
-    setStatus('汇总中...');
-    setPivotHint('正在汇总…', false);
+    setStatus(tt('汇总中...'));
+    setPivotHint(tt('正在汇总…'), false);
 
     buildPivot(req)
         .then(data => {
             if (seq !== pivotSeq) return;   // 期间又发了一次，这份结果已经过期
             pivotLastRequest = req;
             renderPivot(data, req);
-            setStatus('透视汇总完成');
+            setStatus(tt('透视汇总完成'));
         })
         .catch(err => {
             if (seq !== pivotSeq) return;
             pivotLastRequest = null;
             renderPivotEmpty();
             setPivotHint('❌ ' + err.message, true);
-            setStatus('汇总失败');
+            setStatus(tt('汇总失败'));
         });
 }
 
@@ -154,23 +154,23 @@ function renderPivot(data, req) {
 
     if (data.sourceRows === 0) {
         renderPivotEmpty();
-        setPivotHint('这张表还没有数据', true);
+        setPivotHint(tt('这张表还没有数据'), true);
         return;
     }
     if (data.rowKeys.length === 0 && data.colKeys.length === 0) {
         renderPivotEmpty();
-        setPivotHint('所选的行 / 列字段里没有可分组的内容（空单元格不参与分组）', true);
+        setPivotHint(tt('所选的行 / 列字段里没有可分组的内容（空单元格不参与分组）'), true);
         return;
     }
 
-    const head = [`<th class="pivot-corner">${escapeHtml(noRow ? '合计' : req.rowField)}</th>`];
+    const head = [`<th class="pivot-corner">${escapeHtml(noRow ? tt('合计') : req.rowField)}</th>`];
     for (const label of colLabels) head.push(`<th>${escapeHtml(label)}</th>`);
-    head.push('<th class="pivot-total">合计</th>');
+    head.push('<th class="pivot-total">' + tt('合计') + '</th>');
 
     const body = [];
     for (let r = 0; r < data.rowKeys.length; r++) {
         const cells = data.cells[r] || [];
-        const tds = [`<th class="pivot-row-label">${escapeHtml(noRow ? '合计' : data.rowKeys[r])}</th>`];
+        const tds = [`<th class="pivot-row-label">${escapeHtml(noRow ? tt('合计') : data.rowKeys[r])}</th>`];
         for (let c = 0; c < colLabels.length; c++) tds.push(pivotCellHtml(cells[c]));
         tds.push(pivotCellHtml(data.rowTotals[r], 'pivot-total'));
         body.push('<tr>' + tds.join('') + '</tr>');
@@ -178,7 +178,7 @@ function renderPivot(data, req) {
 
     // 没有行分组时，唯一那一行本身就是总计，再补一行「合计」只是把同一组数字重复一遍
     if (!noRow) {
-        const tds = ['<th class="pivot-row-label">合计</th>'];
+        const tds = ['<th class="pivot-row-label">' + tt('合计') + '</th>'];
         for (let c = 0; c < colLabels.length; c++) tds.push(pivotCellHtml(data.colTotals[c], 'pivot-total'));
         tds.push(pivotCellHtml(data.grandTotal, 'pivot-grand'));
         body.push('<tr class="pivot-totals-row">' + tds.join('') + '</tr>');
@@ -191,23 +191,27 @@ function renderPivot(data, req) {
             + '<tbody>' + body.join('') + '</tbody></table></div>';
     }
 
-    const dims = (noRow ? '不分组' : data.rowKeys.length + ' 组')
-        + ' × ' + (req.colField ? data.colKeys.length + ' 列' : '不分组');
-    setPivotHint(`共 ${data.sourceRows} 行原始数据 · ${data.valueLabel} · ${dims}`, false);
+    const dims = tt('{rows} × {cols}', {
+        rows: noRow ? tt('不分组') : tt('{n} 组', { n: data.rowKeys.length }),
+        cols: req.colField ? tt('{n} 列', { n: data.colKeys.length }) : tt('不分组')
+    });
+    setPivotHint(tt('共 {n} 行原始数据 · {value} · {dims}', {
+        n: data.sourceRows, value: data.valueLabel, dims: dims
+    }), false);
 }
 
 /** 一个格子。空串是「这个组合没有数据」，显示成 — 而不是 0（两者不是一回事） */
 function pivotCellHtml(text, extraClass) {
     const cls = 'pivot-num' + (extraClass ? ' ' + extraClass : '');
     if (text === undefined || text === null || text === '') {
-        return `<td class="${cls} pivot-empty" title="没有数据">—</td>`;
+        return `<td class="${cls} pivot-empty" title="${tt('没有数据')}">—</td>`;
     }
     return `<td class="${cls}">${escapeHtml(text)}</td>`;
 }
 
 function renderPivotEmpty() {
     const box = document.getElementById('pivotPreview');
-    if (box) box.innerHTML = '<p class="pivot-placeholder">还没有预览结果</p>';
+    if (box) box.innerHTML = '<p class="pivot-placeholder">' + tt('还没有预览结果') + '</p>';
 }
 
 function setPivotHint(text, isError) {
@@ -227,20 +231,20 @@ function setPivotHint(text, isError) {
  */
 function exportPivot() {
     if (!pivotLastRequest) {
-        showToast('请先生成预览，确认数字没问题再导出', 'error');
+        showToast(tt('请先生成预览，确认数字没问题再导出'), 'error');
         return;
     }
 
-    setStatus('导出中...');
+    setStatus(tt('导出中...'));
     exportPivotBlob(pivotLastRequest)
         .then(blob => {
-            downloadBlob(blob, '透视_' + pivotStamp() + '.xlsx');
-            setStatus('已导出');
-            showToast('✅ 导出成功（含原始数据表与「透视」表）', 'success');
+            downloadBlob(blob, (isEnglish() ? 'pivot_' : '透视_') + pivotStamp() + '.xlsx');
+            setStatus(tt('已导出'));
+            showToast('✅ ' + tt('导出成功（含原始数据表与「透视」表）'), 'success');
         })
         .catch(err => {
-            setStatus('导出失败');
-            showToast('❌ 导出失败：' + err.message, 'error');
+            setStatus(tt('导出失败'));
+            showToast('❌ ' + tt('导出失败：{msg}', { msg: err.message }), 'error');
         });
 }
 

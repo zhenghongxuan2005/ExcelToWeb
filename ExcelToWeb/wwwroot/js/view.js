@@ -178,8 +178,8 @@ function updateSearchCount() {
     }
     const matched = getFilteredRows().length;
     el.textContent = matched > 0
-        ? `命中 ${matched} 行`
-        : '无匹配';
+        ? tt('命中 {n} 行', { n: matched })
+        : tt('无匹配');
     el.classList.toggle('is-empty', matched === 0);
 }
 
@@ -208,12 +208,14 @@ function renderPager(rowCount) {
     const end = Math.min(currentPage * pageSize, rowCount);
 
     let html = '<div class="pager">';
-    html += `<span class="pager-info">第 ${start}-${end} 行 / 共 ${rowCount} 行</span>`;
-    html += `<button class="pager-btn" onclick="gotoPage(1)" ${currentPage === 1 ? 'disabled' : ''}>首页</button>`;
-    html += `<button class="pager-btn" onclick="gotoPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>`;
+    html += `<span class="pager-info">${tt('第 {start}-{end} 行 / 共 {total} 行', {
+        start: start, end: end, total: rowCount
+    })}</span>`;
+    html += `<button class="pager-btn" onclick="gotoPage(1)" ${currentPage === 1 ? 'disabled' : ''}>${tt('首页')}</button>`;
+    html += `<button class="pager-btn" onclick="gotoPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>${tt('上一页')}</button>`;
     html += `<span class="pager-current">${currentPage} / ${totalPages}</span>`;
-    html += `<button class="pager-btn" onclick="gotoPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>`;
-    html += `<button class="pager-btn" onclick="gotoPage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}>末页</button>`;
+    html += `<button class="pager-btn" onclick="gotoPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>${tt('下一页')}</button>`;
+    html += `<button class="pager-btn" onclick="gotoPage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}>${tt('末页')}</button>`;
     html += '</div>';
     return html;
 }
@@ -228,22 +230,22 @@ function renderColumnMenu() {
     if (!menu) return;
 
     if (currentHeaders.length === 0) {
-        menu.innerHTML = '<div class="dropdown-empty">请先加载数据</div>';
+        menu.innerHTML = '<div class="dropdown-empty">' + tt('请先加载数据') + '</div>';
         return;
     }
 
     const hidden = new Set(hiddenColumns);
-    let html = '<div class="dropdown-title">显示列</div>';
+    let html = '<div class="dropdown-title">' + tt('显示列') + '</div>';
     for (const h of currentHeaders) {
         const checked = hidden.has(h) ? '' : ' checked';
         const width = columnWidths[h] || '';
         html += '<div class="column-row">';
         html += `<label class="column-check"><input type="checkbox"${checked} onchange="toggleColumn('${escapeHtml(h)}')"> ${escapeHtml(h)}</label>`;
-        html += `<input type="number" class="column-width" min="60" max="600" step="10" placeholder="宽" value="${width}" `
-            + `title="列宽（px，留空为自动）" onchange="setColumnWidth('${escapeHtml(h)}', this.value)">`;
+        html += `<input type="number" class="column-width" min="60" max="600" step="10" placeholder="${tt('宽')}" value="${width}" `
+            + `title="${tt('列宽（px，留空为自动）')}" onchange="setColumnWidth('${escapeHtml(h)}', this.value)">`;
         html += '</div>';
     }
-    html += '<div class="dropdown-footer"><button class="dropdown-item" onclick="showAllColumns()">全部显示</button></div>';
+    html += '<div class="dropdown-footer"><button class="dropdown-item" onclick="showAllColumns()">' + tt('全部显示') + '</button></div>';
     menu.innerHTML = html;
 }
 

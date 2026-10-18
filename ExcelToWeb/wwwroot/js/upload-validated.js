@@ -8,50 +8,52 @@
 function uploadWithValidation() {
     const fileInput = document.getElementById('fileInputValidate');
     if (!fileInput) {
-        showToast('请先选择文件', 'info');
+        showToast(tt('请先选择文件'), 'info');
         return;
     }
     const file = fileInput.files[0];
     if (!file) {
-        showToast('请选择文件', 'info');
+        showToast(tt('请选择文件'), 'info');
         return;
     }
 
     const ext = file.name.split('.').pop().toLowerCase();
     if (ext !== 'xlsx' && ext !== 'csv') {
-        showToast('请上传 .xlsx 或 .csv 格式的文件', 'error');
+        showToast(tt('请上传 .xlsx 或 .csv 格式的文件'), 'error');
         fileInput.value = '';
         return;
     }
 
     if (!currentTableId) {
-        showToast('请先上传一个 Excel 文件或选择一个表格', 'error');
+        showToast(tt('请先上传一个 Excel 文件或选择一个表格'), 'error');
         fileInput.value = '';
         return;
     }
 
-    setStatus('校验并上传中...');
+    setStatus(tt('校验并上传中...'));
     showTableSkeleton(currentHeaders.length);
     uploadWithValidationApi(file, currentTableId)
         .then(vr => {
             hideTableSkeleton();
-            const msg = `校验完成：总行数 ${vr.totalRows}，成功 ${vr.successRows} 行，错误 ${vr.errorRows} 行`;
+            const msg = tt('校验完成：总行数 {total}，成功 {ok} 行，错误 {bad} 行', {
+                total: vr.totalRows, ok: vr.successRows, bad: vr.errorRows
+            });
             if (vr.errorRows > 0) {
-                showToast('⚠️ ' + msg + '\n\n错误详情：\n' + vr.errors.join('\n'), 'error');
+                showToast('⚠️ ' + msg + '\n\n' + tt('错误详情：') + '\n' + vr.errors.join('\n'), 'error');
             } else {
                 showToast('✅ ' + msg, 'success');
                 currentRows = vr.validRows;
                 // 整表被替换，撤销栈随之作废
                 resetHistory();
                 renderTable();
-                setStatus(`已加载: ${currentTableId} (${currentRows.length}行)`);
+                setStatus(tt('已加载: {name} ({n}行)', { name: currentTableId, n: currentRows.length }));
             }
             fileInput.value = '';
         })
         .catch(err => {
             hideTableSkeleton();
-            showToast('❌ 上传失败：' + err.message, 'error');
-            setStatus('上传失败');
+            showToast('❌ ' + tt('上传失败：{msg}', { msg: err.message }), 'error');
+            setStatus(tt('上传失败'));
             fileInput.value = '';
             console.error('上传错误:', err);
         });

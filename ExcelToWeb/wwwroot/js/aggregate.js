@@ -83,9 +83,9 @@ function buildAggregateSelectHtml() {
     let html = '<select class="aggregate-select" aria-label="汇总方式" onchange="setAggregateMode(this.value)">';
     for (const mode of Object.keys(AGG_MODES)) {
         const selected = aggregateMode === mode ? ' selected' : '';
-        html += `<option value="${mode}"${selected}>${AGG_MODES[mode].label}</option>`;
+        html += `<option value="${mode}"${selected}>${tt(AGG_MODES[mode].label)}</option>`;
     }
-    html += `<option value="off"${aggregateMode === 'off' ? ' selected' : ''}>关闭汇总</option>`;
+    html += `<option value="off"${aggregateMode === 'off' ? ' selected' : ''}>${tt('关闭汇总')}</option>`;
     html += '</select>';
     return html;
 }
@@ -99,7 +99,7 @@ function buildAggregateCellsHtml(headers) {
     for (const h of headers) {
         const value = computeColumnAggregate(h, rows);
         if (value === null) {
-            html += '<td class="aggregate-cell is-empty" title="该列没有可汇总的数值">—</td>';
+            html += '<td class="aggregate-cell is-empty" title="' + tt('该列没有可汇总的数值') + '">—</td>';
         } else {
             html += `<td class="aggregate-cell"><span class="aggregate-unit">${unit}</span>${escapeHtml(formatNumber(value))}</td>`;
         }
@@ -147,12 +147,14 @@ function setAggregateMode(mode) {
         refreshAggregateRow();
     }
 
-    if (mode === 'off') setStatus('已关闭汇总行');
-    else setStatus(`汇总方式：${AGG_MODES[mode].label}`);
+    if (mode === 'off') setStatus(tt('已关闭汇总行'));
+    else setStatus(tt('汇总方式：{mode}', { mode: tt(AGG_MODES[mode].label) }));
 }
 
 /** 工具栏入口：显示 / 隐藏汇总行 */
 function toggleAggregateRow() {
     setAggregateMode(aggregateMode === 'off' ? 'sum' : 'off');
-    showToast(aggregateMode === 'off' ? '已关闭汇总行' : `✅ 汇总行：${AGG_MODES[aggregateMode].label}`, 'info');
+    showToast(aggregateMode === 'off'
+        ? tt('已关闭汇总行')
+        : '✅ ' + tt('汇总行：{mode}', { mode: tt(AGG_MODES[aggregateMode].label) }), 'info');
 }

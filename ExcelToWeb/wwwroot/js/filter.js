@@ -49,7 +49,7 @@ function sortBy(field, append) {
     }
 
     renderTable();
-    setStatus(sortKeys.length ? '排序：' + sortSummaryText() : '已取消排序');
+    setStatus(sortKeys.length ? tt('排序：{v}', { v: sortSummaryText() }) : tt('已取消排序'));
 }
 
 /** 移除单个排序键（统计栏排序标签上的 ✕） */
@@ -62,8 +62,8 @@ function removeSortKey(field) {
 function clearSort() {
     resetSort();
     renderTable();
-    showToast('已取消排序', 'info');
-    setStatus('已取消排序');
+    showToast(tt('已取消排序'), 'info');
+    setStatus(tt('已取消排序'));
 }
 
 // ================================================================
@@ -87,14 +87,14 @@ function filterSummaryText() {
     const col = filterColumn;
     if (filterMode === 'values') {
         const n = filterValues.length;
-        if (n === 0) return `${col}：未勾选任何值`;
+        if (n === 0) return tt('{col}：未勾选任何值', { col: col });
         if (n <= 2) return `${col} = ${filterValues.join(' / ')}`;
-        return `${col} ∈ ${n} 个值`;
+        return tt('{col} ∈ {n} 个值', { col: col, n: n });
     }
-    const op = {
+    const op = tt({
         contains: '包含', notContains: '不包含', equals: '等于',
         startsWith: '开头是', endsWith: '结尾是'
-    }[filterCondition] || filterCondition;
+    }[filterCondition] || filterCondition);
     return `${col} ${op} ${filterKeyword}`;
 }
 
@@ -129,17 +129,17 @@ function applyDateFilter() {
     const dateInput = document.getElementById('filterDate');
     const date = dateInput ? dateInput.value : '';
     if (!date) {
-        showToast('请选择日期', 'info');
+        showToast(tt('请选择日期'), 'info');
         return;
     }
     if (!currentTableId) {
-        showToast('请先上传一个 Excel 文件', 'error');
+        showToast(tt('请先上传一个 Excel 文件'), 'error');
         return;
     }
 
     const col = guessDateColumn();
     if (!col) {
-        showToast('没有找到可用于日期筛选的列', 'error');
+        showToast(tt('没有找到可用于日期筛选的列'), 'error');
         return;
     }
 
@@ -152,16 +152,17 @@ function applyDateFilter() {
     renderTable();
 
     const shown = buildDisplayRows().length;
-    showToast(`✅ 已按「${col}」筛选 ${date}：${shown} 行（共 ${currentRows.length} 行）`,
-        shown > 0 ? 'success' : 'info');
-    setStatus(`已筛选 ${date}（${shown} 行）`);
+    showToast('✅ ' + tt('已按「{col}」筛选 {date}：{shown} 行（共 {total} 行）', {
+        col: col, date: date, shown: shown, total: currentRows.length
+    }), shown > 0 ? 'success' : 'info');
+    setStatus(tt('已筛选 {date}（{n} 行）', { date: date, n: shown }));
 }
 
 function clearDateFilter() {
     resetFilter();
     currentPage = 1;
     renderTable();
-    showToast('✅ 已清除筛选', 'success');
+    showToast('✅ ' + tt('已清除筛选'), 'success');
 }
 
 // ================================================================
@@ -229,7 +230,7 @@ function renderFilterValueList() {
     let html = '';
     for (const item of shown) {
         const checked = usePreselect ? (preselected.has(item.value) ? ' checked' : '') : ' checked';
-        const label = item.value === '' ? '（空白）' : item.value;
+        const label = item.value === '' ? tt('（空白）') : item.value;
         html += '<label class="filter-value-item" data-value="' + escapeHtml(item.value) + '">';
         html += `<input type="checkbox"${checked} onchange="updateFilterValueCount()">`;
         html += `<span class="filter-value-text">${escapeHtml(label)}</span>`;
@@ -237,10 +238,12 @@ function renderFilterValueList() {
         html += '</label>';
     }
     if (all.length > limit) {
-        html += `<p class="filter-value-more">值过多，仅列出前 ${limit} 个（共 ${all.length} 个），请用上方搜索框缩小范围</p>`;
+        html += `<p class="filter-value-more">${tt('值过多，仅列出前 {limit} 个（共 {total} 个），请用上方搜索框缩小范围', {
+            limit: limit, total: all.length
+        })}</p>`;
     }
     if (all.length === 0) {
-        html += '<p class="filter-value-more">该列没有可筛选的值</p>';
+        html += '<p class="filter-value-more">' + tt('该列没有可筛选的值') + '</p>';
     }
     host.innerHTML = html;
     updateFilterValueCount();
@@ -279,7 +282,7 @@ function updateFilterValueCount() {
         const cb = item.querySelector('input[type="checkbox"]');
         if (cb && cb.checked) checked++;
     });
-    el.textContent = `已选 ${checked} / ${total}`;
+    el.textContent = tt('已选 {checked} / {total}', { checked: checked, total: total });
 }
 
 /** 切换「按值 / 按条件」两个面板 */
@@ -295,7 +298,7 @@ function setFilterMode(mode, silent) {
     if (valuesPane) valuesPane.style.display = filterMode === 'values' ? '' : 'none';
     if (condPane) condPane.style.display = filterMode === 'condition' ? '' : 'none';
 
-    if (!silent) setStatus(filterMode === 'values' ? '按值筛选' : '按条件筛选');
+    if (!silent) setStatus(filterMode === 'values' ? tt('按值筛选') : tt('按条件筛选'));
 }
 
 // ================================================================
@@ -304,7 +307,7 @@ function setFilterMode(mode, silent) {
 
 function applyFilter() {
     if (!filterColumn) {
-        showToast('请先选择要筛选的列', 'info');
+        showToast(tt('请先选择要筛选的列'), 'info');
         return;
     }
 
@@ -319,7 +322,7 @@ function applyFilter() {
         const all = filterDistinctValues().length;
         filterValues = checked.length === all ? null : checked;
         if (checked.length === 0) {
-            showToast('没有勾选任何值，筛选结果将为空', 'info');
+            showToast(tt('没有勾选任何值，筛选结果将为空'), 'info');
         }
     } else {
         const kwInput = document.getElementById('filterKeyword');
@@ -327,7 +330,7 @@ function applyFilter() {
         const condSelect = document.getElementById('filterCondition');
         if (condSelect) filterCondition = condSelect.value;
         if (!filterKeyword) {
-            showToast('请输入筛选关键词', 'info');
+            showToast(tt('请输入筛选关键词'), 'info');
             return;
         }
     }
@@ -337,9 +340,9 @@ function applyFilter() {
     renderTable();
 
     const shown = buildDisplayRows().length;
-    showToast(`✅ 筛选完成：显示 ${shown} 行（共 ${currentRows.length} 行）`,
+    showToast('✅ ' + tt('筛选完成：显示 {shown} 行（共 {total} 行）', { shown: shown, total: currentRows.length }),
         shown > 0 ? 'success' : 'info');
-    setStatus(`已筛选（${shown} 行）`);
+    setStatus(tt('已筛选（{n} 行）', { n: shown }));
 }
 
 function clearFilter() {
@@ -347,6 +350,6 @@ function clearFilter() {
     currentPage = 1;
     closeFilter();
     renderTable();
-    showToast('✅ 已清除筛选', 'success');
-    setStatus('已清除筛选');
+    showToast('✅ ' + tt('已清除筛选'), 'success');
+    setStatus(tt('已清除筛选'));
 }

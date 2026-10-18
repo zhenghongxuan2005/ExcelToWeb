@@ -164,11 +164,13 @@ function updateRangeHint() {
 
     const size = rangeSize();
     let html = '<div class="range-bar">';
-    html += `<span class="range-title">已选 <strong>${size.rows}</strong> 行 × <strong>${size.cols}</strong> 列</span>`;
-    html += '<span class="range-keys">Ctrl+C 复制（TSV）· Ctrl+V 粘贴 · Delete 清空 · Shift+方向键 扩展 · Esc 取消</span>';
+    html += `<span class="range-title">${tt('已选 {r} 行 × {c} 列', {
+        r: '<strong>' + size.rows + '</strong>', c: '<strong>' + size.cols + '</strong>'
+    })}</span>`;
+    html += '<span class="range-keys">' + tt('Ctrl+C 复制（TSV）· Ctrl+V 粘贴 · Delete 清空 · Shift+方向键 扩展 · Esc 取消') + '</span>';
     html += '<span class="range-actions">';
-    html += '<button class="btn btn-outline btn-sm" onclick="copyRangeSelection()">复制选区</button>';
-    html += '<button class="btn btn-outline btn-sm" onclick="clearRangeContent()">清空内容</button>';
+    html += '<button class="btn btn-outline btn-sm" onclick="copyRangeSelection()">' + tt('复制选区') + '</button>';
+    html += '<button class="btn btn-outline btn-sm" onclick="clearRangeContent()">' + tt('清空内容') + '</button>';
     html += '</span>';
     html += '</div>';
     host.innerHTML = html;

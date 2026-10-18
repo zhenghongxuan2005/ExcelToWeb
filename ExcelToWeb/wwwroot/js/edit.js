@@ -4,7 +4,7 @@
 
 function addRow() {
     if (!currentTableId) {
-        showToast('请先上传一个 Excel 文件', 'error');
+        showToast(tt('请先上传一个 Excel 文件'), 'error');
         return;
     }
     pushHistory();
@@ -23,23 +23,23 @@ function addRow() {
         container.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
 
-    showToast('✅ 已新增一行，请填写数据后点击保存', 'success');
-    setStatus('已新增一行');
+    showToast('✅ ' + tt('已新增一行，请填写数据后点击保存'), 'success');
+    setStatus(tt('已新增一行'));
 }
 
 function deleteSelectedRows() {
     if (!currentTableId) {
-        showToast('请先上传一个 Excel 文件', 'error');
+        showToast(tt('请先上传一个 Excel 文件'), 'error');
         return;
     }
 
     const checkboxes = document.querySelectorAll('.row-checkbox:checked');
     if (checkboxes.length === 0) {
-        showToast('请先勾选要删除的行', 'info');
+        showToast(tt('请先勾选要删除的行'), 'info');
         return;
     }
 
-    if (!confirm(`确定要删除选中的 ${checkboxes.length} 行吗？`)) return;
+    if (!confirm(tt('确定要删除选中的 {n} 行吗？', { n: checkboxes.length }))) return;
 
     pushHistory();
 
@@ -54,30 +54,30 @@ function deleteSelectedRows() {
     resetSort();
     renderTable();
 
-    showToast(`✅ 已删除 ${indices.length} 行`, 'success');
-    setStatus(`已删除 ${indices.length} 行`);
+    showToast('✅ ' + tt('已删除 {n} 行', { n: indices.length }), 'success');
+    setStatus(tt('已删除 {n} 行', { n: indices.length }));
 }
 
 function clearAll() {
     if (!currentTableId) {
-        showToast('没有数据可清空', 'info');
+        showToast(tt('没有数据可清空'), 'info');
         return;
     }
-    if (!confirm('确定要清空当前表格数据吗？（保存后生效）')) return;
+    if (!confirm(tt('确定要清空当前表格数据吗？（保存后生效）'))) return;
 
     pushHistory();
     currentRows = [];
     resetSort();
     renderTable();
 
-    showToast('已清空', 'info');
-    setStatus('已清空');
+    showToast(tt('已清空'), 'info');
+    setStatus(tt('已清空'));
 }
 
 function batchEdit() {
     const checkboxes = document.querySelectorAll('.row-checkbox:checked');
     if (checkboxes.length === 0) {
-        showToast('请先勾选要修改的行', 'info');
+        showToast(tt('请先勾选要修改的行'), 'info');
         return;
     }
 
@@ -106,13 +106,13 @@ function confirmBatchEdit() {
     const newValue = document.getElementById('batchValueInput').value.trim();
 
     if (newValue === '') {
-        showToast('请输入新值', 'info');
+        showToast(tt('请输入新值'), 'info');
         return;
     }
 
     const checkboxes = document.querySelectorAll('.row-checkbox:checked');
     if (checkboxes.length === 0) {
-        showToast('没有选中任何行', 'info');
+        showToast(tt('没有选中任何行'), 'info');
         closeBatchModal();
         return;
     }
@@ -120,7 +120,7 @@ function confirmBatchEdit() {
     // 计算列的值由公式决定，批量改它只会被下次读取打回。下拉里已经不给选，
     // 这里再挡一道是为了「弹窗开着时那一列刚被设成计算列」这种时序
     if (isComputedColumn(column)) {
-        showToast(`「${column}」是计算列，值由公式算出，不能批量修改`, 'info');
+        showToast(tt('「{col}」是计算列，值由公式算出，不能批量修改', { col: column }), 'info');
         closeBatchModal();
         return;
     }
@@ -141,7 +141,7 @@ function confirmBatchEdit() {
     closeBatchModal();
     renderTable();
 
-    showToast(`✅ 已成功修改 ${indices.length} 行的 "${column}" 列`, 'success');
+    showToast('✅ ' + tt('已成功修改 {n} 行的 "{col}" 列', { n: indices.length, col: column }), 'success');
 }
 
 // ================================================================
@@ -168,13 +168,13 @@ function resolveTargetIndexes() {
 /** 在选中行上方插入与选中行数相同的空行（Excel 的「在上方插入行」） */
 function insertRowsAbove() {
     if (!currentTableId) {
-        showToast('请先上传一个 Excel 文件', 'error');
+        showToast(tt('请先上传一个 Excel 文件'), 'error');
         return;
     }
 
     const indexes = resolveTargetIndexes();
     if (indexes.length === 0) {
-        showToast('请先勾选一行，或点一下作为插入位置的单元格', 'info');
+        showToast(tt('请先勾选一行，或点一下作为插入位置的单元格'), 'info');
         return;
     }
 
@@ -192,8 +192,8 @@ function insertRowsAbove() {
     resetSort();
     renderTable();
 
-    showToast(`✅ 已在第 ${at + 1} 行上方插入 ${blanks.length} 行`, 'success');
-    setStatus(`已插入 ${blanks.length} 行`);
+    showToast('✅ ' + tt('已在第 {at} 行上方插入 {n} 行', { at: at + 1, n: blanks.length }), 'success');
+    setStatus(tt('已插入 {n} 行', { n: blanks.length }));
 }
 
 /**
@@ -205,22 +205,22 @@ function insertRowsAbove() {
  */
 function moveSelectedRows(dir) {
     if (!currentTableId) {
-        showToast('请先上传一个 Excel 文件', 'error');
+        showToast(tt('请先上传一个 Excel 文件'), 'error');
         return;
     }
 
     const indexes = resolveTargetIndexes();
     if (indexes.length === 0) {
-        showToast('请先勾选要移动的行', 'info');
+        showToast(tt('请先勾选要移动的行'), 'info');
         return;
     }
 
     if (dir < 0 && indexes[0] === 0) {
-        showToast('已经是第一行，无法上移', 'info');
+        showToast(tt('已经是第一行，无法上移'), 'info');
         return;
     }
     if (dir > 0 && indexes[indexes.length - 1] === currentRows.length - 1) {
-        showToast('已经是最后一行，无法下移', 'info');
+        showToast(tt('已经是最后一行，无法下移'), 'info');
         return;
     }
 
@@ -247,6 +247,10 @@ function moveSelectedRows(dir) {
     resetSort();
     renderTable();
 
-    showToast(dir < 0 ? `✅ 已上移 ${group.length} 行` : `✅ 已下移 ${group.length} 行`, 'success');
-    setStatus(dir < 0 ? `上移 ${group.length} 行` : `下移 ${group.length} 行`);
+    showToast('✅ ' + (dir < 0
+        ? tt('已上移 {n} 行', { n: group.length })
+        : tt('已下移 {n} 行', { n: group.length })), 'success');
+    setStatus(dir < 0
+        ? tt('上移 {n} 行', { n: group.length })
+        : tt('下移 {n} 行', { n: group.length }));
 }

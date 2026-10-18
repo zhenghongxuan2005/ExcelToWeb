@@ -1,37 +1,8 @@
 // ================================================================
 // 渲染表格（带建议列表 + 颜色规则 + XSS 防护）
-// 说明：escapeHtml 已上移到 utils.js，供各页面共用
+// 说明：escapeHtml 已上移到 utils.js，供各页面共用；
+//       加载占位的骨架屏在 render-skeleton.js（本文件已顶到行数上限附近）。
 // ================================================================
-
-// 骨架屏延迟显示的定时器（避免接口很快返回时闪一下）
-let _skeletonTimer = null;
-
-/**
- * 显示表格骨架屏（数据加载中的占位）。
- * 加一小段延迟再出现：接口很快返回时不会「闪一下」，慢请求才看得到加载态。
- * @param {number} colCount 预估列数，让占位宽度更接近真实表格
- */
-function showTableSkeleton(colCount) {
-    const container = document.getElementById('tableContainer');
-    if (!container) return;
-    const cols = Math.max(3, Math.min(parseInt(colCount) || 6, 12));
-
-    if (_skeletonTimer) clearTimeout(_skeletonTimer);
-    _skeletonTimer = setTimeout(() => {
-        _skeletonTimer = null;
-        let html = '<div class="skeleton-table" aria-hidden="true">';
-        for (let r = 0; r < 8; r++) {
-            html += '<div class="skeleton-row">';
-            for (let c = 0; c < cols; c++) {
-                html += '<div class="skeleton-cell' + (c === 0 ? ' skeleton-narrow' : '') + '"></div>';
-            }
-            html += '</div>';
-        }
-        html += '</div>';
-        container.innerHTML = html;
-        clearSelectionStats();
-    }, 120);
-}
 
 /* 短状态值 → 标签色。只用于视觉呈现，不改变取值、不改变可编辑性。
    命中率应当极低：只有值恰好等于这些词的单元格才会变成胶囊。 */
@@ -64,11 +35,15 @@ function updatePageMeta() {
 
     if (sub) {
         sub.textContent = table
-            ? `${table.tableName} · 最后保存 ${formatTime(table.updatedAt || table.createdAt)}`
-            : '尚未选择表格 · 上传 Excel 或从上方下拉框选择';
+            ? tt('{name} · 最后保存 {time}', {
+                name: table.tableName, time: formatTime(table.updatedAt || table.createdAt)
+            })
+            : tt('尚未选择表格 · 上传 Excel 或从上方下拉框选择');
     }
     if (meta) {
-        meta.textContent = `${currentRows.length} 行 · ${currentHeaders.length} 列`;
+        meta.textContent = tt('{rows} 行 · {cols} 列', {
+            rows: currentRows.length, cols: currentHeaders.length
+        });
     }
 }
 
@@ -91,7 +66,8 @@ function renderTable() {
 
     // 空状态
     if (currentHeaders.length === 0 || currentRows.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#i-inbox"/></svg></div><p>暂无数据，请上传 Excel 文件</p></div>';
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon"><svg class="icon"><use href="#i-inbox"/></svg></div><p>'
+            + tt('暂无数据，请上传 Excel 文件') + '</p></div>';
         clearSelectionStats();
         // 表格已被替换成占位内容，旧选区失去意义（range.js 未接线时跳过）
         if (typeof clearRange === 'function') clearRange();
@@ -129,11 +105,11 @@ function renderTable() {
     // 搜索把数据全部过滤掉了 / 列筛选筛空了：给出与「无数据」不同的提示，避免用户以为文件丢了
     if (displayRows.length === 0) {
         const emptyMsg = searchKeyword
-            ? `没有匹配「${escapeHtml(searchKeyword)}」的数据`
-            : '当前筛选条件下没有数据';
+            ? tt('没有匹配「{q}」的数据', { q: escapeHtml(searchKeyword) })
+            : tt('当前筛选条件下没有数据');
         const emptySub = searchKeyword
-            ? '换个关键词，或点搜索框右侧的 ✕ 清除'
-            : '点下方统计栏里的筛选标签 ✕ 可清除筛选';
+            ? tt('换个关键词，或点搜索框右侧的 ✕ 清除')
+            : tt('点下方统计栏里的筛选标签 ✕ 可清除筛选');
         container.innerHTML = '<div class="empty-state">'
             + '<div class="empty-icon"><svg class="icon"><use href="#i-search"/></svg></div>'
             + `<p>${emptyMsg}</p>`
@@ -150,7 +126,7 @@ function renderTable() {
     // col-pin / col-pin-1 / col-pin-2 用于冻结「勾选列 + 序号列」（样式见 table.css）
     let html = '<table><thead><tr>';
     html += '<th class="cell-center col-pin col-pin-1" style="width:36px; min-width:36px;"><input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes()" /></th>';
-    html += '<th class="cell-center col-pin col-pin-2" style="width:44px; min-width:44px;">序号</th>';
+    html += '<th class="cell-center col-pin col-pin-2" style="width:44px; min-width:44px;">' + tt('序号') + '</th>';
     for (const h of visibleHeaders) {
         const order = sortOrderOf(h);
         // 排序指示器平时隐藏（悬停该列才出现），只有真正参与排序的列常显 ——
@@ -170,10 +146,10 @@ function renderTable() {
             : '';
         html += `<th${fxAttr}${columnWidthStyle(h)}>`;
         html += '<div class="th-inner">';
-        html += `<span class="th-sort" title="点击排序：升序 → 降序 → 取消；按住 Shift 点击可追加为次级排序键" `
+        html += `<span class="th-sort" title="${tt('点击排序：升序 → 降序 → 取消；按住 Shift 点击可追加为次级排序键')}" `
             + `onclick="sortBy('${escapeHtml(h)}', event.shiftKey)">${escapeHtml(h)}${arrow}${rank}</span>`;
-        if (computed) html += '<span class="th-fx" title="计算列">fx</span>';
-        html += `<button class="th-filter" title="筛选该列" onclick="openFilter('${escapeHtml(h)}')"><svg class="icon icon-sm"><use href="#i-filter"/></svg></button>`;
+        if (computed) html += '<span class="th-fx" title="' + tt('计算列') + '">fx</span>';
+        html += `<button class="th-filter" title="${tt('筛选该列')}" onclick="openFilter('${escapeHtml(h)}')"><svg class="icon icon-sm"><use href="#i-filter"/></svg></button>`;
         html += '</div></th>';
     }
     html += '</tr></thead><tbody>';
@@ -190,7 +166,7 @@ function renderTable() {
         html += '<tr>';
         html += `<td class="cell-center"><input type="checkbox" class="row-checkbox" data-index="${actualIndex}" onchange="updateSelectionStats()" /></td>`;
         html += `<td class="cell-center row-index">${(currentPage - 1) * (pageSize > 0 ? pageSize : 0) + r + 1}`
-            + `<button type="button" class="row-hist-btn" title="本行变更历史" onclick="openRowHistory(${actualIndex}, event)"><svg class="icon icon-sm"><use href="#i-clock"/></svg></button></td>`;
+            + `<button type="button" class="row-hist-btn" title="${tt('本行变更历史')}" onclick="openRowHistory(${actualIndex}, event)"><svg class="icon icon-sm"><use href="#i-clock"/></svg></button></td>`;
         for (const key of visibleHeaders) {
             const val = row[key] !== undefined && row[key] !== null ? row[key] : '';
             const bgColor = getColorForValue(key, val);
@@ -234,33 +210,36 @@ function renderTable() {
     // 比每次回到工具栏点「新增行」更顺手（仍然复用同一个 addRow）
     html += '<div class="ghost-row">'
         + '<button type="button" onclick="addRow()">'
-        + '<svg class="icon icon-sm"><use href="#i-plus"/></svg>添加一行</button></div>';
+        + '<svg class="icon icon-sm"><use href="#i-plus"/></svg>' + tt('添加一行') + '</button></div>';
 
     // 统计栏：区分「全量」与「被视图裁剪后」的行数，避免用户误以为数据变少了；
     // 生效中的筛选必须一直看得见（筛选是隐形状态，看不见就会以为数据丢了）
     const viewFiltered = !!searchKeyword || (typeof isFilterActive === 'function' && isFilterActive());
     html += '<div class="stats-bar">';
     if (viewFiltered) {
-        html += `<span>筛选出 <strong>${displayRows.length}</strong> 行</span>`;
-        html += `<span class="stats-muted">全量 ${currentRows.length} 行</span>`;
+        html += `<span>${tt('筛选出 {n} 行', { n: '<strong>' + displayRows.length + '</strong>' })}</span>`;
+        html += `<span class="stats-muted">${tt('全量 {n} 行', { n: currentRows.length })}</span>`;
     } else {
-        html += `<span>共 <strong>${currentRows.length}</strong> 行 · <strong>${visibleHeaders.length}</strong> 列</span>`;
+        html += `<span>${tt('共 {n} 行 · {c} 列', {
+            n: '<strong>' + currentRows.length + '</strong>',
+            c: '<strong>' + visibleHeaders.length + '</strong>'
+        })}</span>`;
     }
     if (typeof isFilterActive === 'function' && isFilterActive()) {
         html += '<span class="filter-chip">';
-        html += `<span>筛选：${escapeHtml(filterSummaryText())}</span>`;
-        html += '<button class="filter-chip-x" title="清除筛选" onclick="clearFilter()"><svg class="icon icon-sm"><use href="#i-x"/></svg></button>';
+        html += `<span>${tt('筛选：{v}', { v: escapeHtml(filterSummaryText()) })}</span>`;
+        html += `<button class="filter-chip-x" title="${tt('清除筛选')}" onclick="clearFilter()"><svg class="icon icon-sm"><use href="#i-x"/></svg></button>`;
         html += '</span>';
     }
     // 排序同样是「隐形」的视图状态：有排序时必须看得见，否则用户会以为行序莫名变了
     if (sortKeys.length > 0) {
         html += '<span class="filter-chip sort-chip">';
-        html += `<span>排序：${escapeHtml(sortSummaryText())}</span>`;
-        html += '<button class="filter-chip-x" title="清除排序" onclick="clearSort()"><svg class="icon icon-sm"><use href="#i-x"/></svg></button>';
+        html += `<span>${tt('排序：{v}', { v: escapeHtml(sortSummaryText()) })}</span>`;
+        html += `<button class="filter-chip-x" title="${tt('清除排序')}" onclick="clearSort()"><svg class="icon icon-sm"><use href="#i-x"/></svg></button>`;
         html += '</span>';
     }
-    if (viewFiltered) html += `<span><strong>${visibleHeaders.length}</strong> 列</span>`;
-    html += '<span class="stat-hint">拖拽 / Shift+方向键选区 · 表头点击排序（Shift+点击多列）· Ctrl+C·V 与 Excel 互通 · 编辑后点击"保存"</span>';
+    if (viewFiltered) html += `<span>${tt('{c} 列', { c: '<strong>' + visibleHeaders.length + '</strong>' })}</span>`;
+    html += '<span class="stat-hint">' + tt('拖拽 / Shift+方向键选区 · 表头点击排序（Shift+点击多列）· Ctrl+C·V 与 Excel 互通 · 编辑后点击"保存"') + '</span>';
     html += '</div>';
 
     // 分页条

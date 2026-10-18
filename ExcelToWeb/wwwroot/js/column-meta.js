@@ -85,7 +85,7 @@ function flushColumnMeta() {
         .catch(() => {
             if (_metaSaveFailed) return;
             _metaSaveFailed = true;
-            showToast('列设置没能保存到服务器，刷新后可能丢失', 'error');
+            showToast(tt('列设置没能保存到服务器，刷新后可能丢失'), 'error');
         });
 }
 

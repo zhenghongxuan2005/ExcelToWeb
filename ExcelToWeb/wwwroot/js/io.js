@@ -5,7 +5,7 @@
 
 function saveData() {
     if (!currentTableId) {
-        showToast('请先上传一个 Excel 文件', 'error');
+        showToast(tt('请先上传一个 Excel 文件'), 'error');
         return;
     }
     // 收集输入框中的最新值（计算列的值由服务端算，收集回去只会污染 currentRows）
@@ -30,7 +30,7 @@ function saveData() {
                         const colName = rule.columnName;
                         const value = row[colName] !== undefined ? String(row[colName]) : '';
                         if (rule.required && !value) {
-                            rowErrors.push(colName + ' 不能为空');
+                            rowErrors.push(tt('{col} 不能为空', { col: colName }));
                             rowValid = false;
                             continue;
                         }
@@ -38,22 +38,22 @@ function saveData() {
                         if (rule.dataType === 'number') {
                             const num = parseFloat(value);
                             if (isNaN(num)) {
-                                rowErrors.push(colName + ' 必须是数字');
+                                rowErrors.push(tt('{col} 必须是数字', { col: colName }));
                                 rowValid = false;
                                 continue;
                             }
                             if (rule.minValue !== null && num < rule.minValue) {
-                                rowErrors.push(colName + ' 不能小于 ' + rule.minValue);
+                                rowErrors.push(tt('{col} 不能小于 {min}', { col: colName, min: rule.minValue }));
                                 rowValid = false;
                             }
                             if (rule.maxValue !== null && num > rule.maxValue) {
-                                rowErrors.push(colName + ' 不能大于 ' + rule.maxValue);
+                                rowErrors.push(tt('{col} 不能大于 {max}', { col: colName, max: rule.maxValue }));
                                 rowValid = false;
                             }
                         }
                     }
                     if (rowValid) validRows.push(row);
-                    else errors.push(`第 ${r + 1} 行：${rowErrors.join('；')}`);
+                    else errors.push(tt('第 {row} 行：{msg}', { row: r + 1, msg: rowErrors.join(tt('；')) }));
                 });
 
                 // 唯一性（跨行）：启用「唯一」的列不允许出现重复值
@@ -64,7 +64,9 @@ function saveData() {
                         const v = row[rule.columnName] !== undefined ? String(row[rule.columnName]) : '';
                         if (!v) return;
                         if (seen[v] !== undefined) {
-                            errors.push(`第 ${r + 1} 行：${rule.columnName} 的值「${v}」与第 ${seen[v] + 1} 行重复`);
+                            errors.push(tt('第 {row} 行：{col} 的值「{v}」与第 {other} 行重复', {
+                                row: r + 1, col: rule.columnName, v: v, other: seen[v] + 1
+                            }));
                         } else {
                             seen[v] = r;
                         }
@@ -80,7 +82,10 @@ function saveData() {
                     currentRows.forEach((row, r) => {
                         const v = row[rule.columnName] !== undefined ? String(row[rule.columnName]) : '';
                         if (v && !allowed.has(v)) {
-                            errors.push(`第 ${r + 1} 行：${rule.columnName} 的值「${v}」不在引用表「${getTableName(rule.refTableId)}」的 ${rule.refColumnName} 列中`);
+                            errors.push(tt('第 {row} 行：{col} 的值「{v}」不在引用表「{table}」的 {ref} 列中', {
+                                row: r + 1, col: rule.columnName, v: v,
+                                table: getTableName(rule.refTableId), ref: rule.refColumnName
+                            }));
                         }
                     });
                 }
@@ -89,19 +94,19 @@ function saveData() {
             }
 
             if (errors.length > 0) {
-                showToast('⚠️ 校验失败：\n' + errors.join('\n'), 'error');
+                showToast('⚠️ ' + tt('校验失败：') + '\n' + errors.join('\n'), 'error');
                 return;
             }
 
-            setStatus('保存中...');
+            setStatus(tt('保存中...'));
             return saveTableData(currentTableId, validRows)
                 .then(result => {
-                    showToast('✅ ' + (result.message || '保存成功'), 'success');
-                    setStatus('已保存');
+                    showToast('✅ ' + (result.message || tt('保存成功')), 'success');
+                    setStatus(tt('已保存'));
                     refreshData();
                 });
         })
-        .catch(err => showToast('❌ 保存失败：' + err.message, 'error'));
+        .catch(err => showToast('❌ ' + tt('保存失败：{msg}', { msg: err.message }), 'error'));
 }
 
 // ================================================================
@@ -109,55 +114,55 @@ function saveData() {
 // ================================================================
 function exportExcel() {
     if (!currentTableId) {
-        showToast('请先上传一个 Excel 文件', 'error');
+        showToast(tt('请先上传一个 Excel 文件'), 'error');
         return;
     }
-    setStatus('导出中...');
+    setStatus(tt('导出中...'));
     exportExcelBlob(currentTableId)
         .then(blob => {
-            downloadBlob(blob, `数据_${new Date().toISOString().slice(0, 10)}.xlsx`);
-            setStatus('已导出');
-            showToast('✅ Excel 导出成功', 'success');
+            downloadBlob(blob, `${isEnglish() ? 'data' : '数据'}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            setStatus(tt('已导出'));
+            showToast('✅ ' + tt('Excel 导出成功'), 'success');
         })
         .catch(err => {
             showToast('❌ 导出失败：' + err.message, 'error');
-            setStatus('导出失败');
+            setStatus(tt('导出失败'));
         });
 }
 
 function exportCsv() {
     if (!currentTableId) {
-        showToast('请先上传一个 Excel 文件', 'error');
+        showToast(tt('请先上传一个 Excel 文件'), 'error');
         return;
     }
-    setStatus('导出中...');
+    setStatus(tt('导出中...'));
     exportCsvBlob(currentTableId)
         .then(blob => {
-            downloadBlob(blob, `数据_${new Date().toISOString().slice(0, 10)}.csv`);
-            setStatus('已导出');
-            showToast('✅ CSV 导出成功', 'success');
+            downloadBlob(blob, `${isEnglish() ? 'data' : '数据'}_${new Date().toISOString().slice(0, 10)}.csv`);
+            setStatus(tt('已导出'));
+            showToast('✅ ' + tt('CSV 导出成功'), 'success');
         })
         .catch(err => {
-            showToast('❌ 导出失败：' + err.message, 'error');
-            setStatus('导出失败');
+            showToast('❌ ' + tt('导出失败：{msg}', { msg: err.message }), 'error');
+            setStatus(tt('导出失败'));
         });
 }
 
 function downloadTemplate() {
     if (!currentTableId) {
-        showToast('请先上传一个 Excel 文件或选择一个表格', 'error');
+        showToast(tt('请先上传一个 Excel 文件或选择一个表格'), 'error');
         return;
     }
-    setStatus('下载模板中...');
+    setStatus(tt('下载模板中...'));
     downloadTemplateBlob(currentTableId)
         .then(blob => {
-            downloadBlob(blob, `模板_${new Date().toISOString().slice(0, 10)}.xlsx`);
-            setStatus('已下载');
-            showToast('✅ 模板下载成功', 'success');
+            downloadBlob(blob, `${isEnglish() ? 'template' : '模板'}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            setStatus(tt('已下载'));
+            showToast('✅ ' + tt('模板下载成功'), 'success');
         })
         .catch(err => {
-            showToast('❌ 下载失败：' + err.message, 'error');
-            setStatus('下载失败');
+            showToast('❌ ' + tt('下载失败：{msg}', { msg: err.message }), 'error');
+            setStatus(tt('下载失败'));
         });
 }
 
@@ -167,7 +172,7 @@ function downloadTemplate() {
 // ================================================================
 function exportViewCsv() {
     if (currentRows.length === 0) {
-        showToast('没有可导出的数据', 'info');
+        showToast(tt('没有可导出的数据'), 'info');
         return;
     }
 
@@ -175,7 +180,7 @@ function exportViewCsv() {
     const rows = buildDisplayRows();
 
     if (rows.length === 0) {
-        showToast('当前筛选结果为空，无可导出内容', 'info');
+        showToast(tt('当前筛选结果为空，无可导出内容'), 'info');
         return;
     }
 
@@ -186,9 +191,9 @@ function exportViewCsv() {
 
     // 前置 UTF-8 BOM，否则 Excel 打开中文会乱码
     const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
-    const suffix = searchKeyword ? '_筛选结果' : '';
-    downloadBlob(blob, `数据${suffix}_${new Date().toISOString().slice(0, 10)}.csv`);
-    showToast(`✅ 已导出当前视图（${rows.length} 行）`, 'success');
+    const suffix = searchKeyword ? (isEnglish() ? '_filtered' : '_筛选结果') : '';
+    downloadBlob(blob, `${isEnglish() ? 'data' : '数据'}${suffix}_${new Date().toISOString().slice(0, 10)}.csv`);
+    showToast('✅ ' + tt('已导出当前视图（{n} 行）', { n: rows.length }), 'success');
 }
 
 /** CSV 单元格转义：含逗号/引号/换行的值必须用双引号包裹 */

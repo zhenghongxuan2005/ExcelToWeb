@@ -225,7 +225,8 @@
         <div class="modal-card modal-wide">
             <button class="modal-close" aria-label="关闭弹窗" onclick="closeFormulaEditor()"><svg class="icon"><use href="#i-x"/></svg></button>
             <h3 class="modal-title">计算列公式</h3>
-            <p class="modal-sub">
+            <!-- 这个段落夹着 <strong>/<code>，逐文本节点翻会碎成片；整块交给字典（key 见 i18n-en-editor.js） -->
+            <p class="modal-sub" data-i18n-html="editor.formulaSub">
                 列 <strong id="formulaColumnLabel"></strong> 的值由公式算出，不再手动填写。
                 公式里引用列名要用方括号（如 <code>[单价] * [数量]</code>），结果在保存列结构后由服务端计算。
             </p>
@@ -273,7 +274,7 @@
         <div class="modal-card modal-wide">
             <button class="modal-close" aria-label="关闭弹窗" onclick="closePivotModal()"><svg class="icon"><use href="#i-x"/></svg></button>
             <h3 class="modal-title">透视汇总</h3>
-            <p class="modal-sub">
+            <p class="modal-sub" data-i18n-html="editor.pivotSub">
                 选一个「行」字段分组、一个「列」字段展开，再选要汇总的列。生成预览确认数字没问题后再导出，
                 导出的文件里会连原始数据表一起给出，方便核对每个格子是怎么来的。
                 <br>透视基于<strong>已保存</strong>的数据计算，有未保存的修改请先点「保存」。

@@ -78,7 +78,7 @@ function openFindModal() {
     if (!modal) return;
 
     if (currentTableId === null) {
-        showToast('请先上传一个 Excel 文件', 'error');
+        showToast(tt('请先上传一个 Excel 文件'), 'error');
         return;
     }
 
@@ -106,22 +106,22 @@ function updateFindStatus() {
 
     const { kw } = readFindInputs();
     if (!kw) {
-        el.textContent = '输入要查找的内容';
+        el.textContent = tt('输入要查找的内容');
         el.classList.remove('is-empty');
         return;
     }
 
     const matches = collectFindMatches(kw);
     if (matches.length === 0) {
-        el.textContent = '未找到匹配项';
+        el.textContent = tt('未找到匹配项');
         el.classList.add('is-empty');
         return;
     }
 
     el.classList.remove('is-empty');
     el.textContent = findCursor >= 0 && findCursor < matches.length
-        ? `共 ${matches.length} 处，当前第 ${findCursor + 1} 处`
-        : `找到 ${matches.length} 处`;
+        ? tt('共 {n} 处，当前第 {i} 处', { n: matches.length, i: findCursor + 1 })
+        : tt('找到 {n} 处', { n: matches.length });
 }
 
 // ================================================================
@@ -167,7 +167,7 @@ function jumpToMatch(match) {
 function findNext() {
     const { kw } = readFindInputs();
     if (!kw) {
-        showToast('请输入要查找的内容', 'info');
+        showToast(tt('请输入要查找的内容'), 'info');
         return;
     }
 
@@ -175,7 +175,7 @@ function findNext() {
     if (findMatches.length === 0) {
         findCursor = -1;
         updateFindStatus();
-        showToast('未找到匹配项', 'info');
+        showToast(tt('未找到匹配项'), 'info');
         return;
     }
 
@@ -184,7 +184,7 @@ function findNext() {
     updateFindStatus();
 
     if (!ok) {
-        showToast('该匹配项被当前筛选条件隐藏了', 'info');
+        showToast(tt('该匹配项被当前筛选条件隐藏了'), 'info');
     }
 }
 
@@ -199,20 +199,20 @@ function replaceCurrent() {
     const el = document.activeElement;
     if (!isCellInput(el)) {
         findNext();
-        showToast('已定位到第一处，再点一次「替换」即可替换', 'info');
+        showToast(tt('已定位到第一处，再点一次「替换」即可替换'), 'info');
         return;
     }
 
     const idx = parseInt(el.dataset.index);
     const key = el.dataset.key;
     if (isNaN(idx) || !currentRows[idx] || key === undefined) {
-        showToast('请先点「查找下一个」定位到要替换的单元格', 'info');
+        showToast(tt('请先点「查找下一个」定位到要替换的单元格'), 'info');
         return;
     }
 
     // 用户可能手动点到了一个计算列单元格上
     if (isComputedColumn(key)) {
-        showToast(`「${key}」是计算列，值由公式算出，不能直接替换`, 'info');
+        showToast(tt('「{col}」是计算列，值由公式算出，不能直接替换', { col: key }), 'info');
         return;
     }
 
@@ -226,7 +226,7 @@ function replaceCurrent() {
     pushHistory();
     currentRows[idx][key] = after;
     renderTable();
-    setStatus('已替换 1 处');
+    setStatus(tt('已替换 1 处'));
     findNext();
 }
 
@@ -244,7 +244,7 @@ function replaceAll() {
         return;
     }
 
-    if (!confirm(`将替换 ${matches.length} 处，确定继续吗？`)) return;
+    if (!confirm(tt('将替换 {n} 处，确定继续吗？', { n: matches.length }))) return;
 
     pushHistory();
 
@@ -268,6 +268,6 @@ function replaceAll() {
     renderTable();
     updateFindStatus();
 
-    showToast(`✅ 已替换 ${changed} 处`, 'success');
-    setStatus(`已替换 ${changed} 处`);
+    showToast('✅ ' + tt('已替换 {n} 处', { n: changed }), 'success');
+    setStatus(tt('已替换 {n} 处', { n: changed }));
 }

@@ -21,11 +21,11 @@ function uploadFile(file, sheetIndex) {
     if (!file) return;
 
     if (!isAcceptedExcelFile(file)) {
-        showToast('请上传 .xlsx 或 .csv 格式的文件', 'error');
+        showToast(tt('请上传 .xlsx 或 .csv 格式的文件'), 'error');
         return;
     }
 
-    setStatus('上传中...');
+    setStatus(tt('上传中...'));
     showTableSkeleton(currentHeaders.length);
     uploadExcel(file, sheetIndex)
         .then(data => {
@@ -45,19 +45,19 @@ function uploadFile(file, sheetIndex) {
             if (clearBtn) clearBtn.style.display = 'none';
 
             renderTable();
-            showToast('✅ 成功导入 ' + data.rows.length + ' 条数据', 'success');
+            showToast('✅ ' + tt('成功导入 {n} 条数据', { n: data.rows.length }), 'success');
             // 合并信息是隐形的（数据已铺平入库），必须告诉用户导出时会还原，
             // 否则用户既看不出文件里有合并、也不知道导出会变回去
             if (data.mergeCount > 0) {
-                showToast(`已记录 ${data.mergeCount} 个合并区域，导出时会按原样还原`, 'info');
+                showToast(tt('已记录 {n} 个合并区域，导出时会按原样还原', { n: data.mergeCount }), 'info');
             }
-            setStatus(`已加载: ${data.tableName} (${data.rows.length}行)`);
+            setStatus(tt('已加载: {name} ({n}行)', { name: data.tableName, n: data.rows.length }));
             loadTableList();
         })
         .catch(err => {
             hideTableSkeleton();
-            showToast('❌ 上传失败：' + err.message, 'error');
-            setStatus('上传失败');
+            showToast('❌ ' + tt('上传失败：{msg}', { msg: err.message }), 'error');
+            setStatus(tt('上传失败'));
             console.error(err);
         });
 }
@@ -94,7 +94,7 @@ function initDragAndDrop() {
 
         const files = e.dataTransfer && e.dataTransfer.files;
         if (!files || files.length === 0) return;
-        if (files.length > 1) showToast('一次只能上传一个文件，已取第一个', 'info');
+        if (files.length > 1) showToast(tt('一次只能上传一个文件，已取第一个'), 'info');
         startImport(files[0]);
     });
 }

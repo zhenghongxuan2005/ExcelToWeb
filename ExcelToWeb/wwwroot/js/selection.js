@@ -25,7 +25,7 @@ function buildSelectionStatsHtml() {
     if (rows.length === 0) return '';
 
     let html = '<div class="selection-bar">';
-    html += `<span class="selection-title"><svg class="icon icon-sm"><use href="#i-check"/></svg>已选 <strong>${rows.length}</strong> 行</span>`;
+    html += `<span class="selection-title"><svg class="icon icon-sm"><use href="#i-check"/></svg>${tt('已选 {n} 行', { n: '<strong>' + rows.length + '</strong>' })}</span>`;
 
     // 只对「确实全是数字」的可见列做求和 / 平均，避免把日期、编号算进去
     for (const key of getVisibleHeaders()) {

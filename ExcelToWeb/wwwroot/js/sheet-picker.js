@@ -22,7 +22,7 @@ function startImport(file) {
     if (!file) return;
 
     if (!isAcceptedExcelFile(file)) {
-        showToast('请上传 .xlsx 或 .csv 格式的文件', 'error');
+        showToast(tt('请上传 .xlsx 或 .csv 格式的文件'), 'error');
         return;
     }
 
@@ -33,7 +33,7 @@ function startImport(file) {
     }
 
     const token = ++sheetProbeToken;
-    setStatus('正在读取工作表...');
+    setStatus(tt('正在读取工作表...'));
 
     listSheets(file)
         .then(sheets => {
@@ -41,7 +41,7 @@ function startImport(file) {
             setStatus('');
 
             if (!sheets || sheets.length === 0) {
-                showToast('文件里没有工作表', 'error');
+                showToast(tt('文件里没有工作表'), 'error');
                 return;
             }
             if (sheets.length === 1) {
@@ -53,7 +53,7 @@ function startImport(file) {
         .catch(err => {
             if (token !== sheetProbeToken) return;
             setStatus('');
-            showToast('❌ 读取工作表失败：' + err.message, 'error');
+            showToast('❌ ' + tt('读取工作表失败：{msg}', { msg: err.message }), 'error');
         });
 }
 
@@ -69,8 +69,8 @@ function openSheetPicker(file, sheets) {
     pendingSheetFile = file;
     list.innerHTML = sheets.map(item => {
         const meta = item.hasData
-            ? `${item.rowCount - 1} 行数据 · ${item.columnCount} 列`
-            : '没有数据行，无法导入';
+            ? tt('{rows} 行数据 · {cols} 列', { rows: item.rowCount - 1, cols: item.columnCount })
+            : tt('没有数据行，无法导入');
         return `<button type="button" class="sheet-item${item.hasData ? '' : ' is-empty'}" `
             + `onclick="pickSheet(${item.index})">`
             + `<span class="sheet-name">${escapeHtml(item.name)}</span>`

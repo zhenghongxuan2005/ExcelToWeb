@@ -98,7 +98,7 @@ function buildRangeTsv() {
 /** 「复制选区」按钮：写入系统剪贴板（Ctrl+C 走下面的 copy 事件，兼容性更好） */
 function copyRangeSelection() {
     if (!isRangeActive()) {
-        showToast('请先选择单元格区域', 'info');
+        showToast(tt('请先选择单元格区域'), 'info');
         return false;
     }
     const tsv = buildRangeTsv();
@@ -107,13 +107,13 @@ function copyRangeSelection() {
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(tsv)
             .then(() => {
-                showToast('✅ 已复制选区，可直接粘贴到 Excel', 'success');
-                setStatus('已复制选区');
+                showToast('✅ ' + tt('已复制选区，可直接粘贴到 Excel'), 'success');
+                setStatus(tt('已复制选区'));
             })
-            .catch(() => showToast('复制失败，请改用 Ctrl+C', 'error'));
+            .catch(() => showToast(tt('复制失败，请改用 Ctrl+C'), 'error'));
         return true;
     }
-    showToast('当前环境不支持直接复制，请按 Ctrl+C', 'info');
+    showToast(tt('当前环境不支持直接复制，请按 Ctrl+C'), 'info');
     return false;
 }
 
@@ -145,7 +145,7 @@ function onRangeCopy(e) {
     if (!tsv) return;
     e.clipboardData.setData('text/plain', tsv);
     e.preventDefault();
-    setStatus('已复制选区');
+    setStatus(tt('已复制选区'));
 }
 
 // ================================================================
@@ -228,10 +228,12 @@ function pasteTsv(text) {
     _rangeSig = rangeSignature();
     renderTable();
 
-    let msg = `已粘贴 ${grid.length} 行 × ${cols} 列，共 ${cells} 个单元格`;
-    if (clippedCols > 0) msg += `；右侧 ${clippedCols} 列超出表格宽度，已忽略`;
+    let msg = tt('已粘贴 {rows} 行 × {cols} 列，共 {cells} 个单元格', {
+        rows: grid.length, cols: cols, cells: cells
+    });
+    if (clippedCols > 0) msg += tt('；右侧 {n} 列超出表格宽度，已忽略', { n: clippedCols });
     showToast('✅ ' + msg, clippedCols > 0 ? 'info' : 'success');
-    setStatus('已粘贴 ' + cells + ' 个单元格');
+    setStatus(tt('已粘贴 {n} 个单元格', { n: cells }));
     return true;
 }
 
@@ -266,7 +268,7 @@ function clearRangeContent() {
     if (cells === 0) return false;
 
     renderTable();
-    showToast(`已清空 ${cells} 个单元格`, 'info');
-    setStatus('已清空选区');
+    showToast(tt('已清空 {n} 个单元格', { n: cells }), 'info');
+    setStatus(tt('已清空选区'));
     return true;
 }

@@ -10,7 +10,7 @@ let historyRowIndex = null;   // null = 整表历史；数字 = 只看该行（1
 /** 打开变更历史弹窗；rowIndex 可选（1 起始），不传则看整表 */
 function openHistoryModal(rowIndex) {
     if (!currentTableId) {
-        showToast('请先选择一个表格', 'info');
+        showToast(tt('请先选择一个表格'), 'info');
         return;
     }
     historyRowIndex = rowIndex || null;
@@ -39,13 +39,17 @@ function loadHistoryList() {
     if (!host) return;
 
     const titleEl = document.getElementById('historyTitle');
-    if (titleEl) titleEl.textContent = historyRowIndex ? `第 ${historyRowIndex} 行的变更历史` : '变更历史';
+    if (titleEl) {
+        titleEl.textContent = historyRowIndex
+            ? tt('第 {n} 行的变更历史', { n: historyRowIndex })
+            : tt('变更历史');
+    }
 
     const chip = document.getElementById('historyFilterChip');
     if (chip) {
         chip.style.display = historyRowIndex ? 'inline-flex' : 'none';
         const label = document.getElementById('historyFilterText');
-        if (label) label.textContent = `只看第 ${historyRowIndex} 行`;
+        if (label) label.textContent = tt('只看第 {n} 行', { n: historyRowIndex });
     }
 
     // 加载骨架（复用 table.css 的 skeleton-block）
@@ -56,7 +60,7 @@ function loadHistoryList() {
     fetchAuditLogs(currentTableId, historyRowIndex)
         .then(logs => renderHistoryList(logs || []))
         .catch(err => {
-            host.innerHTML = `<p class="muted-center">加载失败：${escapeHtml(err.message)}</p>`;
+            host.innerHTML = `<p class="muted-center">${escapeHtml(tt('加载失败：{msg}', { msg: err.message }))}</p>`;
         });
 }
 
@@ -65,7 +69,7 @@ function renderHistoryList(logs) {
     if (!host) return;
 
     if (logs.length === 0) {
-        host.innerHTML = '<p class="muted-center">还没有变更记录——保存一次数据后这里会出现时间线</p>';
+        host.innerHTML = '<p class="muted-center">' + tt('还没有变更记录——保存一次数据后这里会出现时间线') + '</p>';
         return;
     }
 
@@ -76,18 +80,18 @@ function renderHistoryList(logs) {
         html += '<div class="history-body">';
 
         if (log.action === 'edit') {
-            html += `<div class="history-summary">第 ${log.rowIndex} 行 · <strong>${escapeHtml(log.columnName)}</strong>：</div>`
+            html += `<div class="history-summary">${tt('第 {n} 行 · {col}：', { n: log.rowIndex, col: '<strong>' + escapeHtml(log.columnName) + '</strong>' })}</div>`
                 + '<div class="history-change">'
-                + `<span class="history-old" title="旧值">${escapeHtml(log.oldValue) || '<空>'}</span>`
+                + `<span class="history-old" title="${tt('旧值')}">${escapeHtml(log.oldValue) || '<' + tt('空') + '>'}</span>`
                 + '<svg class="icon icon-sm"><use href="#i-chevron-right"/></svg>'
-                + `<span class="history-new" title="新值">${escapeHtml(log.newValue) || '<空>'}</span>`
+                + `<span class="history-new" title="${tt('新值')}">${escapeHtml(log.newValue) || '<' + tt('空') + '>'}</span>`
                 + '</div>';
         } else if (log.action === 'add-row') {
-            html += `<div class="history-summary">新增了第 ${log.rowIndex} 行</div>`;
+            html += `<div class="history-summary">${tt('新增了第 {n} 行', { n: log.rowIndex })}</div>`;
         } else if (log.action === 'delete-row') {
-            html += `<div class="history-summary">删除了第 ${log.rowIndex} 行</div>`;
+            html += `<div class="history-summary">${tt('删除了第 {n} 行', { n: log.rowIndex })}</div>`;
         } else {
-            html += `<div class="history-summary">批量变更（${escapeHtml(log.newValue)}）</div>`;
+            html += `<div class="history-summary">${tt('批量变更（{v}）', { v: escapeHtml(log.newValue) })}</div>`;
         }
 
         html += `<div class="history-meta">${escapeHtml(log.userName)} · ${formatTime(log.createdAt)}</div>`;

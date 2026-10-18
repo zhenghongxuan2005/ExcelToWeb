@@ -41,8 +41,8 @@ function formulaOf(name) {
 
 /** 计算列表头的悬浮提示：让用户随时能看到这一列是怎么算出来的 */
 function computedColumnHint(name) {
-    return '计算列\n公式：' + formulaOf(name)
-        + '\n值由服务端算出，不能手动修改；改动源列后点「保存」会重新计算。';
+    return tt('计算列\n公式：{f}', { f: formulaOf(name) })
+        + '\n' + tt('值由服务端算出，不能手动修改；改动源列后点「保存」会重新计算。');
 }
 
 // ================================================================
@@ -58,7 +58,7 @@ function openFormulaEditor(index) {
     formulaEditBuffer = draft[index].expr;
 
     const label = document.getElementById('formulaColumnLabel');
-    if (label) label.textContent = draft[index].name || '(未命名列)';
+    if (label) label.textContent = draft[index].name || tt('(未命名列)');
 
     const input = document.getElementById('formulaInput');
     if (input) input.value = formulaEditBuffer;
@@ -93,7 +93,7 @@ function updateFormulaHint() {
 
     const problem = formulaCheck(formulaEditBuffer);
     el.classList.toggle('is-error', !!problem && !!formulaEditBuffer.trim());
-    el.textContent = problem || '公式看起来没问题；保存列结构时会由服务端再校验一次。';
+    el.textContent = problem || tt('公式看起来没问题；保存列结构时会由服务端再校验一次。');
 }
 
 /** 可引用的列：排除自己，也排除同样是计算列的列（计算列之间不许互相引用） */
@@ -110,7 +110,7 @@ function renderFormulaChips(index) {
 
     const columns = formulaColumnCandidates(index);
     colBox.innerHTML = columns.length === 0
-        ? '<span class="formula-empty">没有可引用的列</span>'
+        ? '<span class="formula-empty">' + tt('没有可引用的列') + '</span>'
         : columns.map((name, i) =>
             `<button type="button" class="formula-chip" onclick="insertFormulaColumn(${index}, ${i})">${escapeHtml(name)}</button>`
         ).join('');
@@ -183,26 +183,28 @@ function applyFormulaDraft() {
  */
 function formulaCheck(text) {
     const s = (text || '').trim();
-    if (!s) return '留空表示取消这一列的计算列';
-    if (s.length > FORMULA_MAX_LENGTH) return `公式不能超过 ${FORMULA_MAX_LENGTH} 个字符`;
+    if (!s) return tt('留空表示取消这一列的计算列');
+    if (s.length > FORMULA_MAX_LENGTH) return tt('公式不能超过 {n} 个字符', { n: FORMULA_MAX_LENGTH });
 
     let depth = 0;
     for (const ch of s) {
         if (ch === '(') depth++;
         else if (ch === ')') {
             depth--;
-            if (depth < 0) return '括号不匹配：多了一个 )';
+            if (depth < 0) return tt('括号不匹配：多了一个 )');
         }
     }
-    if (depth > 0) return '括号不匹配：少了一个 )';
+    if (depth > 0) return tt('括号不匹配：少了一个 )');
 
-    if (countOf(s, '"') % 2 !== 0) return '双引号没有成对';
-    if (countOf(s, "'") % 2 !== 0) return '单引号没有成对';
-    if (countOf(s, '[') !== countOf(s, ']')) return '方括号没有成对';
+    if (countOf(s, '"') % 2 !== 0) return tt('双引号没有成对');
+    if (countOf(s, "'") % 2 !== 0) return tt('单引号没有成对');
+    if (countOf(s, '[') !== countOf(s, ']')) return tt('方括号没有成对');
 
     const unknown = unknownFunctions(s);
     if (unknown.length > 0) {
-        return `不支持的函数：${unknown.join('、')}（可用：${FORMULA_FUNCTIONS.join('、')}）`;
+        return tt('不支持的函数：{bad}（可用：{ok}）', {
+            bad: unknown.join(tt('、')), ok: FORMULA_FUNCTIONS.join(tt('、'))
+        });
     }
 
     return '';
@@ -252,7 +254,7 @@ function applyColumnFormulas(drafts) {
 
     if (targets.length === 0) return Promise.resolve();
 
-    setStatus('保存计算公式...');
+    setStatus(tt('保存计算公式...'));
     const failures = [];
     let chain = Promise.resolve();
 
@@ -265,7 +267,20 @@ function applyColumnFormulas(drafts) {
 
     return chain.then(() => {
         if (failures.length > 0) {
-            showToast('⚠️ 部分公式没保存成功：\n' + failures.join('\n'), 'error');
+            showToast('⚠️ ' + tt('部分公式没保存成功：') + '\n' + failures.join('\n'), 'error');
         }
     });
 }
+
+// 语言切换时 i18n.js 会整块替换公式说明段落（data-i18n-html="editor.formulaSub"），
+// 段落里那个 <strong id="formulaColumnLabel"> 由 openFormulaEditor 填列名，替换后会变空，
+// 弹窗开着时在这里补回去（否则英文版会显示「Column  is computed from…」少了列名）。
+document.addEventListener('i18n:change', function () {
+    const modal = document.getElementById('formulaModal');
+    if (!modal || modal.style.display !== 'flex') return;
+
+    const label = document.getElementById('formulaColumnLabel');
+    const draft = columnDraftSnapshot();
+    const current = draft[formulaEditIndex];
+    if (label && current) label.textContent = current.name || tt('(未命名列)');
+});

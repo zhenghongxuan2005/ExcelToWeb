@@ -50,24 +50,24 @@ function pushHistory() {
 /** 撤销：先把当前状态压入重做栈，再回到上一个撤销点 */
 function undo() {
     if (undoHistory.length === 0) {
-        showToast('没有可撤销的操作', 'info');
+        showToast(tt('没有可撤销的操作'), 'info');
         return;
     }
     redoHistory.push(snapshotState());
     restoreState(undoHistory.pop());
-    showToast('↩️ 已撤销', 'success');
+    showToast('↩️ ' + tt('已撤销'), 'success');
     updateUndoButtons();
 }
 
 /** 重做：撤销的反向操作 */
 function redo() {
     if (redoHistory.length === 0) {
-        showToast('没有可重做的操作', 'info');
+        showToast(tt('没有可重做的操作'), 'info');
         return;
     }
     undoHistory.push(snapshotState());
     restoreState(redoHistory.pop());
-    showToast('↪️ 已重做', 'success');
+    showToast('↪️ ' + tt('已重做'), 'success');
     updateUndoButtons();
 }
 
@@ -77,13 +77,18 @@ function restoreState(state) {
     renderTable();
 }
 
+// 语言切换后「撤销 / 重做」这两个标签要跟着换，否则状态胶囊会中英混排
+if (typeof document !== 'undefined' && document.addEventListener) {
+    document.addEventListener('i18n:change', () => updateUndoButtons());
+}
+
 function updateUndoButtons() {
     const statusText = document.getElementById('statusText');
     if (!statusText) return;
     // 页头位置有限：只在确有可撤销 / 可重做的内容时才追加计数，
     // 否则「撤销: 0 | 重做: 0」会长期占满状态胶囊
-    const base = (statusText.textContent.split(' | ')[0] || '就绪').trim();
+    const base = (statusText.textContent.split(' | ')[0] || tt('就绪')).trim();
     statusText.textContent = (undoHistory.length || redoHistory.length)
-        ? `${base} | 撤销: ${undoHistory.length} | 重做: ${redoHistory.length}`
+        ? `${base} | ${tt('撤销')}: ${undoHistory.length} | ${tt('重做')}: ${redoHistory.length}`
         : base;
 }

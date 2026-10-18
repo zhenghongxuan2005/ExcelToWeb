@@ -48,7 +48,7 @@ function loadRulesForColumn(columnName) {
             return currentRules;
         })
         .catch(err => {
-            showToast('❌ 加载规则失败：' + err.message, 'error');
+            showToast('❌ ' + tt('加载规则失败：{msg}', { msg: err.message }), 'error');
             currentRules = [];
             return currentRules;
         });
@@ -56,11 +56,11 @@ function loadRulesForColumn(columnName) {
 
 function openRuleModal() {
     if (!currentTableId) {
-        showToast('请先上传一个 Excel 文件', 'error');
+        showToast(tt('请先上传一个 Excel 文件'), 'error');
         return;
     }
     if (getColorRuleColumns().length === 0) {
-        showToast('当前表格没有可用的列', 'error');
+        showToast(tt('当前表格没有可用的列'), 'error');
         return;
     }
 
@@ -68,11 +68,11 @@ function openRuleModal() {
     const select = document.getElementById('ruleColumnSelect');
     if (select && select.value) ruleColumnName = select.value;
 
-    setStatus('加载规则中...');
+    setStatus(tt('加载规则中...'));
     loadRulesForColumn(ruleColumnName).then(() => {
         renderRuleList();
         document.getElementById('ruleModal').style.display = 'flex';
-        setStatus('就绪');
+        setStatus(tt('就绪'));
     });
 }
 
@@ -93,16 +93,17 @@ function renderRuleList() {
     if (!container) return;
 
     if (currentRules.length === 0) {
-        container.innerHTML = '<div class="muted-center">暂无规则，点击下方"添加规则"开始设置</div>';
+        container.innerHTML = '<div class="muted-center">'
+            + tt('暂无规则，点击下方"添加规则"开始设置') + '</div>';
         return;
     }
 
     let html = '<table class="rule-table"><thead><tr>';
-    html += '<th>优先级</th>';
-    html += '<th>最小值</th>';
-    html += '<th>最大值</th>';
-    html += '<th>颜色</th>';
-    html += '<th style="text-align:center;">上移/下移</th>';
+    html += '<th>' + tt('优先级') + '</th>';
+    html += '<th>' + tt('最小值') + '</th>';
+    html += '<th>' + tt('最大值') + '</th>';
+    html += '<th>' + tt('颜色') + '</th>';
+    html += '<th style="text-align:center;">' + tt('上移/下移') + '</th>';
     html += '<th style="text-align:center; width:40px;"></th>';
     html += '</tr></thead><tbody>';
 
@@ -111,13 +112,13 @@ function renderRuleList() {
         html += '<tr>';
         html += `<td class="cell-center row-index">${i + 1}</td>`;
         html += `<td><input type="number" step="any" class="input-sm rule-min" value="${rule.minValue}" data-index="${i}" /></td>`;
-        html += `<td><input type="number" step="any" class="input-sm rule-max" value="${maxValue}" placeholder="以上" data-index="${i}" /></td>`;
+        html += `<td><input type="number" step="any" class="input-sm rule-max" value="${maxValue}" placeholder="${tt('以上')}" data-index="${i}" /></td>`;
         html += `<td><input type="color" class="color-input rule-color" value="${escapeHtml(rule.colorCode)}" data-index="${i}" /></td>`;
         html += '<td class="cell-center">';
-        if (i > 0) html += `<button class="icon-btn" title="上移" onclick="moveRuleUp(${i})">↑</button>`;
-        if (i < currentRules.length - 1) html += `<button class="icon-btn" title="下移" onclick="moveRuleDown(${i})">↓</button>`;
+        if (i > 0) html += `<button class="icon-btn" title="${tt('上移')}" onclick="moveRuleUp(${i})">↑</button>`;
+        if (i < currentRules.length - 1) html += `<button class="icon-btn" title="${tt('下移')}" onclick="moveRuleDown(${i})">↓</button>`;
         html += '</td>';
-        html += `<td class="cell-center"><button class="icon-btn icon-btn-danger" title="删除规则" onclick="removeRule(${i})">✕</button></td>`;
+        html += `<td class="cell-center"><button class="icon-btn icon-btn-danger" title="${tt('删除规则')}" onclick="removeRule(${i})">✕</button></td>`;
         html += '</tr>';
     });
     html += '</tbody></table>';
@@ -196,16 +197,18 @@ function saveRules() {
 
     const invalid = rules.find(r => r.maxValue !== null && r.maxValue < r.minValue);
     if (invalid) {
-        showToast(`⚠️ 区间不合法：${invalid.minValue} ~ ${invalid.maxValue}（最大值不能小于最小值）`, 'error');
+        showToast('⚠️ ' + tt('区间不合法：{min} ~ {max}（最大值不能小于最小值）', {
+            min: invalid.minValue, max: invalid.maxValue
+        }), 'error');
         return;
     }
 
     saveColorRules(rules)
         .then(result => {
-            showToast('✅ ' + (result.message || '保存成功'), 'success');
+            showToast('✅ ' + (result.message || tt('保存成功')), 'success');
             closeRuleModal();
             colorRulesCache = rules.slice();
             renderTable();
         })
-        .catch(err => showToast('❌ 保存失败：' + err.message, 'error'));
+        .catch(err => showToast('❌ ' + tt('保存失败：{msg}', { msg: err.message }), 'error'));
 }
