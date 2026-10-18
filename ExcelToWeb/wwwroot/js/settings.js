@@ -1,7 +1,17 @@
 // ================================================================
 // 设置页：账号 / 修改密码 / 会话管理 / 偏好设置 / 关于
-// 依赖：api.js、utils.js、shell.js
+// 依赖：api.js、utils.js、shell.js（i18n.js 可选，缺省回落中文）
 // ================================================================
+
+/**
+ * 文案取字典。i18n.js 未接入时按中文原文返回，但仍要做占位替换，
+ * 保证「有字典 / 没字典」两种情况下拼出来的句子结构一致。
+ */
+function tr(key, vars) {
+    if (typeof I18n !== 'undefined') return I18n.t(key, vars);
+    return String(key).replace(/\{(\w+)\}/g, (m, name) =>
+        vars && name in vars ? String(vars[name]) : m);
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!Shell.requireLogin()) return;
@@ -11,6 +21,13 @@ document.addEventListener('DOMContentLoaded', () => {
     initSessions();
     initPreferences();
     initAbout();
+
+    // 切换语言后，用 JS 拼出来的文案（会话行、「N 个已登录会话」）不会自动重翻，
+    // 直接按新语言重渲染一遍，避免中英混排
+    document.addEventListener('i18n:change', () => {
+        initSessions();
+        syncThemeButton();
+    });
 });
 
 // ================================================================
@@ -45,13 +62,13 @@ function paintAccountType(user) {
     const noteEl = document.getElementById('accountNote');
     const noteText = document.getElementById('accountNoteText');
 
-    if (typeEl) typeEl.textContent = isWindows ? 'Windows 集成身份验证' : '本地账号密码';
-    if (pwdEl) pwdEl.textContent = hasPassword ? '已设置本地密码' : '未设置本地密码';
+    if (typeEl) typeEl.textContent = tr(isWindows ? 'Windows 集成身份验证' : '本地账号密码');
+    if (pwdEl) pwdEl.textContent = tr(hasPassword ? '已设置本地密码' : '未设置本地密码');
 
     if (noteText) {
-        noteText.textContent = isWindows
+        noteText.textContent = tr(isWindows
             ? '使用 Windows 集成身份验证自动创建的账号没有本地密码，无法在此修改。'
-            : '本地密码由服务器校验：修改后其他设备无需重新登录，下次登录请使用新密码。';
+            : '本地密码由服务器校验：修改后其他设备无需重新登录，下次登录请使用新密码。');
     }
     if (noteEl) noteEl.hidden = false;
 }
@@ -71,17 +88,18 @@ function initPasswordForm() {
         const confirmPwd = document.getElementById('confirmPassword').value;
 
         // 前端先做一轮校验，减少无意义的请求；后端仍会再校验一遍
-        if (!oldPwd) return showToast('请输入原密码', 'error');
-        if (newPwd.length < 6) return showToast('新密码至少 6 位', 'error');
-        if (newPwd !== confirmPwd) return showToast('两次输入的新密码不一致', 'error');
-        if (newPwd === oldPwd) return showToast('新密码不能与原密码相同', 'error');
+        if (!oldPwd) return showToast(tr('请输入原密码'), 'error');
+        if (newPwd.length < 6) return showToast(tr('新密码至少 6 位'), 'error');
+        if (newPwd !== confirmPwd) return showToast(tr('两次输入的新密码不一致'), 'error');
+        if (newPwd === oldPwd) return showToast(tr('新密码不能与原密码相同'), 'error');
 
         const submitBtn = form.querySelector('button[type="submit"]');
         if (submitBtn) submitBtn.disabled = true;
 
         changePassword(oldPwd, newPwd, confirmPwd)
             .then(msg => {
-                showToast('✅ ' + (msg || '密码修改成功'), 'success');
+                // 服务端提示是中文原文，字典里没有时按原样透出
+                showToast('✅ ' + tr(msg || '密码修改成功'), 'success');
                 form.reset();
             })
             .catch(err => showToast('❌ ' + err.message, 'error'))
@@ -103,34 +121,71 @@ function initSessions() {
     fetchSessions()
         .then(sessions => renderSessionList(host, sessions || []))
         .catch(err => {
-            host.innerHTML = '<p class="panel-hint">会话列表加载失败：' + escapeHtml(err.message) + '</p>';
+            host.innerHTML = '<p class="panel-hint">'
+                + tr('会话列表加载失败：{msg}', { msg: escapeHtml(err.message) }) + '</p>';
         });
 }
 
 function renderSessionList(host, sessions) {
+    // 计数与列表同源：注销后重渲染，标题上的「N 个已登录会话」自动跟着变
+    const countEl = document.getElementById('sessionCount');
+    if (countEl) countEl.textContent = tr('{n} 个已登录会话', { n: sessions.length });
+
     if (sessions.length === 0) {
-        host.innerHTML = '<p class="panel-hint">当前没有活跃会话。</p>';
+        host.innerHTML = '<p class="panel-hint">' + tr('当前没有活跃会话。') + '</p>';
         return;
     }
 
     const currentFamily = localStorage.getItem('familyId');
     host.innerHTML = sessions.map(s => {
         const isCurrent = !!currentFamily && s.familyId === currentFamily;
+        const ip = escapeHtml(tr('来源 {ip}', { ip: s.createdByIp || '未知' }));
         return '<div class="session-row">'
             + '<svg class="icon session-enter" aria-hidden="true"><use href="#i-log-in"/></svg>'
-            + '<span class="session-time" title="来源 ' + escapeHtml(s.createdByIp || '未知') + '">登录于 '
-            + escapeHtml(formatTime(s.createdAt)) + '</span>'
-            + (isCurrent ? '<span class="session-badge">当前会话</span>' : '')
+            + '<span class="session-time" title="' + ip + '">'
+            + escapeHtml(tr('登录于 {time}', { time: formatTime(s.createdAt) })) + '</span>'
+            + (isCurrent ? '<span class="session-badge">' + tr('当前会话') + '</span>' : '')
+            + '<span class="session-client">' + escapeHtml(describeClient(s.createdByUserAgent)) + '</span>'
             + '<button type="button" class="btn-quiet" onclick="onRevokeSession('
             + Number(s.id) + ',' + isCurrent + ')">'
-            + '<svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>注销</button>'
+            + '<svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>' + tr('注销') + '</button>'
             + '</div>';
     }).join('');
 }
 
+/**
+ * UA → 「Chrome 155 · Windows」。
+ * 会话列表只需要区分「哪台设备」，完整 UA 留给「关于」页，这里取主版本号即可。
+ * 认不出来就回落「未知设备」——宁可承认不知道，也不要显示错误的浏览器名。
+ */
+function describeClient(userAgent) {
+    const ua = String(userAgent || '');
+    if (!ua) return tr('未知设备');
+
+    let browser = '';
+    let m = /Edg\/(\d+)/.exec(ua) || /Edge\/(\d+)/.exec(ua);
+    if (m) browser = 'Edge ' + m[1];
+    else if ((m = /OPR\/(\d+)/.exec(ua))) browser = 'Opera ' + m[1];
+    else if ((m = /Firefox\/(\d+)/.exec(ua))) browser = 'Firefox ' + m[1];
+    else if ((m = /Chrome\/(\d+)/.exec(ua))) browser = 'Chrome ' + m[1];
+    else if ((m = /Version\/(\d+)[\d.]* .*Safari\//.exec(ua))) browser = 'Safari ' + m[1];
+
+    const system =
+        /Windows/.test(ua) ? 'Windows'
+        : /Android/.test(ua) ? 'Android'
+        : /iPhone|iPad|iPod/.test(ua) ? 'iOS'
+        : /Mac OS X/.test(ua) ? 'macOS'
+        : /Linux/.test(ua) ? 'Linux' : '';
+
+    return [browser, system].filter(Boolean).join(' · ') || tr('未知设备');
+}
+
 /** 注销一条会话。isCurrent 为 true 时等同退出登录：清本地登录态并回登录页 */
 function onRevokeSession(sessionId, isCurrent) {
-    if (!confirm(isCurrent ? '注销当前会话将退出登录，确定吗？' : '确定要注销该会话吗？该设备将需要重新登录。')) return;
+    const ask = isCurrent
+        ? tr('注销当前会话将退出登录，确定吗？')
+        : tr('确定要注销该会话吗？该设备将需要重新登录。');
+    if (!confirm(ask)) return;
 
     revokeSessionApi(sessionId)
         .then(() => {
@@ -143,7 +198,7 @@ function onRevokeSession(sessionId, isCurrent) {
                 window.location.href = '/login.html?loggedout=1';
                 return;
             }
-            showToast('✅ 会话已注销', 'success');
+            showToast('✅ ' + tr('会话已注销'), 'success');
             initSessions();   // 刷新列表
         })
         .catch(err => showToast('❌ ' + err.message, 'error'));
@@ -191,7 +246,7 @@ function initPreferences() {
         themeSel.value = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
         themeSel.addEventListener('change', () => {
             setTheme(themeSel.value);
-            showToast('✅ 主题已切换', 'success');
+            showToast('✅ ' + tr('主题已切换'), 'success');
         });
     }
 
@@ -199,7 +254,7 @@ function initPreferences() {
     if (sizeSel) {
         sizeSel.addEventListener('change', () => {
             localStorage.setItem(PREF_KEYS.pageSize, sizeSel.value);
-            showToast('✅ 已保存默认每页行数', 'success');
+            showToast('✅ ' + tr('已保存默认每页行数'), 'success');
         });
     }
 
@@ -212,7 +267,7 @@ function initPreferences() {
             if (value === currentPrefs().textSize) return;
             localStorage.setItem(PREF_KEYS.textSize, value);
             paintPreferences();
-            showToast('✅ 已保存表格字号', 'success');
+            showToast('✅ ' + tr('已保存表格字号'), 'success');
         });
     }
 
@@ -222,7 +277,7 @@ function initPreferences() {
             const next = !currentPrefs().grid;
             localStorage.setItem(PREF_KEYS.grid, next ? 'on' : 'off');
             paintPreferences();
-            showToast(next ? '✅ 已显示网格线' : '✅ 已隐藏网格线', 'success');
+            showToast('✅ ' + tr(next ? '已显示网格线' : '已隐藏网格线'), 'success');
         });
     }
 
@@ -264,7 +319,7 @@ function paintPreferences() {
 
 /** 恢复默认：清掉本地偏好后按默认值重绘（主题回到「跟随系统」） */
 function resetPreferences() {
-    if (!confirm('恢复默认设置后，主题、分页与表格字号都会回到初始值，确定吗？')) return;
+    if (!confirm(tr('恢复默认设置后，主题、分页与表格字号都会回到初始值，确定吗？'))) return;
 
     localStorage.removeItem(PREF_KEYS.pageSize);
     localStorage.removeItem(PREF_KEYS.textSize);
@@ -274,7 +329,7 @@ function resetPreferences() {
 
     setTheme(prefersDark() ? 'dark' : 'light', true);
     paintPreferences();
-    showToast('✅ 已恢复默认设置', 'success');
+    showToast('✅ ' + tr('已恢复默认设置'), 'success');
 }
 
 /** 系统主题偏好（恢复默认时用；浏览器不支持就按浅色） */
@@ -312,7 +367,7 @@ function syncThemeButton() {
     const useEl = btn.querySelector('use');
     const labelEl = btn.querySelector('.theme-label');
     if (useEl) useEl.setAttribute('href', dark ? '#i-sun' : '#i-moon');
-    if (labelEl) labelEl.textContent = dark ? '浅色模式' : '深色模式';
+    if (labelEl) labelEl.textContent = tr(dark ? '浅色模式' : '深色模式');
 }
 
 // ================================================================

@@ -1,16 +1,16 @@
 /* ================================================================
-   ExcelToWeb 样式模块：settings.css —— 设置页（一）：页头 / 卡片网格 / 账号 / 密码 / 会话
-   偏好设置与「关于」见 settings-prefs.css（必须紧跟本文件）
-   （由 style.css 以 @import 汇总，加载顺序即层叠顺序，排在 console.css 之后）
+   ExcelToWeb 样式模块：settings.css —— 设置页（一）：页头 / 标签栏 / 单列卡片 / 账号
+   账号与安全（修改密码、会话管理）见 settings-security.css，
+   偏好与关于见 settings-prefs.css；三者必须按此顺序加载（层叠顺序有实际约束）
    ================================================================ */
 
 /* ================================================================
-   页头：图标徽章 + 标题 + 副标题（副标题不再缩进，跟标题左边缘对齐）
+   页头：图标徽章 + 标题 + 副标题（副标题与标题左边缘对齐）
    ================================================================ */
 .settings-head {
     align-items: center;
     padding-top: 20px;      /* 比其他页多留一点上边距：36px 徽章需要呼吸空间 */
-    margin-bottom: 20px;
+    margin-bottom: 6px;     /* 标签栏自带下边距，这里只留一小段 */
 }
 
     .settings-head .page-title {
@@ -52,29 +52,80 @@
     }
 
 /* ================================================================
-   卡片网格
-   第一行三栏等分；第二行「偏好 55 : 关于 45」（与设计稿像素比例一致）
-   同一行内卡片默认 stretch，行高对齐
+   标签栏：五块都在同一页，标签只做锚点定位（不做内容切换）
+   激活项 = 主色文字 + 2px 下划线；栏底不画通栏线，免得和卡片描边打架
    ================================================================ */
-.settings-grid {
-    display: grid;
-    gap: 24px 16px;
+.settings-tabs {
+    display: flex;
+    align-items: flex-end;
+    gap: 26px;
+    margin: 14px 0 20px;
+    overflow-x: auto;               /* 窄屏时标签可横向滚动，不挤成两行 */
+    scrollbar-width: none;
 }
 
-.settings-grid-3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    .settings-tabs::-webkit-scrollbar {
+        height: 0;
+    }
+
+.settings-tab {
+    position: relative;
+    flex: none;
+    padding: 4px 0 9px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--text-3);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color var(--transition-fast);
 }
 
-.settings-grid-2 {
-    grid-template-columns: 55fr 45fr;
+    .settings-tab:hover {
+        color: var(--text-1);
+    }
+
+    .settings-tab.is-active {
+        color: var(--primary);
+        font-weight: 500;
+    }
+
+        .settings-tab.is-active::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 2px;
+            border-radius: 2px;
+            background: var(--primary);
+        }
+
+/* ================================================================
+   单列容器：一块一个板块，纵向等距排列
+   边界 = 20px 留白 → 1px 描边 → 极轻投影（三层叠加，缺一层就发虚）
+   ================================================================ */
+.settings-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
-/* ===== 卡片外壳：白底、无描边、圆角 12（画布是浅灰，靠底色区分层次） ===== */
+/* 主区左右内边距只在本页放宽（其他页保持 24，避免全站版式抖动） */
+.settings-page .main {
+    padding-left: 32px;
+    padding-right: 32px;
+    padding-bottom: 32px;
+}
+
 .panel {
     min-width: 0;
-    padding: 20px;
+    padding: 24px;
     background: var(--bg-card);
+    border: 1px solid var(--border-card);
     border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-panel);
+    /* 标签跳转后标题不要贴到视口顶端 */
+    scroll-margin-top: 16px;
 }
 
 .panel-title {
@@ -106,6 +157,18 @@
             stroke-width: 2;
         }
 
+    /* 标题后的补充计数（如「5 个已登录会话」），不能抢标题的字重 */
+    .panel-count {
+        font-size: 12px;
+        font-weight: 400;
+        color: var(--text-4);
+    }
+
+    /* 标题行右端的操作区（恢复默认设置） */
+    .panel-title-actions {
+        margin-left: auto;
+    }
+
 /* 卡片内通用说明文字 */
 .panel-hint {
     margin-top: 16px;
@@ -115,29 +178,32 @@
 }
 
 /* ================================================================
-   账号：头像 + 账号名 / 键值行 / 灰色提示条
+   账号：头像 + 账号名 / 键值列表 / 灰色提示条
+   键值列固定 100px 标签列，值左对齐（右对齐会让长文案贴着卡片右缘）
    ================================================================ */
 .account {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 18px;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-row);
 }
 
 .account-avatar {
     display: grid;
     place-items: center;
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     flex: none;
-    border-radius: var(--radius-lg);
+    border-radius: 10px;
     background: var(--primary-soft);
     color: var(--primary);
 }
 
     .account-avatar .icon {
-        width: 22px;
-        height: 22px;
+        width: 20px;
+        height: 20px;
         stroke-width: 1.7;
     }
 
@@ -164,8 +230,6 @@
 .kv {
     display: flex;
     align-items: baseline;
-    justify-content: space-between;
-    gap: 16px;
     font-size: 13px;
     line-height: 1.65;
 }
@@ -175,6 +239,7 @@
     }
 
     .kv dt {
+        width: 100px;
         flex: none;
         color: var(--text-3);
     }
@@ -183,7 +248,6 @@
         min-width: 0;
         color: var(--text-1);
         font-weight: 500;
-        text-align: right;
         word-break: break-all;
     }
 
@@ -218,146 +282,11 @@
     }
 
 /* ================================================================
-   修改密码：左侧固定宽标签 + 右侧输入框
+   中等宽度（900px 以下）：放宽的左右内边距先收回
    ================================================================ */
-.form-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-    .form-row + .form-row {
-        margin-top: 17px;
-    }
-
-    .form-row > label {
-        width: 76px;
-        flex: none;
-        font-size: 13px;
-        color: var(--text-2);
-    }
-
-    /* 覆盖弹窗里「灰底通栏」的输入框：这里是白底细描边、35px 高 */
-    .form-row .input {
-        flex: 1;
-        min-width: 0;
-        height: 35px;
-        padding: 0 12px;
-        font-size: 13px;
-        background: var(--bg-card);
-        border: 1px solid var(--border-field);
-        border-radius: var(--radius-md);
-    }
-
-        .form-row .input::placeholder {
-            color: var(--text-4);
-        }
-
-        .form-row .input:focus {
-            border-color: var(--primary);
-            box-shadow: var(--focus-ring);
-        }
-
-/* 卡片内的按钮：比工具栏高 2px、圆角更大，跟输入框同一套观感 */
-.panel .btn {
-    height: 34px;
-    padding: 0 14px;
-    border-radius: var(--radius-md);
-    font-size: 13px;
-}
-
-    .panel .btn .icon {
-        width: 15px;
-        height: 15px;
-    }
-
-    .panel form > .btn {
-        margin-top: 21px;
-    }
-
-/* ================================================================
-   会话管理：一行一个会话（登录时间 + 当前会话标记 + 注销）
-   ================================================================ */
-.session-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    height: 39px;
-    border-bottom: 1px solid var(--border-row);
-}
-
-    .session-row:last-of-type {
-        border-bottom: 0;
-    }
-
-.session-enter {
-    width: 14px;
-    height: 14px;
-    color: var(--primary);
-    stroke-width: 2;
-}
-
-.session-time {
-    min-width: 0;
-    font-size: 13px;
-    color: var(--text-1);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.session-badge {
-    flex: none;
-    padding: 2px 7px;
-    border-radius: var(--radius-sm);
-    background: var(--success-soft);
-    color: var(--success);
-    font-size: 11px;
-    line-height: 1.4;
-}
-
-/* 行内次级按钮：浅灰底、无描边，hover 才加深 */
-.btn-quiet {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    height: 24px;
-    margin-left: auto;
-    padding: 0 8px;
-    flex: none;
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: var(--bg-soft);
-    color: var(--text-3);
-    font-family: inherit;
-    font-size: 12px;
-    cursor: pointer;
-    transition: background var(--transition-fast), color var(--transition-fast);
-}
-
-    .btn-quiet .icon {
-        width: 12px;
-        height: 12px;
-    }
-
-    .btn-quiet:hover {
-        background: var(--border-light);
-        color: var(--text-2);
-    }
-
-/* ================================================================
-   响应式：三栏折两栏（会话管理独占一行），两栏改为上下堆叠
-   ================================================================ */
-@media (max-width: 1180px) {
-    .settings-grid-3 {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-        .settings-grid-3 > .panel:last-child {
-            grid-column: 1 / -1;
-        }
-
-    .settings-grid-2 {
-        grid-template-columns: minmax(0, 1fr);
+@media (max-width: 900px) {
+    .settings-page .main {
+        padding-left: 20px;
+        padding-right: 20px;
     }
 }

@@ -22,9 +22,12 @@
     </script>
     <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body class="settings-page">
     <!-- 页面外壳：图标 sprite / 主题切换 / 退出登录 / 导航高亮，由 js/shell.js 统一提供 -->
     <script src="js/shell.js"></script>
+    <!-- 多语言：i18n.js 提供语言状态 + DOM 即时翻译，i18n-en.js 是「中 → 英」字典（须在 shell.js 之后） -->
+    <script src="js/i18n.js"></script>
+    <script src="js/i18n-en.js"></script>
     <a class="skip-link" href="#mainContent">跳到主要内容</a>
 
     <div class="app-shell">
@@ -84,11 +87,19 @@
                 </div>
             </div>
 
-            <!-- 第一行：账号 / 修改密码 / 会话管理，三栏等分 -->
-            <div class="settings-grid settings-grid-3">
+            <!-- 标签栏：五块在同一页纵向排列，标签只做锚点定位（滚动时高亮跟随） -->
+            <nav class="settings-tabs" id="settingsTabs" aria-label="设置分区">
+                <a class="settings-tab is-active" href="#section-account" data-target="section-account" aria-current="true">账号</a>
+                <a class="settings-tab" href="#section-password" data-target="section-password">密码</a>
+                <a class="settings-tab" href="#section-sessions" data-target="section-sessions">会话</a>
+                <a class="settings-tab" href="#section-prefs" data-target="section-prefs">偏好设置</a>
+                <a class="settings-tab" href="#section-about" data-target="section-about">关于</a>
+            </nav>
+
+            <div class="settings-stack">
 
                 <!-- 账号 -->
-                <section class="panel">
+                <section class="panel" id="section-account">
                     <h2 class="panel-title">
                         <span class="panel-icon"><svg class="icon"><use href="#i-user"/></svg></span>账号
                     </h2>
@@ -119,7 +130,7 @@
                 </section>
 
                 <!-- 修改密码 -->
-                <section class="panel">
+                <section class="panel" id="section-password">
                     <h2 class="panel-title">
                         <span class="panel-icon"><svg class="icon"><use href="#i-key"/></svg></span>修改密码
                     </h2>
@@ -129,47 +140,54 @@
                             <label for="oldPassword">原密码</label>
                             <input type="password" id="oldPassword" class="input"
                                    autocomplete="current-password" placeholder="请输入当前密码">
+                            <span class="field-hint">仅用于身份校验，不会以明文保存</span>
                         </div>
                         <div class="form-row">
                             <label for="newPassword">新密码</label>
                             <input type="password" id="newPassword" class="input"
                                    autocomplete="new-password" placeholder="至少 6 位">
+                            <span class="field-hint">至少 6 位，建议包含字母与数字</span>
                         </div>
                         <div class="form-row">
                             <label for="confirmPassword">确认新密码</label>
                             <input type="password" id="confirmPassword" class="input"
                                    autocomplete="new-password" placeholder="再次输入新密码">
+                            <span class="field-hint">需与新密码完全一致</span>
                         </div>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary form-submit">
                             <svg class="icon"><use href="#i-key"/></svg>保存新密码
                         </button>
                     </form>
                 </section>
 
                 <!-- 会话管理：列出活跃会话，支持逐个注销 -->
-                <section class="panel">
+                <section class="panel" id="section-sessions">
                     <h2 class="panel-title">
                         <span class="panel-icon"><svg class="icon"><use href="#i-clock"/></svg></span>会话管理
+                        <span class="panel-count" id="sessionCount"></span>
                     </h2>
 
                     <div class="session-list" id="sessionList">
                         <p class="panel-hint">加载中…</p>
                     </div>
 
+                    <!-- 两句各自一个 <span>：同一元素里的连续文字是一个文本节点，
+                         i18n 按文本节点整段匹配，写在同一个节点里就只能整段翻译、无法分开维护 -->
                     <p class="panel-hint">
-                        会话按「浏览器登录」划分：在某设备上注销该会话后，那台设备需要重新登录。
-                        登录状态最短 2 小时自动续期一次，最长 7 天不动也会过期。
+                        <span>会话按「浏览器登录」划分：在某设备上注销该会话后，那台设备需要重新登录。</span>
+                        <span>登录状态最短 2 小时自动续期一次，最长 7 天不动也会过期。</span>
                     </p>
                 </section>
-            </div>
-
-            <!-- 第二行：偏好设置（宽）/ 关于（窄） -->
-            <div class="settings-grid settings-grid-2">
 
                 <!-- 偏好设置 -->
-                <section class="panel">
+                <section class="panel" id="section-prefs">
                     <h2 class="panel-title">
                         <span class="panel-icon"><svg class="icon"><use href="#i-sliders"/></svg></span>偏好设置
+                        <span class="panel-title-actions">
+                            <button type="button" class="btn btn-outline btn-sm" id="resetPrefs">
+                                <svg class="icon"><use href="#i-refresh"/></svg>恢复默认设置
+                            </button>
+                        </span>
                     </h2>
 
                     <div class="pref-row">
@@ -199,25 +217,21 @@
                             <button type="button" data-value="compact" aria-pressed="false">紧凑</button>
                             <button type="button" data-value="cozy" aria-pressed="true">舒适</button>
                         </div>
+                        <p class="pref-hint">在「表格编辑」页生效，可自行切换对比</p>
                     </div>
 
                     <div class="pref-row">
                         <span class="pref-label" id="prefGridLabel">网格线</span>
                         <button type="button" class="toggle" id="prefGrid" role="switch"
                                 aria-checked="true" aria-labelledby="prefGridLabel"></button>
-                        <p class="pref-hint">字号与网格线在「表格编辑」页生效，可自行切换对比。</p>
+                        <p class="pref-hint">关闭后表格只保留行分隔线，画面更干净</p>
                     </div>
 
-                    <div class="pref-footer">
-                        <button type="button" class="btn btn-outline" id="resetPrefs">
-                            <svg class="icon"><use href="#i-refresh"/></svg>恢复默认设置
-                        </button>
-                        <p class="panel-hint">偏好设置保存在本机浏览器中，不影响账号数据。</p>
-                    </div>
+                    <p class="panel-hint pref-footnote">偏好设置保存在本机浏览器中，不影响账号数据。</p>
                 </section>
 
                 <!-- 关于 -->
-                <section class="panel">
+                <section class="panel" id="section-about">
                     <h2 class="panel-title">
                         <span class="panel-icon"><svg class="icon"><use href="#i-info"/></svg></span>关于
                     </h2>
@@ -233,7 +247,7 @@
                         </div>
                         <div class="about-row">
                             <dt>前端</dt>
-                            <dd>原生 HTML / CSS / JavaScript（零构建、零依赖）</dd>
+                            <dd>原生 HTML/CSS/JavaScript（零构建、零依赖）</dd>
                         </div>
                         <div class="about-row">
                             <dt>浏览器</dt>
@@ -252,6 +266,7 @@
     <script src="js/api.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/palette.js"></script>
+    <script src="js/settings-tabs.js"></script>
     <script src="js/settings.js"></script>
 </body>
 </html>

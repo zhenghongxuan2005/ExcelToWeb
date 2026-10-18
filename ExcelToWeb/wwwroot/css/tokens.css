@@ -51,8 +51,11 @@
     --border: #e9ecf2;
     --border-light: #eef0f5;
     --border-strong: #d6dbe6;
-    /* 表单控件描边：比卡片描边略深一档，白底输入框/下拉框才看得出边界 */
-    --border-field: #e0e5ef;
+    /* 表单控件描边：与卡片描边同属「清楚可见」的一档（控件不该比容器外框还淡） */
+    --border-field: #d5dce9;
+    /* 卡片描边：白卡与浅灰画布的明度差很小，多卡片并排时必须靠这一档描边划清范围
+       （比 --border-light 深两档，接近 --border-strong，但不至于像表格外框那么硬） */
+    --border-card: #d0d7e3;
     /* 表格行分隔线：比卡片描边更淡，长表格不至于变成「棋盘」 */
     --border-row: #f1f3f8;
 
@@ -60,6 +63,9 @@
     --overlay: rgba(17, 26, 43, 0.4);
     --shadow-xs: 0 1px 2px rgba(17, 26, 43, 0.04);
     --shadow-card: 0 1px 2px rgba(17, 26, 43, 0.04);
+    /* 面板卡：1px 描边之外再叠一层「几乎看不见、但能压住边界」的投影，
+       让卡片从画布上立起来；扩散收负值，避免五张卡片叠出脏灰边 */
+    --shadow-panel: 0 1px 2px rgba(17, 26, 43, 0.05), 0 10px 22px -16px rgba(17, 26, 43, 0.22);
     --shadow-pop: 0 2px 6px rgba(17, 26, 43, 0.06), 0 12px 32px rgba(17, 26, 43, 0.1);
     --shadow-modal: 0 4px 12px rgba(17, 26, 43, 0.08), 0 24px 64px rgba(17, 26, 43, 0.18);
 
@@ -142,11 +148,14 @@ html[data-theme="dark"] {
     --border-light: #1f2836;
     --border-strong: #3a4658;
     --border-field: #2c3748;
+    /* 暗色下卡片(#131a27)与画布(#0c111c)同样贴得近，描边要提亮而不是压暗 */
+    --border-card: #2b3648;
     --border-row: #1d2634;
 
     --overlay: rgba(2, 6, 14, 0.62);
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.24);
+    --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.32), 0 10px 22px -16px rgba(0, 0, 0, 0.6);
     --shadow-pop: 0 2px 8px rgba(0, 0, 0, 0.3), 0 14px 36px rgba(0, 0, 0, 0.46);
     --shadow-modal: 0 4px 14px rgba(0, 0, 0, 0.36), 0 26px 68px rgba(0, 0, 0, 0.54);
 

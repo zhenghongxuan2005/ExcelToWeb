@@ -9,6 +9,7 @@ const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..', '..', 'ExcelToWeb', 'wwwroot');
 const code = fs.readFileSync(path.join(ROOT, 'js', 'settings.js'), 'utf8');
+const tabsCode = fs.readFileSync(path.join(ROOT, 'js', 'settings-tabs.js'), 'utf8');
 
 // ---------------------------------------------------------------
 // 极简 DOM：只实现 settings.js 真正用到的接口
@@ -56,6 +57,7 @@ function build() {
             querySelector: sel => (sel === 'use' ? themeUse : (sel === '.theme-label' ? themeLabel : null))
         }),
         sessionList: makeEl(),
+        sessionCount: makeEl(),
         accountName: makeEl(),
         accountType: makeEl(),
         passwordState: makeEl(),
@@ -107,7 +109,7 @@ function build() {
     vm.runInContext(
         code + '\n;globalThis.__api = { normalizeTextSize, TEXT_SIZE_ATTR, PREF_DEFAULTS, PREF_KEYS,'
         + ' currentPrefs, paintPreferences, resetPreferences, setTheme, applyTextSize,'
-        + ' renderSessionList, paintAccountType };',
+        + ' renderSessionList, paintAccountType, describeClient };',
         ctx, { filename: 'settings.js' });
     return { api: sandbox.__api, sandbox, store, els, htmlAttrs, segButtons, themeLabel, ctx };
 }
@@ -235,8 +237,16 @@ console.log('[6] 会话列表：登录时间 + 当前会话标记 + 注销按钮
     const host = H.els.sessionList;
 
     H.api.renderSessionList(host, [
-        { id: 7, familyId: 'fam-a', createdAt: '2026-10-17 22:52', createdByIp: '10.0.0.2' },
-        { id: 8, familyId: 'fam-b', createdAt: '2026-10-16 22:03', createdByIp: '10.0.0.3' }
+        {
+            id: 7, familyId: 'fam-a', createdAt: '2026-10-17 22:52', createdByIp: '10.0.0.2',
+            createdByUserAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                + '(KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0'
+        },
+        {
+            id: 8, familyId: 'fam-b', createdAt: '2026-10-16 22:03', createdByIp: '10.0.0.3',
+            createdByUserAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                + '(KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36'
+        }
     ]);
 
     check('两行会话', (host.innerHTML.match(/class="session-row"/g) || []).length === 2,
@@ -247,9 +257,16 @@ console.log('[6] 会话列表：登录时间 + 当前会话标记 + 注销按钮
     check('当前会话传给注销函数是 true', host.innerHTML.indexOf('onRevokeSession(7,true)') !== -1);
     check('其他会话传给注销函数是 false', host.innerHTML.indexOf('onRevokeSession(8,false)') !== -1);
     check('IP 只在 title 里备查', host.innerHTML.indexOf('title="来源 10.0.0.2"') !== -1);
+    check('标题计数与列表同源', H.els.sessionCount.textContent === '2 个已登录会话',
+        H.els.sessionCount.textContent);
+    // 第一行是 Edge 的 UA（同时含 Chrome/155），不能被认成 Chrome
+    check('客户端标识识别 Edge', host.innerHTML.indexOf('Edge 155 · Windows') !== -1, host.innerHTML);
+    check('客户端标识识别 Chrome', host.innerHTML.indexOf('>Chrome 155 · Windows<') !== -1);
 
     H.api.renderSessionList(host, []);
     check('无会话时给空态文案', host.innerHTML.indexOf('当前没有活跃会话') !== -1);
+    check('空列表时计数归零', H.els.sessionCount.textContent === '0 个已登录会话',
+        H.els.sessionCount.textContent);
 }
 
 // ---------------------------------------------------------------
@@ -267,6 +284,107 @@ console.log('[7] 账号类型：Windows 账号没有本地密码');
     check('本地账号类型文案', H.els.accountType.textContent === '本地账号密码');
     check('本地账号密码状态', H.els.passwordState.textContent === '已设置本地密码');
     check('本地账号提示条不再提 Windows', H.els.accountNoteText.textContent.indexOf('Windows') === -1);
+}
+
+// ---------------------------------------------------------------
+console.log('[8] 客户端标识：UA → 「浏览器 主版本 · 系统」');
+// ---------------------------------------------------------------
+{
+    const d = build().api.describeClient;
+
+    check('Windows + Chrome',
+        d('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+            + 'Chrome/155.0.0.0 Safari/537.36') === 'Chrome 155 · Windows');
+    // Edge 的 UA 里同时含 Chrome/155，必须先认 Edg
+    check('Windows + Edge（同时含 Chrome 字样也不误判）',
+        d('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+            + 'Chrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0') === 'Edge 155 · Windows');
+    check('macOS + Safari（主版本取 Version/ 而不是 605.1）',
+        d('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) '
+            + 'Version/17.4 Safari/605.1.15') === 'Safari 17 · macOS');
+    check('Android + Chrome',
+        d('Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) '
+            + 'Chrome/155.0.0.0 Mobile Safari/537.36') === 'Chrome 155 · Android');
+    check('空 UA 回落「未知设备」',
+        d('') === '未知设备' && d(undefined) === '未知设备' && d(null) === '未知设备');
+    check('认不出浏览器但认得出系统：只给系统',
+        d('curl/8.0 (Windows)') === 'Windows');
+    check('完全不认识的串也不瞎猜', d('something-odd') === '未知设备');
+}
+
+// ---------------------------------------------------------------
+console.log('[9] 标签栏：高亮唯一 + 点击跳转到对应板块');
+// ---------------------------------------------------------------
+function buildTabs() {
+    const ids = ['section-account', 'section-password', 'section-sessions', 'section-prefs', 'section-about'];
+    const tabs = ids.map(id => {
+        const attrs = { 'data-target': id };
+        const classes = new Set(['settings-tab']);
+        if (id === 'section-account') classes.add('is-active');
+        return {
+            _attrs: attrs,
+            _classes: classes,
+            getAttribute: k => (k in attrs ? attrs[k] : null),
+            setAttribute: (k, v) => { attrs[k] = String(v); },
+            removeAttribute: k => { delete attrs[k]; },
+            classList: {
+                toggle: (c, on) => { if (on) classes.add(c); else classes.delete(c); }
+            }
+        };
+    });
+    const scrolled = [];
+
+    const nav = {
+        querySelectorAll: sel => (sel === '.settings-tab' ? tabs : []),
+        addEventListener() {}
+    };
+    // 每个板块只需要 id 与 scrollIntoView，记录被滚到哪一块
+    const sections = {};
+    ids.forEach(id => {
+        sections[id] = { id, scrollIntoView: () => scrolled.push(id) };
+    });
+
+    const sandbox = {
+        console,
+        document: {
+            getElementById: id => (id === 'settingsTabs' ? nav : (sections[id] || null)),
+            addEventListener() {}
+        }
+    };
+    sandbox.window = sandbox;
+    sandbox.globalThis = sandbox;
+
+    const ctx = vm.createContext(sandbox);
+    vm.runInContext(
+        tabsCode + '\n;globalThis.__api = { initSettingsTabs, setActiveTab, onClickTab };',
+        ctx, { filename: 'settings-tabs.js' });
+    return { api: sandbox.__api, tabs, scrolled };
+}
+
+{
+    const T = buildTabs();
+
+    T.api.setActiveTab('section-prefs');
+    check('任何时刻只有一个标签高亮',
+        T.tabs.filter(t => t._classes.has('is-active')).length === 1);
+    check('高亮落在目标标签', T.tabs[3]._classes.has('is-active'));
+    check('aria-current 与高亮同步',
+        T.tabs[3]._attrs['aria-current'] === 'true'
+        && T.tabs[0]._attrs['aria-current'] === undefined);
+
+    // 单测环境没有 IntersectionObserver：只应保留点击跳转，不能抛错
+    let threw = false;
+    try { T.api.initSettingsTabs(); } catch (e) { threw = true; }
+    check('没有 IntersectionObserver 时既不报错也不崩', !threw);
+
+    let prevented = false;
+    T.api.onClickTab({
+        target: { closest: () => T.tabs[2] },
+        preventDefault() { prevented = true; }
+    });
+    check('点击「会话」滚到该板块', T.scrolled[0] === 'section-sessions', T.scrolled.join());
+    check('点击时拦掉默认锚点跳转（避免 URL 里多出 #）', prevented);
+    check('点击后高亮跟随', T.tabs[2]._classes.has('is-active') && !T.tabs[3]._classes.has('is-active'));
 }
 
 console.log('\n================ 结果：' + pass + ' 通过 / ' + fail + ' 失败 ================');

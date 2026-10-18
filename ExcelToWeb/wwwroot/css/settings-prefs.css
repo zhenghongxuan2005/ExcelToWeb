@@ -1,10 +1,11 @@
 /* ================================================================
-   ExcelToWeb 样式模块：settings-prefs.css —— 设置页（二）：偏好设置 / 关于 / 窄屏
-   依赖 settings.css 的卡片外壳（.panel / .panel-title / .panel-hint），必须紧跟其后加载
+   ExcelToWeb 样式模块：settings-prefs.css —— 设置页（三）：偏好设置 / 关于 / 窄屏
+   依赖 settings.css 的卡片外壳（.panel / .panel-title / .panel-hint），
+   以及 settings-security.css 的按钮基样式；必须排在两者之后加载
    ================================================================ */
 
 /* ================================================================
-   偏好设置：标签列 128px + 控件 + 右说明
+   偏好设置：标签列 132px（+12 间距 = 输入类控件统一 144 起排）
    ================================================================ */
 .pref-row {
     display: flex;
@@ -18,7 +19,7 @@
     }
 
 .pref-label {
-    width: 128px;
+    width: 132px;
     flex: none;
     font-size: 13px;
     color: var(--text-1);
@@ -27,6 +28,7 @@
 .pref-hint {
     flex: 1;
     min-width: 0;
+    margin-left: 6px;
     font-size: 12px;
     line-height: 1.55;
     color: var(--text-4);
@@ -132,19 +134,25 @@
             transform: translateX(14px);
         }
 
-/* 偏好设置底部：分隔线 + 恢复默认 */
-.pref-footer {
-    margin-top: 24px;
-    padding-top: 16px;
-    border-top: 1px solid var(--border-row);
+/* 「恢复默认设置」搬到了卡片标题行右端：比正文按钮小一号，不抢标题 */
+.panel-title-actions .btn {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
 }
 
-    .pref-footer .panel-hint {
-        margin-top: 13px;
+    .panel-title-actions .btn .icon {
+        width: 13px;
+        height: 13px;
     }
 
+/* 卡片末尾的总说明（不再画分隔线，与图一致） */
+.pref-footnote {
+    margin-top: 20px;
+}
+
 /* ================================================================
-   关于：标签列 80px，值左对齐（不用右对齐，长 UA 换行才整齐）
+   关于：标签列 100px，值左对齐（不用右对齐，长 UA 换行才整齐）
    ================================================================ */
 .about-row {
     display: flex;
@@ -157,7 +165,7 @@
     }
 
     .about-row dt {
-        width: 80px;
+        width: 100px;
         flex: none;
         color: var(--text-4);
     }
@@ -186,19 +194,13 @@
     }
 
 /* ================================================================
-   窄屏（760px 以下）：全部单列，标签移到控件上方
-   放在本文件末尾，可同时覆盖 settings.css 里的 .form-row
+   窄屏（760px 以下）：标签移到控件上方，控件拉满宽
    ================================================================ */
 @media (max-width: 760px) {
     .settings-head {
         padding-top: 14px;
     }
 
-    .settings-grid-3 {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .form-row,
     .pref-row {
         display: grid;
         grid-template-columns: minmax(0, 1fr);
@@ -218,7 +220,15 @@
             flex: 1;
         }
 
+    .pref-hint {
+        margin-left: 0;
+    }
+
     .panel {
         padding: 16px;
+    }
+
+    .panel-title-actions .btn span {
+        display: none;
     }
 }

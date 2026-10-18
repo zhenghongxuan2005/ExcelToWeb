@@ -1,0 +1,205 @@
+/* ================================================================
+   ExcelToWeb 样式模块：settings-security.css —— 设置页（二）：修改密码 / 会话管理
+   依赖 settings.css 的卡片外壳（.panel / .panel-title / .panel-hint），必须紧跟其后加载
+   ================================================================ */
+
+/* ================================================================
+   修改密码：左侧固定宽标签 + 定宽输入框 + 右侧行内说明
+   说明贴在输入框右边而不是垫在下面，三行表单的行距才能保持一致
+   ================================================================ */
+.form-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+    .form-row + .form-row {
+        margin-top: 16px;
+    }
+
+    /* 132 + 12 间距 = 输入框统一从卡片左缘 144px 处起排（与偏好卡对齐） */
+    .form-row > label {
+        width: 132px;
+        flex: none;
+        font-size: 13px;
+        color: var(--text-2);
+    }
+
+    /* 覆盖弹窗里「灰底通栏」的输入框：这里是白底细描边、36px 高、定宽 420 */
+    .form-row .input {
+        width: 420px;
+        flex: 0 1 420px;
+        min-width: 0;
+        height: 36px;
+        padding: 0 12px;
+        font-size: 13px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-field);
+        border-radius: var(--radius-md);
+    }
+
+        .form-row .input::placeholder {
+            color: var(--text-4);
+        }
+
+        .form-row .input:focus {
+            border-color: var(--primary);
+            box-shadow: var(--focus-ring);
+        }
+
+    /* 行内说明：只解释这一行，比堆在表单底部更容易对上号 */
+    .field-hint {
+        margin-left: 6px;
+        min-width: 0;
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--text-4);
+    }
+
+/* 提交按钮对齐输入框左缘，不跟标签列混在一起 */
+.form-submit {
+    margin-top: 20px;
+    margin-left: 144px;
+}
+
+.panel .btn {
+    height: 34px;
+    padding: 0 14px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+}
+
+    .panel .btn .icon {
+        width: 15px;
+        height: 15px;
+    }
+
+/* ================================================================
+   会话管理：一行一个会话（登录时间 + 当前会话标记 + 客户端 + 注销）
+   右侧「客户端」用 margin-left:auto 顶到最右，注销按钮紧随其后
+   ================================================================ */
+.session-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    border-bottom: 1px solid var(--border-row);
+}
+
+    .session-row:last-of-type {
+        border-bottom: 0;
+    }
+
+.session-enter {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    color: var(--primary);
+    stroke-width: 2;
+}
+
+.session-time {
+    min-width: 0;
+    font-size: 13px;
+    color: var(--text-1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.session-badge {
+    flex: none;
+    padding: 2px 7px;
+    border-radius: var(--radius-sm);
+    background: var(--success-soft);
+    color: var(--success);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+/* 客户端标识（Chrome 155 · Windows）：弱于登录时间，不参与左对齐的阅读节奏 */
+.session-client {
+    margin-left: auto;
+    flex: none;
+    font-size: 12px;
+    color: var(--text-4);
+    white-space: nowrap;
+}
+
+/* 行内次级按钮：浅灰底、无描边，hover 才加深 */
+.btn-quiet {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 24px;
+    margin-left: 16px;
+    padding: 0 8px;
+    flex: none;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: var(--bg-soft);
+    color: var(--text-3);
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+    .btn-quiet .icon {
+        width: 12px;
+        height: 12px;
+    }
+
+    .btn-quiet:hover {
+        background: var(--border-light);
+        color: var(--text-2);
+    }
+
+/* ================================================================
+   中等宽度（1100px 以下）：输入框收窄，把余量让给行内说明，避免说明折成三行
+   ================================================================ */
+@media (max-width: 1100px) {
+    .form-row .input {
+        width: 340px;
+        flex-basis: 340px;
+    }
+}
+
+/* ================================================================
+   窄屏：标签列收窄、输入框拉满，说明文字折到下一行
+   ================================================================ */
+@media (max-width: 760px) {
+    .form-row {
+        flex-wrap: wrap;    /* 说明文字挤不下时落到输入框下方，不直接丢信息 */
+    }
+
+    .form-row > label {
+        width: 96px;
+    }
+
+    .form-row .input {
+        width: auto;
+        flex: 1 1 auto;
+    }
+
+    .field-hint {
+        flex-basis: 100%;
+        margin-left: 96px;
+        margin-top: 2px;
+    }
+
+    .form-submit {
+        margin-left: 0;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .session-client {
+        display: none;      /* 手机上看不到也没法注销别的设备，先保住时间和按钮 */
+    }
+
+    /* 客户端列没了，注销靠 auto 顶到行尾，仍与桌面版对齐 */
+    .btn-quiet {
+        margin-left: auto;
+    }
+}

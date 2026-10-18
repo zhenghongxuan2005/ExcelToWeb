@@ -8,11 +8,16 @@
        —— console.css 末尾的响应式断点要能覆盖卡片网格与帮助页
      * pages.css 现在只放断点（media query），页面级样式在各自模块里
      * dash-table.css 必须紧跟 dash.css —— 汇总表沿用卡片外壳的样式基座
+     * settings-security.css 必须紧跟 settings.css、settings-prefs.css 必须最后
+       —— 设置页三个模块按「外壳 → 账号安全 → 偏好/关于」的覆盖顺序排列
+     * sidebar-lang.css 必须紧跟 sidebar.css
+       —— 折叠态规则挂在 .app-shell.sidebar-collapsed 上，要先有侧栏基础样式
    ================================================================ */
 
 @import url("tokens.css");   /* 设计令牌（亮/暗）+ 全局重置 */
 @import url("layout.css");   /* 应用外壳：主内容 + 页头 + 状态胶囊 */
 @import url("sidebar.css");  /* 侧边栏：品牌 / 导航 / 底部操作 / 折叠态 */
+@import url("sidebar-lang.css"); /* 语言切换控件（侧栏底部 / 登录页），依赖 sidebar.css 的折叠态选择器 */
 @import url("toolbar.css");  /* 按钮、工具栏、下拉菜单、表格选择器 */
 @import url("search.css");   /* 全局搜索框、列显示/列宽菜单 */
 @import url("table.css");    /* 数据表格、冻结列、表头、表格密度、网格线 */
@@ -30,6 +35,7 @@
 @import url("cards.css");    /* 表格管理页卡片网格 */
 @import url("doc.css");      /* 帮助页文档排版 */
 @import url("console.css");  /* 二级页面其余：页头附加区、表格字号档位、响应式 */
-@import url("settings.css");        /* 设置页：页头 / 卡片网格 / 账号 / 密码 / 会话 */
-@import url("settings-prefs.css");  /* 设置页：偏好设置 / 关于 / 窄屏（必须紧跟 settings.css） */
+@import url("settings.css");          /* 设置页：页头 / 标签栏 / 单列卡片 / 账号 */
+@import url("settings-security.css"); /* 设置页：修改密码 / 会话管理（必须紧跟 settings.css） */
+@import url("settings-prefs.css");    /* 设置页：偏好设置 / 关于 / 窄屏（必须排在最后） */
 @import url("pivot.css");    /* 透视汇总弹窗：字段表单 + 预览表格 */
