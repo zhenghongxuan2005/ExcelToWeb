@@ -1,0 +1,109 @@
+/* ================================================================
+   ExcelToWeb 样式模块：sidebar-lang.css —— 语言切换控件（中 / EN）
+   ----------------------------------------------------------------
+   位置：侧边栏底部、深色模式开关上方；登录页在卡片底部，由 data-lang-mount 指定。
+   结构：见 js/i18n.js 的 mountSwitcher() —— .side-lang > svg.icon + .lang-seg > .lang-btn × 2
+   形态：行高与字号跟侧栏底部其它条目一致；右侧是灰槽分段控件，
+         选中项沿用设置页 .segmented 的「白底靛蓝字」。
+   折叠态：只留当前语言缩写，点它即在两种语言间互换（逻辑在 i18n.js 的 click 处理里）。
+   ================================================================ */
+
+.side-lang {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 10px;
+    color: var(--text-2);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+    .side-lang .icon {
+        width: 15px;
+        height: 15px;
+        flex-shrink: 0;
+        color: var(--text-3);
+    }
+
+/* 分段控件：底层灰槽 + 选中项实底，和设置页的分段控件是同一套观感 */
+.lang-seg {
+    display: inline-flex;
+    gap: 2px;
+    height: 22px;
+    margin-left: auto;
+    padding: 2px;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    background: var(--bg-soft);
+}
+
+.lang-btn {
+    min-width: 26px;
+    height: 18px;
+    padding: 0 5px;
+    border: 0;
+    border-radius: var(--radius-xs);
+    background: transparent;
+    color: var(--text-3);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 18px;
+    text-align: center;
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+    .lang-btn:hover {
+        color: var(--text-1);
+    }
+
+    .lang-btn.is-active {
+        background: var(--bg-card);
+        color: var(--primary);
+        box-shadow: var(--shadow-xs);
+    }
+
+    .lang-btn:focus-visible {
+        outline: 2px solid var(--primary);
+        outline-offset: -2px;
+    }
+
+/* 暗色下 --bg-card 比灰槽还暗，选中项改用主色淡染，否则看不出「被选中」 */
+html[data-theme="dark"] .lang-btn.is-active {
+    background: color-mix(in srgb, var(--primary) 22%, transparent);
+    color: var(--primary-hover);
+}
+
+/* ===== 折叠态：只显示当前语言的缩写 ===== */
+.app-shell.sidebar-collapsed .side-lang {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+/* 缩成一格时不能再靠 auto 外边距靠右，否则会被推出中线 */
+.app-shell.sidebar-collapsed .lang-seg {
+    margin-left: 0;
+}
+
+.app-shell.sidebar-collapsed .side-lang .icon,
+.app-shell.sidebar-collapsed .lang-btn:not(.is-active) {
+    display: none;
+}
+
+/* ===== 登录页：卡片底部居中，去掉侧栏那些行内留白 ===== */
+.auth-lang {
+    display: flex;
+    justify-content: center;
+    margin-top: 18px;
+}
+
+    .auth-lang .side-lang {
+        padding: 0;
+        font-size: 12px;
+    }
+
+    .auth-lang .lang-seg {
+        margin-left: 0;
+    }

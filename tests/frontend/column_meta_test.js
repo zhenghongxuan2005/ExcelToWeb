@@ -23,6 +23,13 @@ let saveOutcome = 'ok';
 
 const sandbox = {
     console,
+    // column-meta.js 的提示文案走 tt()；这里复刻 utils.js 的中文回落（含 {占位} 替换），
+    // 免得为了一个字符串把整个 utils.js 拉进沙箱（会覆盖下面 showToast 的桩）
+    tt: (key, vars) => {
+        let text = String(key);
+        if (vars) Object.keys(vars).forEach(n => { text = text.split('{' + n + '}').join(String(vars[n])); });
+        return text;
+    },
     setTimeout: (fn) => { const id = ++timerSeq; timers[id] = fn; return id; },
     clearTimeout: (id) => { delete timers[id]; },
     localStorage: { getItem: () => null, setItem() {}, removeItem() {} },

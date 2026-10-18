@@ -15,6 +15,28 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
+/**
+ * 取译文：i18n.js 未加载时回落中文原文（编辑器 / 看板 / 审计等模块共用这一个出口）。
+ * 回落路径也必须填 {占位}：单测与部分独立模块里没有 i18n.js，
+ * 只返回 key 会把「列名「{name}」重复」这种模板原样抛给用户。
+ */
+function tt(key, vars) {
+    if (typeof I18n !== 'undefined' && I18n.t) return I18n.t(key, vars);
+
+    let text = String(key == null ? '' : key);
+    if (vars) {
+        Object.keys(vars).forEach(function (name) {
+            text = text.split('{' + name + '}').join(String(vars[name]));
+        });
+    }
+    return text;
+}
+
+/** 当前是否为英文界面：数字、日期、量词都得跟着变，格式也算文案 */
+function isEnglish() {
+    return typeof I18n !== 'undefined' && I18n.locale && I18n.locale() === 'en-US';
+}
+
 /** 取（或创建）消息提示的容器，使多条提示纵向排列而不是互相重叠 */
 function getToastHost() {
     let host = document.getElementById('toastHost');
@@ -123,16 +145,28 @@ function isNumericColumn(name) {
     return checked > 0;
 }
 
+var MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/**
+ * 时间格式化：中文侧沿用「2026-10-18 15:51」（与后端日志口径一致），
+ * 英文侧改成「Oct 18, 2026 15:51」—— 英文界面里 10/18 会被读成「十月十八」之后
+ * 再接一个中文式的时间戳，读起来是两种习惯拼接的产物。
+ */
 function formatTime(dateStr) {
-    if (!dateStr) return '未知时间';
+    if (!dateStr) return tt('未知时间');
     try {
         const date = new Date(dateStr);
-        const year = date.getFullYear();
+        if (isNaN(date.getTime())) return dateStr;
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
-        return `${year}-${month}-${day} ${hours}:${minutes}`;
+        if (isEnglish()) {
+            return MONTH_ABBR[date.getMonth()] + ' ' + date.getDate() + ', '
+                + date.getFullYear() + ' ' + hours + ':' + minutes;
+        }
+        return `${date.getFullYear()}-${month}-${day} ${hours}:${minutes}`;
     } catch {
         return dateStr;
     }
