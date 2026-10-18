@@ -36,14 +36,15 @@
         overlay.id = 'cmdPalette';
         overlay.className = 'cmdk-overlay';
         overlay.innerHTML =
-            '<div class="cmdk-card" role="dialog" aria-modal="true" aria-label="命令面板">'
+            '<div class="cmdk-card" role="dialog" aria-modal="true" aria-label="' + tt('命令面板') + '">'
             + '<div class="cmdk-input-row">'
             + '<svg class="icon icon-sm"><use href="#i-search"/></svg>'
-            + '<input type="text" class="cmdk-input" placeholder="输入命令、页面或表格名…" autocomplete="off">'
+            + '<input type="text" class="cmdk-input" placeholder="' + tt('输入命令、页面或表格名…') + '" autocomplete="off">'
             + '<span class="cmdk-kbd">Esc</span>'
             + '</div>'
             + '<div class="cmdk-list" role="listbox"></div>'
-            + '<div class="cmdk-foot"><span>↑↓ 选择</span><span>Enter 执行</span><span>Ctrl+K 开关</span></div>'
+            + '<div class="cmdk-foot"><span>' + tt('↑↓ 选择') + '</span><span>' + tt('Enter 执行')
+        + '</span><span>' + tt('Ctrl+K 开关') + '</span></div>'
             + '</div>';
         document.body.appendChild(overlay);
 
@@ -66,42 +67,42 @@
 
         // —— 页面跳转（所有页面可用） ——
         [
-            ['/', 'i-table', '前往：表格编辑'],
-            ['/tables.html', 'i-columns', '前往：表格管理'],
-            ['/dashboard.html', 'i-chart', '前往：数据看板'],
-            ['/help.html', 'i-help', '前往：使用帮助'],
-            ['/settings.html', 'i-settings', '前往：设置']
+            ['/', 'i-table', tt('前往：表格编辑')],
+            ['/tables.html', 'i-columns', tt('前往：表格管理')],
+            ['/dashboard.html', 'i-chart', tt('前往：数据看板')],
+            ['/help.html', 'i-help', tt('前往：使用帮助')],
+            ['/settings.html', 'i-settings', tt('前往：设置')]
         ].forEach(([href, icon, label]) => {
-            acts.push({ icon, label, hint: '页面', run: () => { location.href = href; } });
+            acts.push({ icon, label, hint: tt('页面'), run: () => { location.href = href; } });
         });
 
         // —— 外观 ——
         acts.push({
-            icon: 'i-moon', label: '切换深色 / 浅色模式', hint: '外观',
+            icon: 'i-moon', label: tt('切换深色 / 浅色模式'), hint: tt('外观'),
             run: () => { const b = document.getElementById('themeToggle'); if (b) b.click(); }
         });
 
         // —— 表格编辑页专属（探测函数存在性） ——
-        if (has('addRow')) acts.push({ icon: 'i-plus', label: '新增行', hint: '编辑', run: () => window.addRow() });
-        if (has('saveData')) acts.push({ icon: 'i-save', label: '保存当前表格', hint: '数据', run: () => window.saveData() });
-        if (has('refreshData')) acts.push({ icon: 'i-refresh', label: '刷新数据', hint: '数据', run: () => window.refreshData() });
+        if (has('addRow')) acts.push({ icon: 'i-plus', label: tt('新增行'), hint: tt('编辑'), run: () => window.addRow() });
+        if (has('saveData')) acts.push({ icon: 'i-save', label: tt('保存当前表格'), hint: tt('数据'), run: () => window.saveData() });
+        if (has('refreshData')) acts.push({ icon: 'i-refresh', label: tt('刷新数据'), hint: tt('数据'), run: () => window.refreshData() });
         if (document.getElementById('fileInput')) {
-            acts.push({ icon: 'i-upload', label: '上传 Excel…', hint: '数据', run: () => document.getElementById('fileInput').click() });
+            acts.push({ icon: 'i-upload', label: tt('上传 Excel…'), hint: tt('数据'), run: () => document.getElementById('fileInput').click() });
         }
-        if (has('exportExcel')) acts.push({ icon: 'i-download', label: '导出 Excel', hint: '数据', run: () => window.exportExcel() });
-        if (has('exportCsv')) acts.push({ icon: 'i-download', label: '导出 CSV', hint: '数据', run: () => window.exportCsv() });
-        if (has('openFindModal')) acts.push({ icon: 'i-search', label: '查找和替换', hint: '工具', run: () => window.openFindModal() });
-        if (has('openColumnModal')) acts.push({ icon: 'i-columns', label: '列管理（增删改移）', hint: '工具', run: () => window.openColumnModal() });
-        if (has('openValidationModal')) acts.push({ icon: 'i-check', label: '数据校验规则', hint: '工具', run: () => window.openValidationModal() });
-        if (has('openRuleModal')) acts.push({ icon: 'i-settings', label: '条件格式规则', hint: '工具', run: () => window.openRuleModal() });
-        if (has('openHistoryModal')) acts.push({ icon: 'i-clock', label: '变更历史', hint: '工具', run: () => window.openHistoryModal() });
-        if (has('undo')) acts.push({ icon: 'i-refresh', label: '撤销', hint: 'Ctrl+Z', run: () => window.undo() });
-        if (has('redo')) acts.push({ icon: 'i-refresh', label: '重做', hint: 'Ctrl+Y', run: () => window.redo() });
+        if (has('exportExcel')) acts.push({ icon: 'i-download', label: tt('导出 Excel'), hint: tt('数据'), run: () => window.exportExcel() });
+        if (has('exportCsv')) acts.push({ icon: 'i-download', label: tt('导出 CSV'), hint: tt('数据'), run: () => window.exportCsv() });
+        if (has('openFindModal')) acts.push({ icon: 'i-search', label: tt('查找和替换'), hint: tt('工具'), run: () => window.openFindModal() });
+        if (has('openColumnModal')) acts.push({ icon: 'i-columns', label: tt('列管理（增删改移）'), hint: tt('工具'), run: () => window.openColumnModal() });
+        if (has('openValidationModal')) acts.push({ icon: 'i-check', label: tt('数据校验规则'), hint: tt('工具'), run: () => window.openValidationModal() });
+        if (has('openRuleModal')) acts.push({ icon: 'i-settings', label: tt('条件格式规则'), hint: tt('工具'), run: () => window.openRuleModal() });
+        if (has('openHistoryModal')) acts.push({ icon: 'i-clock', label: tt('变更历史'), hint: tt('工具'), run: () => window.openHistoryModal() });
+        if (has('undo')) acts.push({ icon: 'i-refresh', label: tt('撤销'), hint: 'Ctrl+Z', run: () => window.undo() });
+        if (has('redo')) acts.push({ icon: 'i-refresh', label: tt('重做'), hint: 'Ctrl+Y', run: () => window.redo() });
 
         // —— 跳到列（当前表格的每一列） ——
         if (typeof currentHeaders !== 'undefined' && Array.isArray(currentHeaders)) {
             currentHeaders.forEach(h => {
-                acts.push({ icon: 'i-chevron-right', label: '跳到列：' + h, hint: '当前表格', run: () => focusColumn(h) });
+                acts.push({ icon: 'i-chevron-right', label: tt('跳到列：{col}', { col: h }), hint: tt('当前表格'), run: () => focusColumn(h) });
             });
         }
 
@@ -115,8 +116,8 @@
             .then(tables => {
                 tableActions = (tables || []).map(t => ({
                     icon: 'i-table',
-                    label: '切换表格：' + t.tableName,
-                    hint: '表格',
+                    label: tt('切换表格：{name}', { name: t.tableName }),
+                    hint: tt('表格'),
                     run: () => switchToTable(t.id)
                 }));
                 if (isOpen) render();
@@ -140,7 +141,7 @@
     function focusColumn(name) {
         const inp = document.querySelector('.cell-input[data-key="' + (window.CSS ? CSS.escape(name) : name) + '"]');
         if (!inp) {
-            toast('当前页未显示该列（可能在其它页码或被隐藏）');
+            toast(tt('当前页未显示该列（可能在其它页码或被隐藏）'));
             return;
         }
         inp.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -159,7 +160,7 @@
         if (activeIndex >= flatActions.length) activeIndex = 0;
 
         if (flatActions.length === 0) {
-            listEl.innerHTML = '<div class="cmdk-empty">没有匹配的命令</div>';
+            listEl.innerHTML = '<div class="cmdk-empty">' + tt('没有匹配的命令') + '</div>';
             return;
         }
 

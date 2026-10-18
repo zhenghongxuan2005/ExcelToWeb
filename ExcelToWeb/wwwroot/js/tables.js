@@ -29,7 +29,7 @@ function loadTableList() {
                 currentRows = [];
                 resetHistory();
                 renderTable();
-                setStatus('无表格，请上传 Excel');
+                setStatus(tt('无表格，请上传 Excel'));
                 return;
             }
 
@@ -58,7 +58,7 @@ function loadTableList() {
 
 function getTableName(tableId) {
     const t = allTables.find(t => t.id === tableId);
-    return t ? t.tableName : '未知表格';
+    return t ? t.tableName : tt('未知表格');
 }
 
 /**
@@ -84,7 +84,7 @@ function loadRefValues() {
 function loadTableData(tableId) {
     // 先取消上一张表遗留的「列设置自动保存」——否则它会把旧表的偏好写到新表上
     resetColumnMeta();
-    setStatus('加载中...');
+    setStatus(tt('加载中...'));
     showTableSkeleton(currentHeaders.length);
     queryTableData(tableId)
         .then(data => {
@@ -100,20 +100,20 @@ function loadTableData(tableId) {
                 // 加载新数据源，旧表格的撤销快照必须作废
                 resetHistory();
                 Promise.all([loadColorRules(), loadRefValues()]).then(() => renderTable());
-                setStatus(`已加载: ${getTableName(tableId)} (${currentRows.length}行)`);
-                showToast('✅ 已切换到: ' + getTableName(tableId), 'success');
+                setStatus(tt('已加载: {name} ({n}行)', { name: getTableName(tableId), n: currentRows.length }));
+                showToast('✅ ' + tt('已切换到: {name}', { name: getTableName(tableId) }), 'success');
             } else {
                 currentHeaders = [];
                 currentRows = [];
                 resetHistory();
                 renderTable();
-                setStatus('该表格没有数据');
+                setStatus(tt('该表格没有数据'));
             }
         })
         .catch(err => {
             hideTableSkeleton();
-            showToast('❌ 加载失败：' + err.message, 'error');
-            setStatus('加载失败');
+            showToast('❌ ' + tt('加载失败：{msg}', { msg: err.message }), 'error');
+            setStatus(tt('加载失败'));
             console.error(err);
         });
 }
@@ -127,7 +127,7 @@ function switchTable() {
         currentRows = [];
         resetHistory();
         renderTable();
-        setStatus('请选择表格');
+        setStatus(tt('请选择表格'));
         return;
     }
     // 切表前把本表最后一次列设置改动提交掉，防抖窗口内切表就不会丢
@@ -138,14 +138,14 @@ function switchTable() {
 
 function deleteCurrentTable() {
     if (!currentTableId) {
-        showToast('请先选择一个表格', 'info');
+        showToast(tt('请先选择一个表格'), 'info');
         return;
     }
-    if (!confirm('确定要删除当前表格吗？删除后进回收站，30 天内可恢复。')) return;
+    if (!confirm(tt('确定要删除当前表格吗？删除后进回收站，30 天内可恢复。'))) return;
 
     deleteTable(currentTableId)
         .then(msg => {
-            showToast('✅ ' + (msg || '表格已删除'), 'success');
+            showToast('✅ ' + (msg || tt('表格已删除')), 'success');
             allTables = allTables.filter(t => t.id !== currentTableId);
             currentTableId = null;
             currentHeaders = [];
@@ -153,24 +153,24 @@ function deleteCurrentTable() {
             resetHistory();
             renderTableSelector();
             renderTable();
-            setStatus('已删除');
+            setStatus(tt('已删除'));
             if (allTables.length > 0) {
                 currentTableId = allTables[0].id;
                 document.getElementById('tableSelector').value = currentTableId;
                 loadTableData(currentTableId);
             }
         })
-        .catch(err => showToast('❌ 删除失败：' + err.message, 'error'));
+        .catch(err => showToast('❌ ' + tt('删除失败：{msg}', { msg: err.message }), 'error'));
 }
 
 function refreshData() {
     // 列筛选是纯视图状态，刷新时先清掉（撤销栈由下面的 resetHistory 一并清）
     if (typeof resetFilter === 'function') resetFilter();
     if (!currentTableId) {
-        showToast('请先上传一个 Excel 文件', 'error');
+        showToast(tt('请先上传一个 Excel 文件'), 'error');
         return;
     }
-    setStatus('刷新中...');
+    setStatus(tt('刷新中...'));
     showTableSkeleton(currentHeaders.length);
     // 从服务端重取数据，撤销栈随之作废
     resetHistory();
@@ -182,14 +182,14 @@ function refreshData() {
                 currentRows = data.rows;
                 resetSort();
                 Promise.all([loadColorRules(), loadRefValues()]).then(() => renderTable());
-                showToast('✅ 已刷新', 'success');
-                setStatus(`已刷新 (${data.rows.length}行)`);
+                showToast('✅ ' + tt('已刷新'), 'success');
+                setStatus(tt('已刷新 ({n}行)', { n: data.rows.length }));
             }
         })
         .catch(err => {
             hideTableSkeleton();
-            showToast('❌ 刷新失败：' + err.message, 'error');
-            setStatus('刷新失败');
+            showToast('❌ ' + tt('刷新失败：{msg}', { msg: err.message }), 'error');
+            setStatus(tt('刷新失败'));
             console.error(err);
         });
 }

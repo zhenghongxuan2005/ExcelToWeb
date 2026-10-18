@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,6 +22,8 @@
         <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
         <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
         <symbol id="i-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+        <!-- 语言切换（见 js/i18n.js 的 mountSwitcher） -->
+        <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
     </svg>
 
     <div class="auth-page">
@@ -75,15 +77,25 @@
                 <button class="btn btn-primary" style="width:100%; padding:12px; font-size:15px;" onclick="handleRegister()">注 册</button>
                 <div class="auth-alt">已有账号？<a href="#" onclick="showLogin()">去登录</a></div>
             </div>
+
+            <!-- 语言切换：i18n.js 会在这里生成「地球图标 + 中 / EN」分段控件 -->
+            <div class="auth-lang" data-lang-mount></div>
         </div>
     </div>
 
+    <script src="js/i18n.js"></script>
+    <script src="js/i18n-en.js"></script>
     <script>
+        // 文案统一走字典，漏翻时回落中文；i18n.js 未加载时也不至于报错
+        function tr(key) {
+            return typeof I18n !== 'undefined' ? I18n.t(key) : key;
+        }
+
         function showRegister() {
             document.getElementById('loginForm').classList.add('hidden');
             document.getElementById('registerForm').classList.remove('hidden');
-            document.getElementById('pageTitle').textContent = '创建账号';
-            document.getElementById('pageSub').textContent = '注册后即可开始使用';
+            document.getElementById('pageTitle').textContent = tr('创建账号');
+            document.getElementById('pageSub').textContent = tr('注册后即可开始使用');
             document.getElementById('loginError').textContent = '';
             document.getElementById('registerError').textContent = '';
         }
@@ -91,8 +103,8 @@
         function showLogin() {
             document.getElementById('registerForm').classList.add('hidden');
             document.getElementById('loginForm').classList.remove('hidden');
-            document.getElementById('pageTitle').textContent = '欢迎回来';
-            document.getElementById('pageSub').textContent = '登录后继续管理你的数据';
+            document.getElementById('pageTitle').textContent = tr('欢迎回来');
+            document.getElementById('pageSub').textContent = tr('登录后继续管理你的数据');
             document.getElementById('loginError').textContent = '';
             document.getElementById('registerError').textContent = '';
         }
@@ -111,7 +123,7 @@
             const errorEl = document.getElementById('loginError');
 
             if (!username || !password) {
-                errorEl.textContent = '请填写完整信息';
+                errorEl.textContent = tr('请填写完整信息');
                 return;
             }
             errorEl.textContent = '';
@@ -128,13 +140,13 @@
                     localStorage.setItem('refreshToken', result.data.refreshToken || '');
                     localStorage.setItem('familyId', result.data.familyId || '');
                     localStorage.setItem('username', result.data.username);
-                    showToast('登录成功，跳转中...', 'success');
+                    showToast(tr('登录成功，跳转中...'), 'success');
                     setTimeout(() => { window.location.href = '/'; }, 800);
                 } else {
-                    errorEl.textContent = result.message || '登录失败';
+                    errorEl.textContent = result.message || tr('登录失败');
                 }
             } catch (err) {
-                errorEl.textContent = '网络错误，请稍后重试';
+                errorEl.textContent = tr('网络错误，请稍后重试');
                 console.error(err);
             }
         }
@@ -146,11 +158,11 @@
             const errorEl = document.getElementById('registerError');
 
             if (!username || !password || !confirmPassword) {
-                errorEl.textContent = '请填写完整信息';
+                errorEl.textContent = tr('请填写完整信息');
                 return;
             }
             if (password !== confirmPassword) {
-                errorEl.textContent = '两次密码输入不一致';
+                errorEl.textContent = tr('两次密码输入不一致');
                 return;
             }
             errorEl.textContent = '';
@@ -163,14 +175,14 @@
                 });
                 const result = await res.json();
                 if (result.success) {
-                    showToast('注册成功，请登录', 'success');
+                    showToast(tr('注册成功，请登录'), 'success');
                     showLogin();
                     document.getElementById('loginUsername').value = username;
                 } else {
-                    errorEl.textContent = result.message || '注册失败';
+                    errorEl.textContent = result.message || tr('注册失败');
                 }
             } catch (err) {
-                errorEl.textContent = '网络错误，请稍后重试';
+                errorEl.textContent = tr('网络错误，请稍后重试');
                 console.error(err);
             }
         }
@@ -192,13 +204,13 @@
                     localStorage.setItem('refreshToken', result.data.refreshToken || '');
                     localStorage.setItem('familyId', result.data.familyId || '');
                     localStorage.setItem('username', result.data.username);
-                    showToast('正在进入演示模式...', 'success');
+                    showToast(tr('正在进入演示模式...'), 'success');
                     setTimeout(() => { window.location.href = '/'; }, 800);
                 } else {
-                    errorEl.textContent = result.message || '演示账号暂不可用';
+                    errorEl.textContent = result.message || tr('演示账号暂不可用');
                 }
             } catch (err) {
-                errorEl.textContent = '网络错误，请稍后重试';
+                errorEl.textContent = tr('网络错误，请稍后重试');
                 console.error(err);
             }
         }
@@ -206,7 +218,7 @@
         // 尝试 Windows 集成身份验证（浏览器自动协商，无需输入账号密码）
         async function tryWindowsLogin(manual) {
             // 手动点击按钮时先征求用户同意，不悄悄登录
-            if (manual && !confirm('确定使用当前 Windows 账号登录吗？')) return;
+            if (manual && !confirm(tr('确定使用当前 Windows 账号登录吗？'))) return;
 
             const statusEl = document.getElementById('windowsStatus');
             statusEl.classList.remove('hidden');
@@ -220,7 +232,7 @@
                     if (result.success && result.data) {
                         localStorage.setItem('token', result.data.token);
                         localStorage.setItem('refreshToken', result.data.refreshToken || '');
-                    localStorage.setItem('familyId', result.data.familyId || '');
+                        localStorage.setItem('familyId', result.data.familyId || '');
                         localStorage.setItem('username', result.data.username);
                         window.location.href = '/';
                         success = true;
@@ -234,7 +246,7 @@
             // 失败则回退到账号密码表单
             statusEl.classList.add('hidden');
             document.getElementById('loginForm').classList.remove('hidden');
-            if (manual && !success) showToast('Windows 登录不可用或已被拒绝，请使用账号密码登录', 'error');
+            if (manual && !success) showToast(tr('Windows 登录不可用或已被拒绝，请使用账号密码登录'), 'error');
         }
 
         document.addEventListener('keydown', e => {

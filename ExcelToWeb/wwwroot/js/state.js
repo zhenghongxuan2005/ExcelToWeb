@@ -72,11 +72,13 @@ function showDemoBanner() {
     banner.className = 'demo-banner';
     banner.setAttribute('role', 'status');
     banner.appendChild(Object.assign(document.createElement('span'), {
-        textContent: '演示模式：只能浏览、筛选与导出，编辑和导入需要注册账号。'
+        textContent: typeof tt === 'function'
+            ? tt('演示模式：只能浏览、筛选与导出，编辑和导入需要注册账号。')
+            : '演示模式：只能浏览、筛选与导出，编辑和导入需要注册账号。'
     }));
     const close = document.createElement('button');
     close.textContent = '×';
-    close.setAttribute('aria-label', '关闭演示提示');
+    close.setAttribute('aria-label', typeof tt === 'function' ? tt('关闭演示提示') : '关闭演示提示');
     close.onclick = () => banner.remove();
     banner.appendChild(close);
     document.body.appendChild(banner);

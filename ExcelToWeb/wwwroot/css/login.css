@@ -155,6 +155,11 @@
             text-decoration: underline;
         }
 
+/* 英文句子之间要有空格，中文「还没有账号？立即注册」原本是紧贴的，只在英文下补 */
+html[data-lang="en"] .auth-alt a {
+    margin-left: 5px;
+}
+
 .error-msg {
     color: var(--danger);
     font-size: 13px;

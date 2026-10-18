@@ -42,6 +42,10 @@
 <body>
     <!-- 页面外壳：图标 sprite / 主题切换 / 退出登录 / 导航高亮，由 js/shell.js 统一提供 -->
     <script src="js/shell.js"></script>
+    <!-- 多语言：i18n.js 提供语言状态 + DOM 即时翻译，i18n-en.js 是「中 → 英」字典（须在 shell.js 之后） -->
+    <script src="js/i18n.js"></script>
+    <script src="js/i18n-en.js"></script>
+<script src="js/i18n-en-help.js"></script>
     <a class="skip-link" href="#mainContent">跳到主要内容</a>
 
     <div class="app-shell">
@@ -109,7 +113,8 @@
             <!-- 快速上手 -->
             <section class="doc-section" id="quickstart">
                 <h2 class="doc-title">快速上手</h2>
-                <ol class="doc-steps">
+                <!-- 整段交给字典：句子中间夹着 <strong>/<code>/<a>，逐节点翻会碎 -->
+                <ol class="doc-steps" data-i18n-html="help.quickstart.steps">
                     <li><strong>登录</strong>：使用已注册的账号，或通过 Windows 集成身份验证直接进入。</li>
                     <li><strong>导入数据</strong>：点击「上传」按钮，或把 <code>.xlsx</code> / <code>.csv</code> 文件直接拖到页面上。中文 Excel 导出的 GBK 编码 CSV 也能自动识别。</li>
                     <li><strong>编辑数据</strong>：直接在单元格中输入；新增行、批量编辑、删除选中行都由工具栏完成。完整的键盘操作见<a href="#keyboard">下方速查表</a>。</li>
@@ -124,7 +129,7 @@
 
                 <details class="faq" open>
                     <summary>全局搜索</summary>
-                    <div class="faq-body">
+                    <div class="faq-body" data-i18n-html="help.feature.search">
                         <p>工具栏右侧的搜索框会在<strong>所有列</strong>中查找，命中内容以蓝色底纹高亮，并实时显示命中行数。搜索不影响原始数据，只改变显示范围。</p>
                         <p>快捷键 <kbd>Ctrl</kbd> + <kbd>F</kbd> 可快速聚焦搜索框；点搜索框右侧的 ✕ 清除。</p>
                     </div>
@@ -132,35 +137,35 @@
 
                 <details class="faq">
                     <summary>查找替换</summary>
-                    <div class="faq-body">
+                    <div class="faq-body" data-i18n-html="help.feature.replace">
                         <p>编辑器提供查找替换，可在全部数据中查找并替换内容。替换前建议先用搜索确认命中范围，避免误替换。</p>
                     </div>
                 </details>
 
                 <details class="faq">
                     <summary>填充柄</summary>
-                    <div class="faq-body">
+                    <div class="faq-body" data-i18n-html="help.feature.fill">
                         <p>选中单元格后，拖动右下角的填充柄，可把内容快速填充到相邻单元格，适合批量补序号或复制内容。</p>
                     </div>
                 </details>
 
                 <details class="faq">
                     <summary>合并单元格</summary>
-                    <div class="faq-body">
+                    <div class="faq-body" data-i18n-html="help.feature.merge">
                         <p>Excel 文件里的合并区域在导入时会原样记录，网页中按合并效果展示，导出时同样保留。</p>
                     </div>
                 </details>
 
                 <details class="faq">
                     <summary>计算列</summary>
-                    <div class="faq-body">
+                    <div class="faq-body" data-i18n-html="help.feature.formula">
                         <p>输入以 <code>=</code> 开头的公式即可创建计算列（如单价 × 数量），支持四则运算与单元格引用，保存后自动算出结果，适合维护派生指标。</p>
                     </div>
                 </details>
 
                 <details class="faq">
                     <summary>分页</summary>
-                    <div class="faq-body">
+                    <div class="faq-body" data-i18n-html="help.feature.paging">
                         <p>通过工具栏「每页」下拉选择 50 / 100 / 500 或「全部」。默认值可在「设置 → 偏好设置」中调整。</p>
                         <p>数据量较大时建议分页，能显著减少浏览器渲染压力。</p>
                     </div>
@@ -168,7 +173,7 @@
 
                 <details class="faq">
                     <summary>列显示与列宽</summary>
-                    <div class="faq-body">
+                    <div class="faq-body" data-i18n-html="help.feature.columns">
                         <p>工具栏「列」按钮可勾选要显示的列，旁边的输入框可指定列宽（60–600 px，留空表示自动）。</p>
                         <p>隐藏列只影响显示，导出与保存时数据不受影响。</p>
                     </div>
@@ -176,7 +181,7 @@
 
                 <details class="faq">
                     <summary>选中行统计</summary>
-                    <div class="faq-body">
+                    <div class="faq-body" data-i18n-html="help.feature.selection">
                         <p>勾选任意行后，表格下方会出现统计条，对<strong>全部为数字</strong>的列给出求和（Σ）与平均值（x̄）。</p>
                         <p>含非数字内容的列不会参与统计，避免把日期、编号算进去。</p>
                     </div>
@@ -184,7 +189,7 @@
 
                 <details class="faq">
                     <summary>条件格式（颜色规则）</summary>
-                    <div class="faq-body">
+                    <div class="faq-body" data-i18n-html="help.feature.rules">
                         <p>「设置 → 条件格式规则」可为数值列配置区间颜色。选择应用列后添加规则，填写最小值、最大值与颜色。</p>
                         <p>最大值留空表示「该值以上」。所有设过规则的列都会同时着色，不只是当前选中的列。</p>
                     </div>
@@ -192,7 +197,7 @@
 
                 <details class="faq">
                     <summary>数据校验规则</summary>
-                    <div class="faq-body">
+                    <div class="faq-body" data-i18n-html="help.feature.validation">
                         <p>「设置 → 数据校验规则」可按列设置是否必填、数据类型（数字等）、最小值 / 最大值，还支持引用<strong>其它表格</strong>的列做合法值校验。</p>
                         <p>保存数据时会逐行检查，校验不通过的行会给出具体行号与原因，整批数据不会写入。</p>
                     </div>
@@ -200,21 +205,21 @@
 
                 <details class="faq">
                     <summary>透视汇总</summary>
-                    <div class="faq-body">
+                    <div class="faq-body" data-i18n-html="help.feature.pivot">
                         <p>选择维度列与数值列、指定聚合方式，即可生成跨行分组汇总，并支持导出——不用写公式就能得到「按地区 / 按月份」这类统计结果。</p>
                     </div>
                 </details>
 
                 <details class="faq">
                     <summary>导出</summary>
-                    <div class="faq-body">
+                    <div class="faq-body" data-i18n-html="help.feature.export">
                         <p>导出菜单提供四种方式：<strong>导出 Excel</strong>、<strong>导出 CSV</strong>、<strong>导出当前视图 CSV</strong>（只含搜索与排序后的结果、且遵循当前列显示设置）以及<strong>下载导入模板</strong>。</p>
                     </div>
                 </details>
 
                 <details class="faq">
                     <summary>撤销与重做</summary>
-                    <div class="faq-body">
+                    <div class="faq-body" data-i18n-html="help.feature.undo">
                         <p>单元格改动会记录历史，支持最多 50 步。</p>
                         <p>快捷键：<kbd>Ctrl</kbd> + <kbd>Z</kbd> 撤销，<kbd>Ctrl</kbd> + <kbd>Y</kbd> 重做。状态栏会显示剩余可撤销 / 可重做步数。</p>
                     </div>
@@ -222,7 +227,7 @@
 
                 <details class="faq">
                     <summary>表格管理与回收站</summary>
-                    <div class="faq-body">
+                    <div class="faq-body" data-i18n-html="help.feature.trash">
                         <p>「表格管理」页以卡片形式列出全部表格，可打开编辑、重命名、复制、单独导出或删除。</p>
                         <p>删除不会立刻清数据：表格会进入<a href="/trash.html">回收站</a>并保留 30 天，期间可随时恢复；确认不再需要时可在回收站里彻底删除，数据与关联的审计、校验规则将一并清除。</p>
                     </div>
@@ -261,35 +266,35 @@
 
                 <details class="faq">
                     <summary>上传后提示「文件解析失败」怎么办？</summary>
-                    <div class="faq-body">
+                    <div class="faq-body" data-i18n-html="help.faq.parse">
                         <p>目前支持 <code>.xlsx</code> 与 <code>.csv</code> 两种格式（把其它文件直接改后缀是不行的），且要求第一行为表头、至少有一行数据。CSV 需为 UTF-8 或 GBK 编码，中文 Excel 导出的 CSV 通常可以直接使用。</p>
                     </div>
                 </details>
 
                 <details class="faq">
                     <summary>保存后为什么提示某些行不合法？</summary>
-                    <div class="faq-body">
+                    <div class="faq-body" data-i18n-html="help.faq.invalid">
                         <p>说明这些行违反了「数据校验规则」。提示中会带行号与具体原因，修正后再次保存即可。校验不通过时整批数据都不会写入，不会出现「改了一半」的情况。</p>
                     </div>
                 </details>
 
                 <details class="faq">
                     <summary>关闭浏览器后数据会丢吗？</summary>
-                    <div class="faq-body">
+                    <div class="faq-body" data-i18n-html="help.faq.persist">
                         <p>不会。数据保存在服务器数据库中，只有点击「保存」后才会写回。未保存的编辑在关闭页面后会丢失。</p>
                     </div>
                 </details>
 
                 <details class="faq">
                     <summary>搜索后保存，会把搜索之外的行删掉吗？</summary>
-                    <div class="faq-body">
+                    <div class="faq-body" data-i18n-html="help.faq.searchsave">
                         <p>不会。保存提交的始终是完整数据，搜索只是显示层的筛选。但删除选中行时需要注意：删除只作用于被勾选的行。</p>
                     </div>
                 </details>
 
                 <details class="faq">
                     <summary>误删了整张表格还能找回来吗？</summary>
-                    <div class="faq-body">
+                    <div class="faq-body" data-i18n-html="help.faq.restore">
                         <p>可以。删除的表格会进入<a href="/trash.html">回收站</a>保留 30 天，在「回收站」页点「恢复」即可原样找回（数据、审计历史、校验规则都还在）。超过 30 天会被系统自动彻底清除。</p>
                     </div>
                 </details>
