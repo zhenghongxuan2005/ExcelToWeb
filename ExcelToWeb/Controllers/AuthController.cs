@@ -37,6 +37,12 @@ public class AuthController : ControllerBase
     /// <summary>客户端 IP（刷新令牌审计字段与会话管理页展示用）</summary>
     private string ClientIp => HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
+    /// <summary>
+    /// 客户端 UA（会话管理页显示「Chrome 155 · Windows」）。
+    /// 只用于展示，Service 侧会按列宽截断；请求头缺失时为空串，前端回落到「未知设备」。
+    /// </summary>
+    private string ClientUserAgent => Request.Headers.UserAgent.ToString();
+
     /// <summary>注册</summary>
     [HttpPost("register")]
     [EnableRateLimiting("auth")]
@@ -103,7 +109,7 @@ public class AuthController : ControllerBase
         await _db.SaveChangesAsync();
 
         var token = _tokenService.GenerateToken(user.Id, user.Username);
-        var (refreshToken, refreshEntity) = await _refreshTokens.IssueAsync(user.Id, ClientIp);
+        var (refreshToken, refreshEntity) = await _refreshTokens.IssueAsync(user.Id, ClientIp, ClientUserAgent);
 
         _logger.LogInformation("用户登录: {Username}", user.Username);
         return Ok(ApiResponse<AuthResponse>.Ok(new AuthResponse
@@ -155,7 +161,7 @@ public class AuthController : ControllerBase
         await _db.SaveChangesAsync();
 
         var token = _tokenService.GenerateToken(user.Id, user.Username);
-        var (refreshToken, refreshEntity) = await _refreshTokens.IssueAsync(user.Id, ClientIp);
+        var (refreshToken, refreshEntity) = await _refreshTokens.IssueAsync(user.Id, ClientIp, ClientUserAgent);
 
         _logger.LogInformation("Windows 用户登录: {Username}", windowsName);
         return Ok(ApiResponse<AuthResponse>.Ok(new AuthResponse
@@ -254,7 +260,7 @@ public class AuthController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.RefreshToken))
             return BadRequest(ApiResponse.Fail("缺少刷新令牌"));
 
-        var (kind, accessToken, newRefreshToken, familyId) = await _refreshTokens.RotateAsync(request.RefreshToken, ClientIp);
+        var (kind, accessToken, newRefreshToken, familyId) = await _refreshTokens.RotateAsync(request.RefreshToken, ClientIp, ClientUserAgent);
         if (kind != RefreshResultKind.Success || accessToken == null || newRefreshToken == null)
         {
             // 重用与伪造同等对待：一律 401，不给攻击者试探空间；差异只体现在日志里
@@ -298,7 +304,8 @@ public class AuthController : ControllerBase
             // 「登录于」用族的真实登录时间：静默刷新会新建记录，t.CreatedAt 只是最近一次轮换时间
             CreatedAt = loginTimes.GetValueOrDefault(t.FamilyId, t.CreatedAt),
             t.ExpiresAt,
-            t.CreatedByIp
+            t.CreatedByIp,
+            t.CreatedByUserAgent
         });
         return Ok(ApiResponse<object>.Ok(items));
     }

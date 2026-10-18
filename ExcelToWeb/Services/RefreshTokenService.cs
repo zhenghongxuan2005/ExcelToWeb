@@ -41,7 +41,7 @@ public class RefreshTokenService
     }
 
     /// <summary>登录成功后签发：开启一条新的会话族</summary>
-    public async Task<(string RawToken, RefreshToken Entity)> IssueAsync(int userId, string ip)
+    public async Task<(string RawToken, RefreshToken Entity)> IssueAsync(int userId, string ip, string userAgent = "")
     {
         var (raw, hash) = NewToken();
         var entity = new RefreshToken
@@ -50,7 +50,8 @@ public class RefreshTokenService
             FamilyId = Guid.NewGuid().ToString("N"),
             TokenHash = hash,
             ExpiresAt = DateTime.UtcNow.AddDays(RefreshExpireDays),
-            CreatedByIp = ip
+            CreatedByIp = ip,
+            CreatedByUserAgent = TrimUserAgent(userAgent)
         };
         _db.RefreshTokens.Add(entity);
         await _db.SaveChangesAsync();
@@ -62,7 +63,7 @@ public class RefreshTokenService
     /// 检测到重用时整族吊销并返回 ReuseDetected。
     /// FamilyId 随新对下发，前端用于在会话列表里标记「当前会话」。
     /// </summary>
-    public async Task<(RefreshResultKind Kind, string? AccessToken, string? NewRefreshToken, string? FamilyId)> RotateAsync(string rawToken, string ip)
+    public async Task<(RefreshResultKind Kind, string? AccessToken, string? NewRefreshToken, string? FamilyId)> RotateAsync(string rawToken, string ip, string userAgent = "")
     {
         var stored = await _db.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == Hash(rawToken));
         if (stored == null)
@@ -111,7 +112,12 @@ public class RefreshTokenService
             FamilyId = stored.FamilyId,
             TokenHash = newHash,
             ExpiresAt = DateTime.UtcNow.AddDays(RefreshExpireDays),
-            CreatedByIp = ip
+            CreatedByIp = ip,
+            // 沿用族内首条的 UA：同一浏览器链上的设备标识不该因为轮换而漂移；
+            // 迁移前的旧记录没有 UA，就用本次请求头补上
+            CreatedByUserAgent = string.IsNullOrEmpty(stored.CreatedByUserAgent)
+                ? TrimUserAgent(userAgent)
+                : stored.CreatedByUserAgent
         };
         _db.RefreshTokens.Add(fresh);
         await _db.SaveChangesAsync();
@@ -163,6 +169,14 @@ public class RefreshTokenService
             .GroupBy(t => t.FamilyId)
             .Select(g => new { g.Key, StartedAt = g.Min(t => t.CreatedAt) })
             .ToDictionaryAsync(g => g.Key, g => g.StartedAt);
+
+    /// <summary>UA 只用于展示，按列宽截断（异常超长请求头不该把行撑爆）</summary>
+    private static string TrimUserAgent(string? userAgent)
+    {
+        if (string.IsNullOrWhiteSpace(userAgent)) return string.Empty;
+        var ua = userAgent.Trim();
+        return ua.Length <= 300 ? ua : ua[..300];
+    }
 
     /// <summary>生成新令牌：32 字节随机数转 64 字符 Hex。返回原文与指纹，原文只下发一次</summary>
     private static (string Raw, string Hash) NewToken()

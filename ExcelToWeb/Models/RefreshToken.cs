@@ -25,6 +25,12 @@ public class RefreshToken
     /// <summary>签发时的客户端 IP（会话管理页展示用，也便于排查异常登录）</summary>
     public string CreatedByIp { get; set; } = string.Empty;
 
+    /// <summary>
+    /// 签发时的浏览器 UA（会话管理页显示「Chrome 155 · Windows」）。
+    /// 轮换时沿用族内第一条的值，保证同一条会话链上的设备标识不漂移。
+    /// </summary>
+    public string CreatedByUserAgent { get; set; } = string.Empty;
+
     /// <summary>吊销时间；null 表示仍在使用中</summary>
     public DateTime? RevokedAt { get; set; }
 }

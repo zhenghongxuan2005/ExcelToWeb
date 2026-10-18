@@ -85,5 +85,9 @@ public class AppDbContext : DbContext
             .HasIndex(r => r.FamilyId);
         modelBuilder.Entity<RefreshToken>()
             .HasIndex(r => r.UserId);
+        // UA 只做展示，限长防止异常请求头把行撑大
+        modelBuilder.Entity<RefreshToken>()
+            .Property(r => r.CreatedByUserAgent)
+            .HasMaxLength(300);
     }
 }

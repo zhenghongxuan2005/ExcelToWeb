@@ -192,6 +192,11 @@ namespace ExcelToWeb.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("CreatedByUserAgent")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("datetime2");
 
