@@ -9,6 +9,14 @@ function chartEsc(text) {
     return typeof escapeHtml === 'function' ? escapeHtml(String(text)) : String(text);
 }
 
+/**
+ * 图表内的文案（tooltip 等）自己取译文：本模块在单测沙箱里会脱离 utils.js 单独加载，
+ * 不能直接依赖那边的 tt()。
+ */
+function chartT(key, vars) {
+    return typeof I18n !== 'undefined' && I18n.t ? I18n.t(key, vars) : key;
+}
+
 /** 平均参考线：设计稿里那条贯穿全图的虚线，标签由页面上方的「— 平均 x」承担 */
 function averageMarkLine(stats, theme, horizontal) {
     if (!stats || !stats.count) return undefined;
@@ -56,17 +64,23 @@ function buildTooltip(cfg, theme, stats, font) {
         padding: [8, 12],
         textStyle: { color: theme.text1, fontSize: 12, fontFamily: font },
         extraCssText: 'box-shadow: 0 8px 24px rgba(17, 26, 43, .12); border-radius: 8px;',
-        axisPointer: cfg.type === 'bar' || cfg.type === 'horizontal'
-            ? { type: 'shadow', shadowStyle: { color: theme.soft } }
-            : { type: 'line', lineStyle: { color: theme.border } },
+        // 指针只用 1px 细线：栅格图的 axisPointer 底板（type:'shadow'）z 序在 series 之上，
+        // 分组色又是实色（--bg-soft #f5f6fa），一 hover 就把整根柱子和顶部数值糊掉。
+        // 悬停反馈改由柱子的 emphasis 承担（见 buildBarSeries），底板直接不用。
+        axisPointer: {
+            type: 'line',
+            z: 0,
+            lineStyle: { color: theme.text4, type: 'dashed', width: 1 }
+        },
         formatter: function (params) {
             const first = Array.isArray(params) ? params[0] : params;
             if (!first) return '';
             const value = Number(first.value) || 0;
             const share = stats.sum ? (value / stats.sum) * 100 : 0;
             return '<div style="font-weight:600;margin-bottom:2px;">' + chartEsc(first.name) + '</div>'
-                + chartEsc(cfg.metric) + '：<b>' + formatCompact(value) + '</b>'
-                + '<div style="color:' + theme.text4 + ';font-size:11px;">占合计 ' + share.toFixed(1) + '%</div>';
+                + chartEsc(cfg.metric) + chartT('：') + '<b>' + formatCompact(value) + '</b>'
+                + '<div style="color:' + theme.text4 + ';font-size:11px;">'
+                + chartT('占合计 {p}%', { p: share.toFixed(1) }) + '</div>';
         }
     };
 }
@@ -108,6 +122,9 @@ function buildBarSeries(cfg, theme, stats, horizontal) {
             color: lineMode ? theme.brand : p => hexToRgba(theme.brand, barAlpha(p.value, stats))
         },
         areaStyle: cfg.type === 'area' ? { color: hexToRgba(theme.brand, 0.18) } : undefined,
+        // 悬停反馈：当前柱变实色。原先靠 axisPointer 的整列底板提示，但那块底板
+        // 会盖住柱子与数值标签，所以改由柱子自身承担（柱子透明度按数值映射，实色即最醒目）
+        emphasis: { itemStyle: { color: theme.brand } },
         label: {
             // 水平条形图的标签在柱子右侧、不占横向槽位，所以不受 labelSlot 限制
             show: horizontal ? cfg.categories.length <= 50 : shouldShowValueLabel(cfg.categories.length, layout),

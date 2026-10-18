@@ -214,4 +214,36 @@ try {
     check('不传 theme 时自动读设计令牌', false, e.message);
 }
 
+// ---------------------------------------------------------------
+console.log('\n[11] 悬停指针不许遮挡柱子与数值');
+// ---------------------------------------------------------------
+// 回归：柱状图曾把 tooltip 的 axisPointer 设成 type:'shadow' + shadowStyle{color:--bg-soft}，
+// 那块底板是实色且 z 序在 series 之上，一 hover 就把整根柱子和顶部数值糊成一片灰。
+['bar', 'horizontal', 'line', 'area'].forEach(t => {
+    const o = api.buildChartOption(Object.assign({}, base, {
+        type: t, layout: api.chartLayout(6, t === 'horizontal' ? 'horizontal' : 'bar', 900)
+    }));
+    check('[' + t + '] 指针是细线而非 shadow 底板', o.tooltip.axisPointer.type === 'line',
+        o.tooltip.axisPointer.type);
+    check('[' + t + '] 指针不带 shadowStyle 底色', o.tooltip.axisPointer.shadowStyle === undefined,
+        JSON.stringify(o.tooltip.axisPointer.shadowStyle));
+});
+
+// 底板去掉后，悬停反馈必须由柱子自身承担，否则鼠标移上去毫无反馈
+const hoverOpt = api.buildChartOption(Object.assign({}, base, {
+    type: 'bar', layout: api.chartLayout(6, 'bar', 900)
+}));
+check('柱子有 emphasis 悬停反馈', !!hoverOpt.series[0].emphasis,
+    JSON.stringify(hoverOpt.series[0].emphasis));
+check('悬停时柱子回到实色', hoverOpt.series[0].emphasis.itemStyle.color === theme.brand,
+    hoverOpt.series[0].emphasis.itemStyle.color);
+
+// 数值标签仍在柱顶，且不再被任何底板压住（label.position 是 top / right）
+check('柱状图数值标签在柱顶', hoverOpt.series[0].label.position === 'top',
+    hoverOpt.series[0].label.position);
+const hOpt = api.buildChartOption(Object.assign({}, base, {
+    type: 'horizontal', layout: api.chartLayout(6, 'horizontal', 900)
+}));
+check('水平图数值标签在柱右', hOpt.series[0].label.position === 'right', hOpt.series[0].label.position);
+
 summary();
