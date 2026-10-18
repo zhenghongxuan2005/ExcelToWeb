@@ -26,6 +26,9 @@ let auditTotal = 0;
 
     loadAuditTableOptions();
     loadAuditCenter();
+
+    // 语言切换后日期格式、分页文案都变了，重新取一次最省事（数据量 50 条/页，代价可忽略）
+    document.addEventListener('i18n:change', () => loadAuditCenter());
 })();
 
 /** 拉取当前用户的表格清单填进筛选下拉；拉不到只影响筛选项，不阻塞时间线 */
@@ -69,7 +72,7 @@ function loadAuditCenter() {
             renderAuditTimeline((data && data.logs) || []);
         })
         .catch(err => {
-            host.innerHTML = `<p class="muted-center">加载失败：${escapeHtml(err.message)}</p>`;
+            host.innerHTML = `<p class="muted-center">${escapeHtml(tt('加载失败：{msg}', { msg: err.message }))}</p>`;
         });
 }
 
@@ -89,8 +92,8 @@ function renderAuditTimeline(logs) {
         pagerEl.innerHTML = '';
         host.innerHTML = '<div class="empty-state">'
             + '<div class="empty-icon"><svg class="icon"><use href="#i-inbox"/></svg></div>'
-            + '<p>没有符合条件的变更记录</p>'
-            + '<p class="empty-sub">编辑表格数据后这里会出现时间线</p>'
+            + '<p>' + tt('没有符合条件的变更记录') + '</p>'
+            + '<p class="empty-sub">' + tt('编辑表格数据后这里会出现时间线') + '</p>'
             + '</div>';
         return;
     }
@@ -100,21 +103,21 @@ function renderAuditTimeline(logs) {
         html += '<div class="history-item">';
         html += `<span class="history-badge history-badge-${escapeHtml(log.action)}"></span>`;
         html += '<div class="history-body">';
-        html += `<span class="audit-table-chip" title="跳转到该表格" onclick="gotoTable(${log.tableId})">${escapeHtml(log.tableName)}</span>`;
+        html += `<span class="audit-table-chip" title="${tt('跳转到该表格')}" onclick="gotoTable(${log.tableId})">${escapeHtml(log.tableName)}</span>`;
 
         if (log.action === 'edit') {
-            html += `<div class="history-summary">第 ${log.rowIndex} 行 · <strong>${escapeHtml(log.columnName)}</strong>：</div>`
+            html += `<div class="history-summary">${tt('第 {n} 行 · {col}：', { n: log.rowIndex, col: '<strong>' + escapeHtml(log.columnName) + '</strong>' })}</div>`
                 + '<div class="history-change">'
-                + `<span class="history-old" title="旧值">${escapeHtml(log.oldValue) || '&lt;空&gt;'}</span>`
+                + `<span class="history-old" title="${tt('旧值')}">${escapeHtml(log.oldValue) || '&lt;' + tt('空') + '&gt;'}</span>`
                 + '<svg class="icon icon-sm"><use href="#i-chevron-right"/></svg>'
-                + `<span class="history-new" title="新值">${escapeHtml(log.newValue) || '&lt;空&gt;'}</span>`
+                + `<span class="history-new" title="${tt('新值')}">${escapeHtml(log.newValue) || '&lt;' + tt('空') + '&gt;'}</span>`
                 + '</div>';
         } else if (log.action === 'add-row') {
-            html += `<div class="history-summary">新增了第 ${log.rowIndex} 行</div>`;
+            html += `<div class="history-summary">${tt('新增了第 {n} 行', { n: log.rowIndex })}</div>`;
         } else if (log.action === 'delete-row') {
-            html += `<div class="history-summary">删除了第 ${log.rowIndex} 行</div>`;
+            html += `<div class="history-summary">${tt('删除了第 {n} 行', { n: log.rowIndex })}</div>`;
         } else {
-            html += `<div class="history-summary">批量变更（${escapeHtml(log.newValue)}）</div>`;
+            html += `<div class="history-summary">${tt('批量变更（{v}）', { v: escapeHtml(log.newValue) })}</div>`;
         }
 
         html += `<div class="history-meta">${escapeHtml(log.userName)} · ${formatTime(log.createdAt)}</div>`;
@@ -128,10 +131,10 @@ function renderAuditTimeline(logs) {
 function renderAuditPager() {
     const pagerEl = document.getElementById('auditPager');
     const totalPages = Math.max(1, Math.ceil(auditTotal / AUDIT_PAGE_SIZE));
-    let html = `<span class="pager-info">共 ${auditTotal} 条记录</span>`;
-    html += `<button class="pager-btn" onclick="onAuditPageChange(-1)" ${auditPage <= 1 ? 'disabled' : ''}>上一页</button>`;
-    html += `<span class="pager-current">第 ${auditPage} / ${totalPages} 页</span>`;
-    html += `<button class="pager-btn" onclick="onAuditPageChange(1)" ${auditPage >= totalPages ? 'disabled' : ''}>下一页</button>`;
+    let html = `<span class="pager-info">${tt('共 {n} 条记录', { n: auditTotal })}</span>`;
+    html += `<button class="pager-btn" onclick="onAuditPageChange(-1)" ${auditPage <= 1 ? 'disabled' : ''}>${tt('上一页')}</button>`;
+    html += `<span class="pager-current">${tt('第 {page} / {total} 页', { page: auditPage, total: totalPages })}</span>`;
+    html += `<button class="pager-btn" onclick="onAuditPageChange(1)" ${auditPage >= totalPages ? 'disabled' : ''}>${tt('下一页')}</button>`;
     pagerEl.innerHTML = html;
 }
 

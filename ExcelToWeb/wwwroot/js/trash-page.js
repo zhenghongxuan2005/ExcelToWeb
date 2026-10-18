@@ -43,7 +43,7 @@ function loadTrashList() {
         .catch(err => {
             host.innerHTML = '<div class="empty-state">'
                 + '<div class="empty-icon"><svg class="icon"><use href="#i-x-circle"/></svg></div>'
-                + `<p>加载失败：${escapeHtml(err.message)}</p>`
+                + `<p>${escapeHtml(tt('加载失败：{msg}', { msg: err.message }))}</p>`
                 + '</div>';
         });
 }
@@ -54,15 +54,19 @@ function renderTrashList() {
     const countEl = document.getElementById('trashCount');
     if (!host) return;
 
-    if (countEl) countEl.textContent = trashItems.length === 0 ? '' : `${trashItems.length} 个已删除表格`;
+    if (countEl) {
+        countEl.textContent = trashItems.length === 0
+            ? ''
+            : tt('{n} 个已删除表格', { n: trashItems.length });
+    }
 
     if (trashItems.length === 0) {
         host.innerHTML = '<div class="empty-state">'
             + '<div class="empty-icon"><svg class="icon"><use href="#i-inbox"/></svg></div>'
-            + '<p>回收站是空的</p>'
-            + '<p class="empty-sub">删除的表格会出现在这里，30 天内可恢复</p>'
+            + '<p>' + tt('回收站是空的') + '</p>'
+            + '<p class="empty-sub">' + tt('删除的表格会出现在这里，30 天内可恢复') + '</p>'
             + '<a class="btn btn-primary" href="/tables.html" style="margin-top:14px;">'
-            + '<svg class="icon"><use href="#i-columns"/></svg>查看表格管理</a>'
+            + '<svg class="icon"><use href="#i-columns"/></svg>' + tt('查看表格管理') + '</a>'
             + '</div>';
         return;
     }
@@ -77,16 +81,16 @@ function renderTrashList() {
         html += '</div>';
 
         html += '<div class="card-meta">';
-        html += `<span><svg class="icon icon-sm"><use href="#i-columns"/></svg>${t.rowCount} 行数据</span>`;
-        html += `<span><svg class="icon icon-sm"><use href="#i-clock"/></svg>删除于 ${escapeHtml(formatTime(t.deletedAt))}</span>`;
-        html += `<span><svg class="icon icon-sm"><use href="#i-info"/></svg>${daysLeft} 天后自动清除</span>`;
+        html += `<span><svg class="icon icon-sm"><use href="#i-columns"/></svg>${tt('{n} 行数据', { n: t.rowCount })}</span>`;
+        html += `<span><svg class="icon icon-sm"><use href="#i-clock"/></svg>${tt('删除于 {time}', { time: escapeHtml(formatTime(t.deletedAt)) })}</span>`;
+        html += `<span><svg class="icon icon-sm"><use href="#i-info"/></svg>${tt('{n} 天后自动清除', { n: daysLeft })}</span>`;
         html += '</div>';
 
         html += '<div class="card-actions">';
         html += `<button class="btn btn-primary btn-sm" onclick="doRestore(${t.id})">`
-            + '<svg class="icon icon-sm"><use href="#i-refresh"/></svg>恢复</button>';
+            + '<svg class="icon icon-sm"><use href="#i-refresh"/></svg>' + tt('恢复') + '</button>';
         html += `<button class="btn btn-danger btn-sm" onclick="doPurge(${t.id})">`
-            + '<svg class="icon icon-sm"><use href="#i-trash"/></svg>彻底删除</button>';
+            + '<svg class="icon icon-sm"><use href="#i-trash"/></svg>' + tt('彻底删除') + '</button>';
         html += '</div>';
 
         html += '</div>';
@@ -107,24 +111,24 @@ function daysRemaining(deletedAtIso) {
 function doRestore(tableId) {
     restoreFromTrash(tableId)
         .then(msg => {
-            showToast('✅ ' + (msg || '已恢复'), 'success');
+            showToast('✅ ' + (msg || tt('已恢复')), 'success');
             loadTrashList();
         })
-        .catch(err => showToast('❌ 恢复失败：' + err.message, 'error'));
+        .catch(err => showToast('❌ ' + tt('恢复失败：{msg}', { msg: err.message }), 'error'));
 }
 
 /** 彻底删除（二次确认，含表格名——这一步不可恢复） */
 function doPurge(tableId) {
     const t = trashItems.find(x => x.id === tableId);
-    const name = t ? t.tableName : '该表格';
-    if (!confirm(`确定要彻底删除「${name}」吗？其全部数据、变更历史与校验规则都将被清除，此操作不可恢复。`)) return;
+    const name = t ? t.tableName : tt('该表格');
+    if (!confirm(tt('确定要彻底删除「{name}」吗？其全部数据、变更历史与校验规则都将被清除，此操作不可恢复。', { name: name }))) return;
 
     purgeTableForever(tableId)
         .then(msg => {
-            showToast('✅ ' + (msg || '已彻底删除'), 'success');
+            showToast('✅ ' + (msg || tt('已彻底删除')), 'success');
             loadTrashList();
         })
-        .catch(err => showToast('❌ 彻底删除失败：' + err.message, 'error'));
+        .catch(err => showToast('❌ ' + tt('彻底删除失败：{msg}', { msg: err.message }), 'error'));
 }
 
 // 暴露给内联 onclick
