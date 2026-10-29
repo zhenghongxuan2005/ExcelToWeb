@@ -234,5 +234,12 @@ I18n.register({
     '正在进入演示模式...': 'Entering demo mode…',
     '确定使用当前 Windows 账号登录吗？': 'Sign in with your current Windows account?',
     'Windows 登录不可用或已被拒绝，请使用账号密码登录':
-        'Windows sign-in is unavailable or was denied — use your username and password'
+        'Windows sign-in is unavailable or was denied — use your username and password',
+
+    // 请求层（api.js）的错误文案：超时 / 非 JSON 响应 / 会话过期
+    '服务器响应超时，请稍后重试': 'The server took too long to respond — please try again',
+    '服务器返回了无法解析的响应（HTTP {status}）': 'The server returned an unreadable response (HTTP {status})',
+    '服务器暂时不可用（HTTP {status}），请稍后重试': 'The server is temporarily unavailable (HTTP {status}) — please try again',
+    '登录已过期，请重新登录': 'Your session has expired — please sign in again',
+    '请求失败': 'Request failed'
 });

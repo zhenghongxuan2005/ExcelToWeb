@@ -89,6 +89,15 @@
   - 缓存读写失败一律降级为「未命中」，不让缓存故障影响主流程
   - **降级之外还有熔断**：连续失败 2 次后暂停使用缓存 30 秒，期间请求直接走数据库。只靠 try/catch 是不够的——Redis 不可达时每次调用都要等连接超时，实测一个普通请求能拖到 25 秒，比不用缓存还糟；加熔断后除第一次（约 5 秒）以外，全部回到毫秒级
 
+### 数据访问与性能
+- **`DynamicRows` 按 `(TableId, Id)` 聚集**：这张表的主路径永远是「按 TableId 取一整张表」（查询 / 导出 / 透视 / 保存），按单行 Id 取的地方一处都没有。原来只有 `Id` 聚集主键、`TableId` 上无索引，每次取数都是全表扫描——10 万行的库上查 6 行要读 3135 个页。改成按 `TableId` 聚集后，同一张表的行物理相邻，同一条查询降到 **5 个页**
+- **回收站列表不再逐表统计**：`GetTrashedAsync` 原本用 `t.Rows.Count()` 生成相关子查询，回收站里有多少张表就扫多少遍全表（实测 132 张表时逻辑读上百万页）；改成一次 `JOIN + GROUP BY` 聚合，查询次数与表数无关
+- **整表保存只发两条语句**：`ExecuteDeleteAsync` 删全部 + 复用导入路径的原生批量插入，替代「读实体 → `RemoveRange` → `AddRange`」生成的 2N 条 SQL（1800 行就是 3600 次往返），事务持有写锁的时间同步缩短
+- **只读路径一律 `AsNoTracking`**：查询 / 导出 / 透视 / 审计 diff 都不改实体，追踪它们的唯一效果是让 EF 为每行建快照、每轮 `SaveChanges` 逐条比对状态
+- **开启 READ_COMMITTED_SNAPSHOT**：默认 READ COMMITTED 下写锁会阻塞读，一次整表保存期间针对该表的所有读请求都在排队（极端时读请求等满 30 秒命令超时）。启动时由 `Data/RcsiInitializer` 检测并尝试开启，失败只记警告、不阻断启动（云上托管实例常不给 `ALTER DATABASE` 权限）
+- **数据库命令超时单独成类**：`SqlException.Number == -2` 由 `ExceptionMiddleware` 转成 503「服务繁忙，请稍后重试」，而不是混进 500——对用户来说这是「重试就好」和「等修 bug」的区别
+- **前端请求有超时**：`fetch` 自身没有超时，服务端一旦卡住页面会一直转圈。`js/api.js` 统一给 25 秒上限，超时 / 网络错误 / 非 JSON 响应都翻译成可读中文，而不是让用户对着空白等
+
 ### 界面
 - **八个页面**：`index.html` 表格编辑、`login.html` 登录注册、`tables.html` 表格管理、`dashboard.html` 数据看板、`audit.html` 审计中心、`trash.html` 回收站、`settings.html` 设置、`help.html` 使用帮助
 - **搜索 / 排序 / 分页**：全局搜索命中高亮；排序与分页只做显示层裁剪，不改写底层数据，编辑始终作用于真实行
@@ -422,7 +431,8 @@ ExcelToWeb/
 | **黑盒回归**（Python + Node） | `tests/` | 起真实服务后的集成路径：API 行为、导入导出、前端模块接线 | `python tests/run.py` |
 
 - 单元测试全部指向不依赖数据库的纯函数/纯类，零 mock；`FormulaLexer`、`FormulaParser` 是 internal 类，经 `InternalsVisibleTo` 直接测
-- 黑盒套件由 `tests/run.py` 一键编排：代码约束守门 → 起服务（5185）→ `backend/*.py` → `frontend/*.js`，当前共 28 项
+- 黑盒套件由 `tests/run.py` 一键编排：代码约束守门 → 起服务（5185）→ `backend/*.py` → `frontend/*.js`，当前共 34 项
+  - 其中 `backend/perf_test.py` 守数据访问层：整表保存（`ExecuteDelete` + 批量重插）后行数与内容不丢、连续保存不翻倍、回收站行数统计准确，并对「加载 / 保存 / 回收站列表」设了 3~5 秒的量级上限——索引一旦丢失或回收站退回逐表子查询，它会立刻报警
 - 前端用例不依赖浏览器：Node `vm` 沙箱 + DOM 桩（`tests/frontend/helpers/dom-harness.js`），直接读 `wwwroot` 源文件，因此改前端必跑
 - **约束守门**（`tests/check_constraints.py`，`run.py` 的第 0 项，不过则后面全跳过）：禁 `eval` / `new Function` / `alert` / `document.write`、禁用 `Console.WriteLine` 与空 catch、`index.html` 脚本加载顺序、共享模块装配审计；行数**不再是约束**（`--lines` 只打印体量提示）。规则细节见 [CODE_STANDARDS.md](CODE_STANDARDS.md)
 - GitHub Actions（`.github/workflows/ci.yml`）按同样顺序跑全部门禁：`dotnet build ExcelToWeb.slnx` → `dotnet test` → 约束守门 → 黑盒回归（ubuntu runner + SQL Server 容器服务）

@@ -37,8 +37,21 @@ public class TableRepository
     public Task<DynamicTable?> FindTrashedAsync(int tableId, int userId) =>
         _db.DynamicTables.FirstOrDefaultAsync(t => t.Id == tableId && t.UserId == userId && t.DeletedAt != null);
 
+    /// <summary>
+    /// 取某表的全部行实体，**带追踪**——给「改完 DataJson 再 SaveChanges」的调用方用
+    /// （目前是 ColumnStructureService 的列操作）。
+    /// 只读场景别用它，见 GetRowsNoTrackingAsync。
+    /// </summary>
     public Task<List<DynamicRow>> GetRowsAsync(int tableId) =>
         _db.DynamicRows.Where(r => r.TableId == tableId).ToListAsync();
+
+    /// <summary>
+    /// 只读场景：不追踪实体。
+    /// 一张 1800 行的表被追踪时，EF 要为每个实体建条目、快照原值、每轮 SaveChanges
+    /// 还要逐条比对状态——这些开销对「读出来就给前端」的场景全是白费。
+    /// </summary>
+    public Task<List<DynamicRow>> GetRowsNoTrackingAsync(int tableId) =>
+        _db.DynamicRows.AsNoTracking().Where(r => r.TableId == tableId).ToListAsync();
 
     /// <summary>
     /// 取出表的全部数据行（实体），供门面在事务里直接改 DataJson 字段。
@@ -46,10 +59,17 @@ public class TableRepository
     /// </summary>
     public Task<List<DynamicRow>> LoadRawRowsAsync(int tableId) => GetRowsAsync(tableId);
 
-    /// <summary>读取并反序列化某表的全部数据行</summary>
+    /// <summary>
+    /// 读取并反序列化某表的全部数据行（带 AsNoTracking）。
+    ///
+    /// 不追踪不只是性能问题，也是**正确性**问题：ReplaceRowsAsync 现在用
+    /// ExecuteDeleteAsync 整批删行，那条语句绕过 ChangeTracker。若这里把行追踪进来，
+    /// 保存时的 SaveChanges 仍会拿着已删除实体的旧状态去发 UPDATE，撞出
+    /// 「0 行受影响」的并发异常。
+    /// </summary>
     public async Task<List<Dictionary<string, object>>> GetRowDataAsync(int tableId)
     {
-        var rows = await GetRowsAsync(tableId);
+        var rows = await GetRowsNoTrackingAsync(tableId);
         return rows.Select(r => DeserializeRow(r.DataJson)).ToList();
     }
 
@@ -170,23 +190,24 @@ public class TableRepository
     /// <summary>
     /// 整表替换（先删后插）。两步必须处在同一事务内：
     /// 否则插入阶段一旦失败，旧数据已被删除、新数据又没写进去，会造成数据丢失。
+    ///
+    /// 实现上走两条语句而不是「读实体 → RemoveRange → AddRange」：
+    /// 后者会为每一行生成独立的 DELETE / INSERT（1800 行就是 3600 次往返），
+    /// 还要让 ChangeTracker 逐实体建快照、算差异。行数越多，事务持有写锁越久，
+    /// 而这段时间内所有针对该表的读请求都在排队——这正是「点保存后整站卡住」的来源。
     /// </summary>
     public async Task ReplaceRowsAsync(DynamicTable table, List<Dictionary<string, object>> rows)
     {
         await using var transaction = await _db.Database.BeginTransactionAsync();
         try
         {
-            var oldRows = await GetRowsAsync(table.Id);
-            _db.DynamicRows.RemoveRange(oldRows);
+            await _db.DynamicRows.Where(r => r.TableId == table.Id).ExecuteDeleteAsync();
 
-            var newRows = rows.Select(r => new DynamicRow
-            {
-                TableId = table.Id,
-                DataJson = SerializeRow(r),
-                CreatedAt = DateTime.UtcNow
-            });
-            await _db.DynamicRows.AddRangeAsync(newRows);
+            // 复用导入路径的原生批量插入（每 500 行一条 INSERT）
+            await BulkInsertRowsAsync(table.Id, rows);
 
+            // 表头的 UpdatedAt / RowVersion 仍走 EF：
+            // 乐观并发控制在「整表替换」这种场景里必须保留，否则两个标签页同时保存会互相覆盖
             table.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
 
@@ -256,19 +277,41 @@ public class TableRepository
         await _cache.RemoveAsync(CacheKeys.ColumnMeta(table.Id));
     }
 
-    /// <summary>回收站列表：该用户已软删除的表格（按删除时间倒序），行数用子查询统计</summary>
-    public Task<List<TrashItemDto>> GetTrashedAsync(int userId) =>
-        _db.DynamicTables
+    /// <summary>
+    /// 回收站列表：该用户已软删除的表格（按删除时间倒序），带每张表的数据行数。
+    ///
+    /// 行数**不再**写成 `t.Rows.Count()` 的相关子查询：那会让数据库对回收站里
+    /// 每一张表各跑一次 COUNT，实测 132 张表就够把查询拖成几十秒（每张表在
+    /// TableId 无索引时都是全表扫描）。改成下面两步：先取表头（走索引），
+    /// 再一次性 JOIN + GROUP BY 聚合全部行数，查询次数与表数无关。
+    /// </summary>
+    public async Task<List<TrashItemDto>> GetTrashedAsync(int userId)
+    {
+        var tables = await _db.DynamicTables
+            .AsNoTracking()
             .Where(t => t.UserId == userId && t.DeletedAt != null)
             .OrderByDescending(t => t.DeletedAt)
-            .Select(t => new TrashItemDto
-            {
-                Id = t.Id,
-                TableName = t.TableName,
-                RowCount = t.Rows.Count(),
-                DeletedAt = t.DeletedAt!.Value
-            })
+            .Select(t => new { t.Id, t.TableName, t.DeletedAt })
             .ToListAsync();
+
+        if (tables.Count == 0) return [];
+
+        // 用导航属性做 JOIN 而不是 ids.Contains(...)：后者会摊成 IN 参数列表，
+        // 回收站表上千张时会撞 SQL Server 的 2100 参数上限。
+        var counts = await _db.DynamicRows
+            .Where(r => r.Table.UserId == userId && r.Table.DeletedAt != null)
+            .GroupBy(r => r.TableId)
+            .Select(g => new { TableId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.TableId, x => x.Count);
+
+        return tables.Select(t => new TrashItemDto
+        {
+            Id = t.Id,
+            TableName = t.TableName,
+            RowCount = counts.TryGetValue(t.Id, out var count) ? count : 0,
+            DeletedAt = t.DeletedAt!.Value
+        }).ToList();
+    }
 
     /// <summary>物理删除回收站里超过保留期（DeletedAt 早于 cutoff）的表格，返回实际清除张数</summary>
     public async Task<int> PurgeExpiredAsync(DateTime utcCutoff)

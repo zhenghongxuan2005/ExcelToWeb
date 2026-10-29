@@ -398,6 +398,12 @@ using (var scope = app.Services.CreateScope())
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     var repository = scope.ServiceProvider.GetRequiredService<TableRepository>();
     await DemoSeeder.SeedAsync(db, repository, logger);
+
+    // ===== 行版本读（RCSI）=====
+    // 迁移之后做：新建库刚创建时没有其他连接，正是拿独占位的时机。
+    // 放在 Demo seeding 之后是刻意的——即使 RCSI 开启要等连接释放，
+    // 也不该让「数据库连不上」之外的因素拖慢首屏可用时间。
+    await RcsiInitializer.TryEnableAsync(db.Database.GetConnectionString()!, logger);
 }
 
 // ===== 注册重复任务（Hangfire recurring jobs）=====

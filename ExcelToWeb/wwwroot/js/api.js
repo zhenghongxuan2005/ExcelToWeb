@@ -60,13 +60,79 @@ function refreshSession() {
 }
 
 /**
+ * 翻译兜底。
+ *
+ * api.js 的加载顺序早于 utils.js（后者的 tt() 才带翻译能力），登录页更是只挂
+ * i18n 两件、不一定有 utils.js。请求发生在用户交互之后，正常情况 tt 早已就绪；
+ * 但这里仍做一次存在性判断——少一个翻译函数不该让整次请求变成 ReferenceError。
+ */
+function apiText(key, vars) {
+    if (typeof tt === 'function') return tt(key, vars);
+    return String(key).replace(/\{(\w+)\}/g, function (m, k) {
+        return vars && vars[k] !== undefined ? String(vars[k]) : m;
+    });
+}
+
+/**
+ * 单一请求的超时上限。
+ *
+ * 为什么必须显式给：fetch 自己没有超时，服务端一旦卡住（数据库超时是 30 秒、
+ * 连接被占用时更久），浏览器会按 TCP 超时一直等，页面上就是无限转圈：
+ * 用户不知道是在加载还是已经挂了，只能手动刷新。
+ * 25 秒略大于服务端的命令超时，让「服务端自己超时并给出原因」优先发生，
+ * 客户端这层只兜住「连服务端都等不到响应」的情况。
+ */
+const REQUEST_TIMEOUT_MS = 25000;
+
+/** 带超时的 fetch：把 AbortError / 网络错误翻成用户能看懂的中文 */
+async function fetchWithTimeout(url, options) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
+        return await fetch(API_BASE + url, { ...options, signal: controller.signal });
+    } catch (e) {
+        if (e && e.name === 'AbortError') {
+            throw new Error(apiText('服务器响应超时，请稍后重试'));
+        }
+        // 复用登录页已有的词条，不再为新文案多造一条同义翻译
+        throw new Error(apiText('网络错误，请稍后重试'));
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+/**
+ * 解析响应体。
+ *
+ * 只对 JSON / problem+json 调 res.json()：反向代理或网关异常时回的是 HTML 错误页，
+ * 直接 .json() 会抛一个英文的 SyntaxError，用户看到的是一串技术信息。
+ */
+async function readResponseBody(res) {
+    const headers = res.headers;
+    // 拿不到 headers（测试替身、极简代理）时不能直接判负：那只是「不知道类型」，
+    // 不代表响应是错的。真解析不出来时下面的 catch 会给可读提示。
+    const type = headers && typeof headers.get === 'function'
+        ? (headers.get('content-type') || '')
+        : '';
+
+    if (!type || type.includes('json')) {
+        try {
+            return await res.json();
+        } catch (e) {
+            throw new Error(apiText('服务器返回了无法解析的响应（HTTP {status}）', { status: res.status }));
+        }
+    }
+    throw new Error(apiText('服务器暂时不可用（HTTP {status}），请稍后重试', { status: res.status }));
+}
+
+/**
  * 统一 fetch 封装：自动带 token、解析统一响应、处理 401
  * 401 时先用刷新令牌静默续期一次并重放原请求（仅排除 refresh 自身，防死循环）
  * @returns {Promise<any>} 解析后的响应 data（如果 success=true）
  * @throws {Error} 包含错误 message
  */
 async function request(url, options = {}) {
-    let res = await fetch(API_BASE + url, { ...options, headers: authHeaders(options.headers || {}) });
+    let res = await fetchWithTimeout(url, { ...options, headers: authHeaders(options.headers || {}) });
 
     // access token 失效：静默刷新一次并重放。只排除 refresh 自身（它走裸 fetch，这里纯防御）；
     // /auth/me、/auth/sessions 等认证端点同样需要静默续期。重放后不再二次刷新，防止死循环
@@ -74,21 +140,23 @@ async function request(url, options = {}) {
         try {
             await refreshSession();
             // 重放原请求：authHeaders 此时读到的已是新 token
-            res = await fetch(API_BASE + url, { ...options, headers: authHeaders(options.headers || {}) });
+            res = await fetchWithTimeout(url, { ...options, headers: authHeaders(options.headers || {}) });
         } catch (e) {
             redirectToLogin();
-            throw new Error('登录已过期，请重新登录');
+            throw new Error(apiText('登录已过期，请重新登录'));
         }
     }
 
     if (res.status === 401) {
         redirectToLogin();
-        throw new Error('登录已过期，请重新登录');
+        throw new Error(apiText('登录已过期，请重新登录'));
     }
 
-    const result = await res.json();
+    const result = await readResponseBody(res);
     if (!result.success) {
-        throw new Error(result.message || '请求失败');
+        // message 是业务约定的字段；detail 兼容 RFC 7807 的 ProblemDetails
+        // （数据库超时、未处理异常走这条，服务端会把可读原因放在 detail 里）
+        throw new Error(apiText(result.message || result.detail || '请求失败'));
     }
     return result.data !== undefined ? result.data : result;
 }

@@ -84,7 +84,10 @@ function createPivotHarness(opts) {
     }
 
     const sandbox = {
-        console, setTimeout, clearTimeout, document: documentStub, fetch: fetchStub,
+        // api.js 的请求超时用到 AbortController；vm 沙箱不继承 Node 全局，
+        // 缺了它每次请求都会在「新建信号」时抛错，看起来像「请求没发出去」
+        console, setTimeout, clearTimeout, AbortController,
+        document: documentStub, fetch: fetchStub,
         localStorage: { getItem: k => (k === 'token' ? 'T' : null), setItem() {}, removeItem() {} },
         location: { href: '' },
         URL: { createObjectURL: () => 'blob:fake', revokeObjectURL() {} },

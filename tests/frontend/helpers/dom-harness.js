@@ -148,7 +148,9 @@ function createHarness(opts) {
     };
 
     const sandbox = {
-        console, setTimeout, clearTimeout,
+        // AbortController 被 api.js 的请求超时用到；vm 的沙箱不会自动继承 Node 的全局对象，
+        // 缺了它 api.js 会在「新建信号」这一步就抛错，表现为「请求根本没发出去」
+        console, setTimeout, clearTimeout, AbortController,
         document: documentStub,
         localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
         navigator: {},

@@ -126,7 +126,11 @@ namespace ExcelToWeb.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TableId");
+                    SqlServerKeyBuilderExtensions.IsClustered(b.HasKey("Id"), false);
+
+                    b.HasIndex("TableId", "Id");
+
+                    SqlServerIndexBuilderExtensions.IsClustered(b.HasIndex("TableId", "Id"));
 
                     b.ToTable("DynamicRows");
                 });
@@ -175,7 +179,10 @@ namespace ExcelToWeb.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("DeletedAt", "AutoExportEnabled");
+
+                    b.HasIndex("UserId", "DeletedAt", "UpdatedAt")
+                        .IsDescending(false, false, true);
 
                     b.ToTable("DynamicTables");
                 });

@@ -40,7 +40,7 @@ public class ExcelExportService
         var table = await _repository.FindTableAsync(tableId, userId);
         if (table == null) return null;
 
-        var rows = await _repository.GetRowsAsync(tableId);
+        var rows = await _repository.GetRowsNoTrackingAsync(tableId);
         var headers = table.Headers ?? new List<string>();
         var meta = ColumnMetaService.Parse(table.ColumnMetaJson);
         var colorRules = await _rules.GetColorRulesAsync(userId, null);
@@ -105,7 +105,7 @@ public class ExcelExportService
         var table = await _repository.FindTableAsync(tableId, userId);
         if (table == null) return null;
 
-        var rows = await _repository.GetRowsAsync(tableId);
+        var rows = await _repository.GetRowsNoTrackingAsync(tableId);
 
         // 与 xlsx 导出同一份口径：计算列现算再写
         var headers = table.Headers ?? new List<string>();
