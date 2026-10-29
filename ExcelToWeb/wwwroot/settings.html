@@ -92,6 +92,7 @@
                 <a class="settings-tab is-active" href="#section-account" data-target="section-account" aria-current="true">账号</a>
                 <a class="settings-tab" href="#section-password" data-target="section-password">密码</a>
                 <a class="settings-tab" href="#section-sessions" data-target="section-sessions">会话</a>
+                <a class="settings-tab" href="#section-members" data-target="section-members" data-perm="member:manage">成员</a>
                 <a class="settings-tab" href="#section-prefs" data-target="section-prefs">偏好设置</a>
                 <a class="settings-tab" href="#section-about" data-target="section-about">关于</a>
             </nav>
@@ -179,6 +180,24 @@
                     </p>
                 </section>
 
+                <!-- 成员管理（RBAC）：只有拥有「管理成员」权限的账号才看得到 -->
+                <section class="panel" id="section-members" data-perm="member:manage">
+                    <h2 class="panel-title">
+                        <span class="panel-icon"><svg class="icon"><use href="#i-users"/></svg></span>成员
+                        <span class="panel-count" id="memberCount"></span>
+                    </h2>
+
+                    <!-- 两句各自一个 <span>：同一元素里的连续文字是一个文本节点，分开写才能分别翻译 -->
+                    <p class="panel-hint">
+                        <span>新注册的账号默认是管理员。</span>
+                        <span>把不需要写权限的账号降为「编辑」或「只读」，权限变更立即生效，对方无需重新登录。</span>
+                    </p>
+
+                    <div class="member-list" id="memberList">
+                        <p class="panel-hint">加载中…</p>
+                    </div>
+                </section>
+
                 <!-- 偏好设置 -->
                 <section class="panel" id="section-prefs">
                     <h2 class="panel-title">
@@ -264,9 +283,12 @@
     </div>
 
     <script src="js/api.js"></script>
+    <script src="js/api-rbac.js"></script>
     <script src="js/utils.js"></script>
+    <script src="js/authz.js"></script>
     <script src="js/palette.js"></script>
     <script src="js/settings-tabs.js"></script>
     <script src="js/settings.js"></script>
+    <script src="js/members.js"></script>
 </body>
 </html>

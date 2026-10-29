@@ -1,3 +1,4 @@
+using ExcelToWeb.Auth;
 using ExcelToWeb.DTOs;
 using ExcelToWeb.Models;
 using ExcelToWeb.Services;
@@ -33,6 +34,7 @@ public class ExcelController : ControllerBase
     // ================================================================
 
     [HttpPost("upload")]
+    [Authorize(Policy = Permission.TableWrite)]
     public async Task<IActionResult> Upload(IFormFile file, [FromQuery] int? sheetIndex = null)
     {
         var userId = GetUserId();
@@ -48,6 +50,7 @@ public class ExcelController : ControllerBase
     /// 只有一张时不弹框直接导入，避免给绝大多数单表文件平白多加一次往返。
     /// </summary>
     [HttpPost("sheets")]
+    [Authorize(Policy = Permission.TableWrite)]
     public async Task<IActionResult> ListSheets(IFormFile file)
     {
         var userId = GetUserId();
@@ -70,6 +73,7 @@ public class ExcelController : ControllerBase
     }
 
     [HttpPost("save")]
+    [Authorize(Policy = Permission.TableWrite)]
     public async Task<IActionResult> Save([FromBody] SaveRequest request)
     {
         var userId = GetUserId();
@@ -82,6 +86,7 @@ public class ExcelController : ControllerBase
     }
 
     [HttpDelete("delete")]
+    [Authorize(Policy = Permission.TableDelete)]
     public async Task<IActionResult> Delete(int tableId)
     {
         var userId = GetUserId();
@@ -94,6 +99,7 @@ public class ExcelController : ControllerBase
 
     /// <summary>重命名表格</summary>
     [HttpPut("rename")]
+    [Authorize(Policy = Permission.TableWrite)]
     public async Task<IActionResult> Rename([FromBody] RenameTableRequest request)
     {
         var userId = GetUserId();
@@ -106,6 +112,7 @@ public class ExcelController : ControllerBase
 
     /// <summary>复制表格（表结构 + 全部数据行），源表保持不变</summary>
     [HttpPost("duplicate")]
+    [Authorize(Policy = Permission.TableWrite)]
     public async Task<IActionResult> Duplicate([FromBody] DuplicateTableRequest request)
     {
         var userId = GetUserId();
@@ -122,6 +129,7 @@ public class ExcelController : ControllerBase
     /// 同步修改每行 DataJson 与 ColorRule / ValidationRule，整个过程在一个事务里。
     /// </summary>
     [HttpPut("headers")]
+    [Authorize(Policy = Permission.TableWrite)]
     public async Task<IActionResult> UpdateHeaders([FromBody] UpdateHeadersRequest request)
     {
         var userId = GetUserId();
@@ -147,6 +155,7 @@ public class ExcelController : ControllerBase
     }
 
     [HttpPut("column-meta")]
+    [Authorize(Policy = Permission.TableWrite)]
     public async Task<IActionResult> SaveColumnMeta([FromBody] SaveColumnMetaRequest request)
     {
         var userId = GetUserId();
@@ -163,6 +172,7 @@ public class ExcelController : ControllerBase
     /// 失败时返回的是「公式哪里写错了」，前端直接展示即可。
     /// </summary>
     [HttpPut("formula")]
+    [Authorize(Policy = Permission.TableWrite)]
     public async Task<IActionResult> SaveFormula([FromBody] SaveFormulaRequest request)
     {
         var userId = GetUserId();
@@ -275,6 +285,7 @@ public class ExcelController : ControllerBase
     }
 
     [HttpPost("rules")]
+    [Authorize(Policy = Permission.TableWrite)]
     public async Task<IActionResult> SaveRules([FromBody] List<ColorRule> rules)
     {
         var userId = GetUserId();
@@ -300,6 +311,7 @@ public class ExcelController : ControllerBase
     }
 
     [HttpPost("validation-rules")]
+    [Authorize(Policy = Permission.TableWrite)]
     public async Task<IActionResult> SaveValidationRules([FromBody] List<ValidationRule> rules)
     {
         var userId = GetUserId();
@@ -318,6 +330,7 @@ public class ExcelController : ControllerBase
     // ================================================================
 
     [HttpPost("upload-with-validation")]
+    [Authorize(Policy = Permission.TableWrite)]
     public async Task<IActionResult> UploadWithValidation(IFormFile file, int tableId)
     {
         var userId = GetUserId();

@@ -1,3 +1,5 @@
+using ExcelToWeb.Auth;
+
 namespace ExcelToWeb.Models;
 
 /// <summary>
@@ -12,6 +14,12 @@ public class User
 
     /// <summary>加密后的密码</summary>
     public string PasswordHash { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 账号角色（RBAC 三档，见 <see cref="Auth.Rbac"/>）。
+    /// 存字符串而不是数字：库表直接可读，插入新角色时也不会因枚举值重排而错位。
+    /// </summary>
+    public UserRole Role { get; set; } = UserRole.Admin;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

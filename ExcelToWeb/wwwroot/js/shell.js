@@ -36,6 +36,8 @@
         '<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></symbol>',
         '<symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>',
         '<symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>',
+        // 成员管理页签（设置页 RBAC 分区）
+        '<symbol id="i-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>',
         '<symbol id="i-chevron-up" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></symbol>',
         '<symbol id="i-chevron-down" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>',
         '<symbol id="i-chevron-left" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></symbol>',
@@ -117,12 +119,34 @@
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('familyId');
         localStorage.removeItem('username');
+        localStorage.removeItem('role');
+        localStorage.removeItem('permissions');
         // 带 loggedout 标记：login.html 看到它就跳过 Windows 静默登录，
         // 否则本机环境下会被自动重新登录，看起来像“退出没反应”
         window.location.href = '/login.html?loggedout=1';
     }
     // 挂到 window，保证内联 onclick 也能找到
     window.handleLogout = handleLogout;
+
+    // ---------------------------------------------------------------
+    // 3.5 角色名（RBAC）
+    // ---------------------------------------------------------------
+    // 角色 → 中文名放在外壳里：每页都先加载 shell.js，设置页的成员卡也复用这一份，
+    // 避免同一组角色名在几个模块里各写一遍。英文由 i18n 字典翻译。
+    var ROLE_TEXT = { Admin: '管理员', Editor: '编辑者', Viewer: '只读' };
+
+    function roleText(role) {
+        var key = ROLE_TEXT[role] || '只读';
+        return typeof I18n !== 'undefined' ? I18n.t(key) : key;
+    }
+
+    /** 把侧栏底部的角色行换成当前账号的真实角色（HTML 里的静态文案只是默认值） */
+    function paintRole() {
+        var role = localStorage.getItem('role') || '';
+        var text = roleText(role);
+        // 侧栏底部与设置页账号卡都显示同一个角色名
+        document.querySelectorAll('.user-role, .account-role').forEach(function (el) { el.textContent = text; });
+    }
 
     function initUserBox() {
         var el = document.getElementById('userInfo');
@@ -207,6 +231,7 @@
         highlightNav();
         initTheme();
         initUserBox();
+        paintRole();
         initSidebarCollapse();
     }
 
@@ -217,5 +242,10 @@
     }
 
     // 暴露给各页面复用
-    window.Shell = { requireLogin: requireLogin, highlightNav: highlightNav };
+    window.Shell = {
+        requireLogin: requireLogin,
+        highlightNav: highlightNav,
+        roleText: roleText,
+        paintRole: paintRole
+    };
 })();

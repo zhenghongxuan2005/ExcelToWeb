@@ -1,0 +1,93 @@
+/* ================================================================
+   设置页 · 成员管理（RBAC）
+   一行一个账号：头像 / 名称与最近登录 / 角色下拉。
+   与设置页其他卡片共用 .panel 外壳，这里只补行内布局与窄屏折行。
+   ================================================================ */
+
+.member-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.member-row {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) 132px;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-top: 1px solid var(--border-row);
+}
+
+/* 第一行不画分隔线：卡片标题下方已经有一条视觉间隔，再加一条会显重 */
+.member-row:first-child {
+    border-top: 0;
+}
+
+.member-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg-soft);
+    color: var(--text-2);
+    font-size: 13px;
+    font-weight: 600;
+    /* 首字母可能是多字节字符，禁用连字与斜体，保证圆形内的字居中稳定 */
+    font-style: normal;
+    line-height: 1;
+    user-select: none;
+}
+
+.member-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.member-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-1);
+    /* 用户名可能很长：截断而不是把角色下拉挤出卡片 */
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.member-since {
+    font-size: 12px;
+    color: var(--text-3);
+}
+
+.member-badge {
+    flex: none;
+    padding: 1px 6px;
+    border: 1px solid var(--border-light);
+    border-radius: 999px;
+    background: var(--bg-soft);
+    color: var(--text-3);
+    font-size: 11px;
+    font-weight: 400;
+}
+
+.member-role {
+    width: 132px;
+}
+
+/* 窄屏：用户名一行、角色下拉独占一行，避免 132px 的下拉把名字压成省略号 */
+@media (max-width: 560px) {
+    .member-row {
+        grid-template-columns: 32px minmax(0, 1fr);
+        row-gap: 8px;
+    }
+
+    .member-role {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+}

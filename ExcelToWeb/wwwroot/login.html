@@ -140,6 +140,8 @@
                     localStorage.setItem('refreshToken', result.data.refreshToken || '');
                     localStorage.setItem('familyId', result.data.familyId || '');
                     localStorage.setItem('username', result.data.username);
+                    localStorage.setItem('role', result.data.role || '');
+                    localStorage.setItem('permissions', JSON.stringify(result.data.permissions || []));
                     showToast(tr('登录成功，跳转中...'), 'success');
                     setTimeout(() => { window.location.href = '/'; }, 800);
                 } else {
@@ -204,6 +206,8 @@
                     localStorage.setItem('refreshToken', result.data.refreshToken || '');
                     localStorage.setItem('familyId', result.data.familyId || '');
                     localStorage.setItem('username', result.data.username);
+                    localStorage.setItem('role', result.data.role || '');
+                    localStorage.setItem('permissions', JSON.stringify(result.data.permissions || []));
                     showToast(tr('正在进入演示模式...'), 'success');
                     setTimeout(() => { window.location.href = '/'; }, 800);
                 } else {
@@ -234,6 +238,8 @@
                         localStorage.setItem('refreshToken', result.data.refreshToken || '');
                         localStorage.setItem('familyId', result.data.familyId || '');
                         localStorage.setItem('username', result.data.username);
+                        localStorage.setItem('role', result.data.role || '');
+                        localStorage.setItem('permissions', JSON.stringify(result.data.permissions || []));
                         window.location.href = '/';
                         success = true;
                         return;

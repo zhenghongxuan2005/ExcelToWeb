@@ -1,3 +1,4 @@
+using ExcelToWeb.Auth;
 using ExcelToWeb.DTOs;
 using ExcelToWeb.Models;
 using ExcelToWeb.Services;
@@ -29,6 +30,7 @@ public class TrashController : ControllerBase
 
     /// <summary>回收站列表：已删除的表格（删除时间 + 行数）</summary>
     [HttpGet]
+    [Authorize(Policy = Permission.TableRead)]
     public async Task<IActionResult> List()
     {
         var userId = GetUserId();
@@ -40,6 +42,7 @@ public class TrashController : ControllerBase
 
     /// <summary>恢复：把表格移回表格列表，数据原样保留</summary>
     [HttpPost("{tableId}/restore")]
+    [Authorize(Policy = Permission.TrashManage)]
     public async Task<IActionResult> Restore(int tableId)
     {
         var userId = GetUserId();
@@ -52,6 +55,7 @@ public class TrashController : ControllerBase
 
     /// <summary>彻底删除：物理删表并清掉关联的审计日志 / 校验规则，不可恢复</summary>
     [HttpDelete("{tableId}")]
+    [Authorize(Policy = Permission.TrashManage)]
     public async Task<IActionResult> Purge(int tableId)
     {
         var userId = GetUserId();

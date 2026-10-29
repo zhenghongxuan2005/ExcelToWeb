@@ -35,6 +35,15 @@ public class AuthResponse
 
     /// <summary>是否设置了本地密码（Windows 自动建档的账号为 false，不能用密码登录）</summary>
     public bool HasPassword { get; set; }
+
+    /// <summary>当前账号的角色（Admin / Editor / Viewer），设置页「账号」分区展示</summary>
+    public string Role { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 该角色拥有的权限码（table:read / table:write / ...）。前端据此隐藏不能用的入口，
+    /// 但服务端仍逐个接口强制校验——前端隐藏只是体验，不是安全边界。
+    /// </summary>
+    public List<string> Permissions { get; set; } = [];
 }
 
 /// <summary>刷新令牌请求：用长效令牌换取新的 access + refresh 对（轮换）</summary>
@@ -263,4 +272,31 @@ public class TrashItemDto
 
     /// <summary>删除时间（UTC）。距此 30 天后会被后台自动物理清除</summary>
     public DateTime DeletedAt { get; set; }
+}
+
+// ===== 成员管理（RBAC） =====
+
+/// <summary>成员条目：设置页「成员」分区一行一个账号</summary>
+public class MemberDto
+{
+    public int Id { get; set; }
+    public string Username { get; set; } = string.Empty;
+
+    /// <summary>角色名（Admin / Editor / Viewer），前端拿它做下拉选中</summary>
+    public string Role { get; set; } = string.Empty;
+
+    /// <summary>角色中文名，列表直接展示，省得前端再维护一份映射</summary>
+    public string RoleLabel { get; set; } = string.Empty;
+
+    public DateTime CreatedAt { get; set; }
+    public DateTime? LastLoginAt { get; set; }
+
+    /// <summary>是否当前登录账号：自己的角色不允许改（避免误操作把自己锁在门外）</summary>
+    public bool IsSelf { get; set; }
+}
+
+/// <summary>修改成员角色</summary>
+public class UpdateRoleRequest
+{
+    public string Role { get; set; } = string.Empty;
 }

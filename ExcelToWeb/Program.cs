@@ -1,5 +1,6 @@
 using System.Text;
 using System.Threading.RateLimiting;
+using ExcelToWeb.Auth;
 using ExcelToWeb.Data;
 using ExcelToWeb.Helpers;
 using ExcelToWeb.HealthChecks;
@@ -7,6 +8,7 @@ using ExcelToWeb.Middleware;
 using ExcelToWeb.Services;
 using ExcelToWeb.Services.Excel;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Data.SqlClient;
@@ -108,6 +110,26 @@ if (enableWindowsAuth)
 {
     authBuilder.AddNegotiate();
 }
+
+// ===== 授权（RBAC 三档角色）=====
+// 每个权限码注册成一条策略，控制器上直接写 [Authorize(Policy = Permission.TableWrite)]：
+// 策略名与权限码同串，接口层不需要再造一套命名。
+// 判定逻辑在 PermissionHandler（角色从库里读，不信令牌里的快照）。
+builder.Services.AddAuthorization(options =>
+{
+    foreach (var permission in Rbac.All)
+    {
+        // RequireAuthenticatedUser：未登录要返回 401 挑战，而不是「权限不足」的 403。
+        // 少了这一条，匿名请求会走到权限判定、判定失败后返回 403，前端就分不清
+        // 「该重新登录」和「账号被降级」了
+        options.AddPolicy(permission, policy => policy
+            .RequireAuthenticatedUser()
+            .AddRequirements(new PermissionRequirement(permission)));
+    }
+});
+builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
+// 403 也返回统一 ApiResponse（带「需要哪种权限」），前端才能给出可读提示
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, PermissionResultHandler>();
 
 // ===== 服务注册 =====
 // 无状态的读表 / 校验工具，注册为单例即可

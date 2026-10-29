@@ -52,6 +52,11 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Username)
             .IsUnique();
+        // 角色存字符串（Admin / Editor / Viewer）：库表可读，加角色也不会错位
+        modelBuilder.Entity<User>()
+            .Property(u => u.Role)
+            .HasConversion<string>()
+            .HasMaxLength(16);
 
         // ColorRule
         modelBuilder.Entity<ColorRule>()

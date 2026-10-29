@@ -11,7 +11,7 @@ I18n.register({
     '表格数据工作台': 'Spreadsheet workbench',
     '工作区': 'Workspace',
     '系统': 'System',
-    '表格编辑': 'Editor',
+    '表格编辑': 'Table editor',
     '表格管理': 'Tables',
     '数据看板': 'Dashboard',
     '审计中心': 'Audit trail',
@@ -48,7 +48,7 @@ I18n.register({
     '↑↓ 选择': '↑↓ to move',
     'Enter 执行': 'Enter to run',
     'Ctrl+K 开关': 'Ctrl+K to toggle',
-    '前往：表格编辑': 'Go to: Editor',
+    '前往：表格编辑': 'Go to: Table editor',
     '前往：表格管理': 'Go to: Tables',
     '前往：数据看板': 'Go to: Dashboard',
     '前往：使用帮助': 'Go to: Help',
@@ -164,6 +164,26 @@ I18n.register({
     '已恢复默认设置': 'Defaults restored',
     '恢复默认设置后，主题、分页与表格字号都会回到初始值，确定吗？':
         'Resetting restores theme, paging and font size to their defaults. Continue?',
+
+    // ===== 设置页：成员管理（RBAC） =====
+    '成员': 'Members',
+    '{n} 名成员': '{n} members',
+    '新注册的账号默认是管理员。': 'New accounts start as administrators.',
+    '把不需要写权限的账号降为「编辑」或「只读」，权限变更立即生效，对方无需重新登录。':
+        'Demote accounts that should not write to Editor or Viewer — the change takes effect immediately, no re-login needed.',
+    '成员列表加载失败：{msg}': 'Failed to load members: {msg}',
+    '还没有其他账号。': 'No other accounts yet.',
+    '当前账号': 'This account',
+    '最后登录 {time}': 'Last signed in {time}',
+    '从未登录': 'Never signed in',
+    '成员角色': 'Member role',
+    '把「{name}」设为{role}？权限变更立即生效。': 'Set “{name}” to {role}? This takes effect immediately.',
+    '角色已更新': 'Role updated',
+
+    // ===== 角色名（RBAC 三档，见 Auth/Rbac.cs） =====
+    '管理员': 'Administrator',
+    '编辑者': 'Editor',
+    '只读': 'Viewer',
 
     // ===== 设置页：关于 =====
     '版本': 'Version',

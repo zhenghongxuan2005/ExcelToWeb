@@ -108,7 +108,7 @@ console.log('[3] apply()：文本节点双向翻译 / 跳过数据区 / 属性�
     check('data-i18n-skip 子树不动', textOf(skip) === '设置', textOf(skip));
     check('placeholder 被翻译', input.getAttribute('placeholder') === 'Enter your password');
     check('title 被翻译', input.getAttribute('title') === 'Settings');
-    check('data-label（折叠气泡）被翻译', input.getAttribute('data-label') === 'Editor');
+    check('data-label（折叠气泡）被翻译', input.getAttribute('data-label') === 'Table editor');
 
     I.setLang('zh');
     I.apply(root);

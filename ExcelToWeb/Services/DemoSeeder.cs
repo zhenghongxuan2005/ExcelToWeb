@@ -1,3 +1,4 @@
+using ExcelToWeb.Auth;
 using ExcelToWeb.Data;
 using ExcelToWeb.Helpers;
 using ExcelToWeb.Models;
@@ -34,7 +35,8 @@ public static class DemoSeeder
             {
                 Username = DemoAccount.Username,
                 PasswordHash = PasswordHelper.HashPassword(DemoAccount.Password),
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                Role = UserRole.Editor
             };
             await db.Users.AddAsync(demo);
             await db.SaveChangesAsync();
@@ -50,6 +52,14 @@ public static class DemoSeeder
                 demo.PasswordHash = PasswordHelper.HashPassword(DemoAccount.Password);
                 await db.SaveChangesAsync();
                 logger.LogWarning("演示账号密码被改动过，已重置回公开约定值 {Username}", DemoAccount.Username);
+            }
+
+            // 演示账号固定为「编辑」：写操作仍由 DemoWriteGuard 给出「注册即可体验」的友好提示，
+            // 但删表与成员管理这类破坏性操作在授权层就挡掉，不依赖业务层逐个兜底。
+            if (demo.Role != UserRole.Editor)
+            {
+                demo.Role = UserRole.Editor;
+                await db.SaveChangesAsync();
             }
         }
 

@@ -90,16 +90,18 @@ function renderManageList() {
 
         html += '<div class="card-actions">';
         html += `<button class="btn btn-primary btn-sm" onclick="openTable(${t.id})"><svg class="icon icon-sm"><use href="#i-edit"/></svg>打开</button>`;
-        html += `<button class="btn btn-outline btn-sm" onclick="promptRename(${t.id})"><svg class="icon icon-sm"><use href="#i-file"/></svg>重命名</button>`;
-        html += `<button class="btn btn-outline btn-sm" onclick="doDuplicate(${t.id})"><svg class="icon icon-sm"><use href="#i-copy"/></svg>复制</button>`;
+        html += `<button class="btn btn-outline btn-sm" data-perm="table:write" onclick="promptRename(${t.id})"><svg class="icon icon-sm"><use href="#i-file"/></svg>重命名</button>`;
+        html += `<button class="btn btn-outline btn-sm" data-perm="table:write" onclick="doDuplicate(${t.id})"><svg class="icon icon-sm"><use href="#i-copy"/></svg>复制</button>`;
         html += `<button class="btn btn-outline btn-sm" onclick="doExport(${t.id}, 'xlsx')"><svg class="icon icon-sm"><use href="#i-download"/></svg>Excel</button>`;
         html += `<button class="btn btn-outline btn-sm" onclick="doExport(${t.id}, 'csv')"><svg class="icon icon-sm"><use href="#i-download"/></svg>CSV</button>`;
-        html += `<button class="btn btn-danger btn-sm" onclick="doDelete(${t.id})"><svg class="icon icon-sm"><use href="#i-trash"/></svg>删除</button>`;
+        html += `<button class="btn btn-danger btn-sm" data-perm="table:delete" onclick="doDelete(${t.id})"><svg class="icon icon-sm"><use href="#i-trash"/></svg>删除</button>`;
         html += '</div>';
 
         html += '</div>';
     }
     host.innerHTML = html;
+    // 没有写权限的账号只保留「打开 / 导出」，不显示改与删
+    if (typeof Authz !== "undefined") Authz.apply(host);
 }
 
 /** 按 id 取表格（找不到返回 null） */

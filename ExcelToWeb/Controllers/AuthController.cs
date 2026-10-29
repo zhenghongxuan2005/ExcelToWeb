@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using ExcelToWeb.Auth;
 using ExcelToWeb.Data;
 using ExcelToWeb.DTOs;
 using ExcelToWeb.Helpers;
@@ -74,7 +75,11 @@ public class AuthController : ControllerBase
         {
             Username = request.Username,
             PasswordHash = PasswordHelper.HashPassword(request.Password),
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            // 注册即管理员：本系统数据按账号隔离，注册者就是自己数据的所有者，
+            // 拿不到「删除自己的表」权限会直接不可用。RBAC 的价值在于管理员
+            // 事后把某些账号降为编辑/只读，而不是在注册时把人挡在门外。
+            Role = UserRole.Admin
         };
 
         await _db.Users.AddAsync(user);
@@ -112,7 +117,7 @@ public class AuthController : ControllerBase
         var (refreshToken, refreshEntity) = await _refreshTokens.IssueAsync(user.Id, ClientIp, ClientUserAgent);
 
         _logger.LogInformation("用户登录: {Username}", user.Username);
-        return Ok(ApiResponse<AuthResponse>.Ok(new AuthResponse
+        var response = new AuthResponse
         {
             Id = user.Id,
             Username = user.Username,
@@ -121,7 +126,9 @@ public class AuthController : ControllerBase
             FamilyId = refreshEntity.FamilyId,
             AuthType = "local",
             HasPassword = true
-        }, "登录成功"));
+        };
+        ApplyRole(response, user);
+        return Ok(ApiResponse<AuthResponse>.Ok(response, "登录成功"));
     }
 
     /// <summary>Windows 集成身份验证登录（浏览器自动协商 NTLM/Kerberos，无需输入账号密码）</summary>
@@ -151,7 +158,9 @@ public class AuthController : ControllerBase
             {
                 Username = windowsName,
                 PasswordHash = string.Empty,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                // 域账号首次登录自动建档，与注册同口径：默认管理员，由管理员按需降级
+                Role = UserRole.Admin
             };
             await _db.Users.AddAsync(user);
             _logger.LogInformation("Windows 用户自动建档: {Username}", windowsName);
@@ -164,7 +173,7 @@ public class AuthController : ControllerBase
         var (refreshToken, refreshEntity) = await _refreshTokens.IssueAsync(user.Id, ClientIp, ClientUserAgent);
 
         _logger.LogInformation("Windows 用户登录: {Username}", windowsName);
-        return Ok(ApiResponse<AuthResponse>.Ok(new AuthResponse
+        var response = new AuthResponse
         {
             Id = user.Id,
             Username = windowsName.Split('\\').Last(),
@@ -173,7 +182,9 @@ public class AuthController : ControllerBase
             FamilyId = refreshEntity.FamilyId,
             AuthType = "windows",
             HasPassword = false
-        }, "Windows 登录成功"));
+        };
+        ApplyRole(response, user);
+        return Ok(ApiResponse<AuthResponse>.Ok(response, "Windows 登录成功"));
     }
 
     /// <summary>获取当前用户信息</summary>
@@ -194,7 +205,9 @@ public class AuthController : ControllerBase
             Username = user.Username,
             // 设置页据此区分「本地账号密码 / Windows 集成身份验证」，空哈希即 Windows 自动建档
             AuthType = string.IsNullOrEmpty(user.PasswordHash) ? "windows" : "local",
-            HasPassword = !string.IsNullOrEmpty(user.PasswordHash)
+            HasPassword = !string.IsNullOrEmpty(user.PasswordHash),
+            Role = user.Role.ToString(),
+            Permissions = [.. Rbac.ForRole(user.Role)]
         }));
     }
 
@@ -324,5 +337,16 @@ public class AuthController : ControllerBase
             return NotFound(ApiResponse.Fail("会话不存在"));
 
         return Ok(ApiResponse.Ok("会话已注销"));
+    }
+
+    /// <summary>
+    /// 把「角色 + 权限码」填进认证响应。
+    /// 前端只认权限码（can('table:write')），不自己推断「管理员能做什么」——
+    /// 角色与权限的对应关系只在服务端 <see cref="Rbac"/> 里维护一份。
+    /// </summary>
+    private static void ApplyRole(AuthResponse response, User user)
+    {
+        response.Role = user.Role.ToString();
+        response.Permissions = [.. Rbac.ForRole(user.Role)];
     }
 }

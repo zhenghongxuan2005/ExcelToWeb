@@ -88,13 +88,13 @@
                 <div class="toolbar-row">
                     <div class="toolbar-group">
                         <input type="file" id="fileInput" accept=".xlsx,.csv" style="display:none;">
-                        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                        <button class="btn btn-primary" data-perm="table:write" onclick="document.getElementById('fileInput').click()">
                             <svg class="icon"><use href="#i-upload"/></svg>上传 Excel
                         </button>
                         <select id="tableSelector" class="table-select" onchange="switchTable()">
                             <option value="">-- 请选择表格 --</option>
                         </select>
-                        <button class="btn btn-danger" onclick="deleteCurrentTable()" title="删除当前表格">
+                        <button class="btn btn-danger" data-perm="table:delete" onclick="deleteCurrentTable()" title="删除当前表格">
                             <svg class="icon"><use href="#i-trash"/></svg>删除表格
                         </button>
                     </div>
@@ -115,7 +115,7 @@
 
                 <div class="toolbar-row">
                     <div class="toolbar-group">
-                        <button class="btn btn-soft-success" onclick="saveData()"><svg class="icon"><use href="#i-save"/></svg>保存</button>
+                        <button class="btn btn-soft-success" data-perm="table:write" onclick="saveData()"><svg class="icon"><use href="#i-save"/></svg>保存</button>
                         <div class="dropdown">
                             <button class="btn"><svg class="icon"><use href="#i-download"/></svg>导出<svg class="icon icon-sm"><use href="#i-chevron-down"/></svg></button>
                             <div class="dropdown-menu">
@@ -130,20 +130,20 @@
                         <div class="dropdown">
                             <button class="btn"><svg class="icon"><use href="#i-settings"/></svg>设置<svg class="icon icon-sm"><use href="#i-chevron-down"/></svg></button>
                             <div class="dropdown-menu">
-                                <button class="dropdown-item" onclick="openColumnModal()"><svg class="icon icon-sm"><use href="#i-columns"/></svg>列管理（增删改移）</button>
-                                <button class="dropdown-item" onclick="openRuleModal()"><svg class="icon icon-sm"><use href="#i-settings"/></svg>条件格式规则</button>
-                                <button class="dropdown-item" onclick="openValidationModal()"><svg class="icon icon-sm"><use href="#i-check"/></svg>数据校验规则</button>
+                                <button class="dropdown-item" data-perm="table:write" onclick="openColumnModal()"><svg class="icon icon-sm"><use href="#i-columns"/></svg>列管理（增删改移）</button>
+                                <button class="dropdown-item" data-perm="table:write" onclick="openRuleModal()"><svg class="icon icon-sm"><use href="#i-settings"/></svg>条件格式规则</button>
+                                <button class="dropdown-item" data-perm="table:write" onclick="openValidationModal()"><svg class="icon icon-sm"><use href="#i-check"/></svg>数据校验规则</button>
                                 <button class="dropdown-item" onclick="openHistoryModal()"><svg class="icon icon-sm"><use href="#i-clock"/></svg>变更历史</button>
                                 <button class="dropdown-item" onclick="toggleAggregateRow()"><svg class="icon icon-sm"><use href="#i-sigma"/></svg>显示 / 关闭汇总行</button>
-                                <button class="dropdown-item" onclick="clearAll()"><svg class="icon icon-sm"><use href="#i-x-circle"/></svg>清空当前数据</button>
+                                <button class="dropdown-item" data-perm="table:write" onclick="clearAll()"><svg class="icon icon-sm"><use href="#i-x-circle"/></svg>清空当前数据</button>
                             </div>
                         </div>
 
                         <span class="toolbar-divider"></span>
 
-                        <button class="btn" onclick="addRow()"><svg class="icon"><use href="#i-plus"/></svg>新增行</button>
-                        <button class="btn btn-soft" onclick="batchEdit()"><svg class="icon"><use href="#i-edit"/></svg>批量编辑</button>
-                        <button class="btn btn-danger" onclick="deleteSelectedRows()"><svg class="icon"><use href="#i-trash"/></svg>删除选中<span id="selCount"></span></button>
+                        <button class="btn" data-perm="table:write" onclick="addRow()"><svg class="icon"><use href="#i-plus"/></svg>新增行</button>
+                        <button class="btn btn-soft" data-perm="table:write" onclick="batchEdit()"><svg class="icon"><use href="#i-edit"/></svg>批量编辑</button>
+                        <button class="btn btn-danger" data-perm="table:write" onclick="deleteSelectedRows()"><svg class="icon"><use href="#i-trash"/></svg>删除选中<span id="selCount"></span></button>
                     </div>
 
                     <div class="toolbar-right">
@@ -188,6 +188,7 @@
     <script src="js/state.js"></script>
     <script src="js/modal-templates.js"></script>
     <script src="js/utils.js"></script>
+    <script src="js/authz.js"></script>
     <script src="js/view.js"></script>
     <script src="js/selection.js"></script>
     <script src="js/aggregate.js"></script>

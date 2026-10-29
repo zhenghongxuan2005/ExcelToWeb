@@ -26,6 +26,16 @@ function statusTagClass(value) {
  * 表格加载、切换、增删行都会经过 renderTable，因此在这里统一同步，
  * 用户不用回头去看下拉框也能知道当前看的是哪张表。
  */
+/**
+ * 只读账号（没有 table:write）把单元格渲染成 readonly：
+ * 仍然可以选中、复制、看变更历史，但输入不会落库。
+ * 用 readonly 而不是不渲染 input，是为了不破坏「每列一个 .cell-input」的定位关系
+ * （选区 / 填充柄 / 键盘导航都按这个结构找列）。
+ */
+function canEditCells() {
+    return typeof Authz === 'undefined' || Authz.can('table:write');
+}
+
 function updatePageMeta() {
     const sub = document.getElementById('pageSub');
     const meta = document.getElementById('tableMeta');
@@ -188,7 +198,7 @@ function renderTable() {
                 continue;
             }
 
-            html += `<input class="cell-input" type="text" value="${escapeHtml(val)}" data-index="${actualIndex}" data-key="${escapeHtml(key)}" autocomplete="off" />`;
+            html += `<input class="cell-input" type="text" value="${escapeHtml(val)}" data-index="${actualIndex}" data-key="${escapeHtml(key)}" autocomplete="off"${canEditCells() ? '' : ' readonly'} />`;
             const suggestions = suggestionsMap[key] || [];
             if (suggestions.length > 0) {
                 html += '<div class="suggest-list" style="display:none;">';

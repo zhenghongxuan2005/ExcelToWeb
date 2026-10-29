@@ -87,15 +87,17 @@ function renderTrashList() {
         html += '</div>';
 
         html += '<div class="card-actions">';
-        html += `<button class="btn btn-primary btn-sm" onclick="doRestore(${t.id})">`
+        html += `<button class="btn btn-primary btn-sm" data-perm="trash:manage" onclick="doRestore(${t.id})">`
             + '<svg class="icon icon-sm"><use href="#i-refresh"/></svg>' + tt('恢复') + '</button>';
-        html += `<button class="btn btn-danger btn-sm" onclick="doPurge(${t.id})">`
+        html += `<button class="btn btn-danger btn-sm" data-perm="trash:manage" onclick="doPurge(${t.id})">`
             + '<svg class="icon icon-sm"><use href="#i-trash"/></svg>' + tt('彻底删除') + '</button>';
         html += '</div>';
 
         html += '</div>';
     }
     host.innerHTML = html;
+    // 新插入的按钮也要按权限过一遍：没有「管理回收站」的账号只看到列表，看不到操作
+    if (typeof Authz !== "undefined") Authz.apply(host);
 }
 
 /** 删除时间（UTC ISO）→ 剩余保留天数（向上取整，删除当天算 30） */
