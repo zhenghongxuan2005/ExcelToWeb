@@ -194,7 +194,7 @@ function saveValidationRules() {
 
     saveValidationRulesApi(currentValidationRules)
         .then(result => {
-            showToast('✅ ' + (result.message || tt('保存成功')), 'success');
+            showToast('✅ ' + tt(result.message || '保存成功'), 'success');
             closeValidationModal();
             // 引用下拉的数据源已变化，重取引用值并刷新表格建议列表
             if (typeof loadRefValues === 'function') loadRefValues().then(() => renderTable());

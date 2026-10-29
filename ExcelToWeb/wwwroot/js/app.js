@@ -102,6 +102,25 @@ function applySavedPreferences() {
 }
 
 // ================================================================
+// 语言切换后的重渲染
+// ----------------------------------------------------------------
+// 页头副标题、统计栏、分页条、汇总行、状态胶囊都是按当前语言拼出来的，
+// 已经写进 DOM 的整串（「共 8 行 · 6 列」）没有可匹配的字典条目 ——
+// 逐节点翻译救不回来，只能按新语言重新生成一遍。
+// 表头与单元格是数据，重渲染不会动它们；选区分支由 renderTable 末尾的
+// paintSelection 重新画到新 DOM 上，所以不会丢。
+// ================================================================
+document.addEventListener('i18n:change', () => {
+    if (typeof currentTableId === 'undefined' || !currentTableId) return;
+
+    updatePageMeta();
+    renderTable();
+    setStatus(tt('已加载: {name} ({n}行)', {
+        name: getTableName(currentTableId), n: currentRows.length
+    }));
+});
+
+// ================================================================
 // 暴露全局函数给 HTML onclick 调用
 // ================================================================
 Object.assign(window, {

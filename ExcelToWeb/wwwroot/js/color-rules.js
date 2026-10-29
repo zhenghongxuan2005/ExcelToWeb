@@ -205,7 +205,7 @@ function saveRules() {
 
     saveColorRules(rules)
         .then(result => {
-            showToast('✅ ' + (result.message || tt('保存成功')), 'success');
+            showToast('✅ ' + tt(result.message || '保存成功'), 'success');
             closeRuleModal();
             colorRulesCache = rules.slice();
             renderTable();

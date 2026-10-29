@@ -101,7 +101,7 @@ function saveData() {
             setStatus(tt('保存中...'));
             return saveTableData(currentTableId, validRows)
                 .then(result => {
-                    showToast('✅ ' + (result.message || tt('保存成功')), 'success');
+                    showToast('✅ ' + tt(result.message || '保存成功'), 'success');
                     setStatus(tt('已保存'));
                     refreshData();
                 });
@@ -125,7 +125,7 @@ function exportExcel() {
             showToast('✅ ' + tt('Excel 导出成功'), 'success');
         })
         .catch(err => {
-            showToast('❌ 导出失败：' + err.message, 'error');
+            showToast('❌ ' + tt('导出失败：{msg}', { msg: err.message }), 'error');
             setStatus(tt('导出失败'));
         });
 }

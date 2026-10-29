@@ -131,7 +131,7 @@ function daysRemaining(deletedAtIso) {
 function doRestore(tableId) {
     restoreFromTrash(tableId)
         .then(msg => {
-            showToast('✅ ' + (msg || tt('已恢复')), 'success');
+            showToast('✅ ' + tt(msg || '已恢复'), 'success');
             loadTrashList();
         })
         .catch(err => showToast('❌ ' + tt('恢复失败：{msg}', { msg: err.message }), 'error'));
@@ -145,11 +145,19 @@ function doPurge(tableId) {
 
     purgeTableForever(tableId)
         .then(msg => {
-            showToast('✅ ' + (msg || tt('已彻底删除')), 'success');
+            showToast('✅ ' + tt(msg || '已彻底删除'), 'success');
             loadTrashList();
         })
         .catch(err => showToast('❌ ' + tt('彻底删除失败：{msg}', { msg: err.message }), 'error'));
 }
+
+// 卡片里的「删除于 {time}」「{n} 天后自动清除」是按当前语言拼出来的，
+// 已经写进 DOM 的整串没有可匹配的字典条目 —— 切换语言后只能整块重渲染。
+document.addEventListener('i18n:change', () => {
+    // 首屏还在骨架屏阶段就跳过：loadTrashList 回来时会按新语言渲染
+    if (document.querySelector('#trashGrid .skeleton-block')) return;
+    renderTrashList();
+});
 
 // 暴露给内联 onclick
 Object.assign(window, { doRestore, doPurge });

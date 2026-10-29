@@ -1,6 +1,8 @@
 // ================================================================
 // 表格管理页：卡片列表 + 重命名 / 复制 / 导出 / 删除
-// 依赖：api.js、utils.js、shell.js
+// 依赖：api.js、utils.js（tt / escapeHtml / formatTime / showToast）、shell.js
+// 说明：卡片是 JS 拼出来的，所有含中文的句子都必须走 tt()——整段拼接之后再查字典
+//       是查不到的（「创建 Oct 13」这种带时间戳的串永远命中不了静态条目）。
 // ================================================================
 
 let manageTables = [];
@@ -10,6 +12,14 @@ document.addEventListener('DOMContentLoaded', () => {
     loadManageList();
     // 报表列表与表格列表并行拉取：两者互不依赖，串行只会让首屏多等一个 RTT
     loadExportList();
+});
+
+// 切换语言后必须重渲染：卡片里的「N 列」「创建 …」是拼出来的，已经写进 DOM 的
+// 中英混排文本没有可匹配的字典条目，只能按新语言重新生成一遍。
+document.addEventListener('i18n:change', () => {
+    if (!manageTables.length) return;   // 首屏还没回来时由 loadManageList 自己按新语言渲染
+    renderManageList();
+    renderExportList();
 });
 
 /** 拉取全部表格并渲染 */
@@ -37,7 +47,7 @@ function loadManageList() {
         .catch(err => {
             host.innerHTML = '<div class="empty-state">'
                 + '<div class="empty-icon"><svg class="icon"><use href="#i-x-circle"/></svg></div>'
-                + `<p>加载失败：${escapeHtml(err.message)}</p>`
+                + `<p>${escapeHtml(tt('加载失败：{msg}', { msg: err.message }))}</p>`
                 + '</div>';
         });
 }
@@ -48,15 +58,19 @@ function renderManageList() {
     if (!host) return;
 
     const countEl = document.getElementById('tableCount');
-    if (countEl) countEl.textContent = manageTables.length === 0 ? '' : `${manageTables.length} 个表格`;
+    if (countEl) {
+        countEl.textContent = manageTables.length === 0
+            ? ''
+            : tt('{n} 个表格', { n: manageTables.length });
+    }
 
     if (manageTables.length === 0) {
         host.innerHTML = '<div class="empty-state">'
             + '<div class="empty-icon"><svg class="icon"><use href="#i-inbox"/></svg></div>'
-            + '<p>还没有任何表格</p>'
-            + '<p class="empty-sub">到「表格编辑」页上传一个 Excel 即可创建</p>'
+            + '<p>' + tt('还没有任何表格') + '</p>'
+            + '<p class="empty-sub">' + tt('到「表格编辑」页上传一个 Excel 即可创建') + '</p>'
             + '<a class="btn btn-primary" href="/" style="margin-top:14px;">'
-            + '<svg class="icon"><use href="#i-upload"/></svg>去上传 Excel</a>'
+            + '<svg class="icon"><use href="#i-upload"/></svg>' + tt('去上传 Excel') + '</a>'
             + '</div>';
         return;
     }
@@ -73,7 +87,7 @@ function renderManageList() {
         // 列名预览：最多显示 4 个，其余折叠为 +N
         html += '<div class="card-headers">';
         if (headers.length === 0) {
-            html += '<span class="chip chip-muted">无列信息</span>';
+            html += '<span class="chip chip-muted">' + tt('无列信息') + '</span>';
         } else {
             headers.slice(0, 4).forEach(h => {
                 html += `<span class="chip">${escapeHtml(h)}</span>`;
@@ -85,9 +99,11 @@ function renderManageList() {
         html += '</div>';
 
         html += '<div class="card-meta">';
-        html += `<span><svg class="icon icon-sm"><use href="#i-columns"/></svg>${headers.length} 列</span>`;
-        html += `<span><svg class="icon icon-sm"><use href="#i-clock"/></svg>创建 ${escapeHtml(formatTime(t.createdAt))}</span>`;
-        html += `<span><svg class="icon icon-sm"><use href="#i-refresh"/></svg>更新 ${escapeHtml(formatTime(t.updatedAt))}</span>`;
+        html += `<span><svg class="icon icon-sm"><use href="#i-columns"/></svg>${tt('{n} 列', { n: headers.length })}</span>`;
+        html += `<span><svg class="icon icon-sm"><use href="#i-clock"/></svg>`
+            + `${tt('创建 {time}', { time: escapeHtml(formatTime(t.createdAt)) })}</span>`;
+        html += `<span><svg class="icon icon-sm"><use href="#i-refresh"/></svg>`
+            + `${tt('更新 {time}', { time: escapeHtml(formatTime(t.updatedAt)) })}</span>`;
         html += '</div>';
 
         // 每日自动导出开关。挂在 data-perm 下：只读账号看到的是「关」而且是禁用的，
@@ -95,15 +111,15 @@ function renderManageList() {
         html += '<label class="card-toggle" data-perm="table:write">'
             + `<input type="checkbox"${t.autoExportEnabled ? ' checked' : ''}`
             + ` onchange="toggleAutoExport(${t.id}, this.checked)">`
-            + '<span>每日自动导出</span></label>';
+            + '<span>' + tt('每日自动导出') + '</span></label>';
 
         html += '<div class="card-actions">';
-        html += `<button class="btn btn-primary btn-sm" onclick="openTable(${t.id})"><svg class="icon icon-sm"><use href="#i-edit"/></svg>打开</button>`;
-        html += `<button class="btn btn-outline btn-sm" data-perm="table:write" onclick="promptRename(${t.id})"><svg class="icon icon-sm"><use href="#i-file"/></svg>重命名</button>`;
-        html += `<button class="btn btn-outline btn-sm" data-perm="table:write" onclick="doDuplicate(${t.id})"><svg class="icon icon-sm"><use href="#i-copy"/></svg>复制</button>`;
+        html += `<button class="btn btn-primary btn-sm" onclick="openTable(${t.id})"><svg class="icon icon-sm"><use href="#i-edit"/></svg>${tt('打开')}</button>`;
+        html += `<button class="btn btn-outline btn-sm" data-perm="table:write" onclick="promptRename(${t.id})"><svg class="icon icon-sm"><use href="#i-file"/></svg>${tt('重命名')}</button>`;
+        html += `<button class="btn btn-outline btn-sm" data-perm="table:write" onclick="doDuplicate(${t.id})"><svg class="icon icon-sm"><use href="#i-copy"/></svg>${tt('复制')}</button>`;
         html += `<button class="btn btn-outline btn-sm" onclick="doExport(${t.id}, 'xlsx')"><svg class="icon icon-sm"><use href="#i-download"/></svg>Excel</button>`;
         html += `<button class="btn btn-outline btn-sm" onclick="doExport(${t.id}, 'csv')"><svg class="icon icon-sm"><use href="#i-download"/></svg>CSV</button>`;
-        html += `<button class="btn btn-danger btn-sm" data-perm="table:delete" onclick="doDelete(${t.id})"><svg class="icon icon-sm"><use href="#i-trash"/></svg>删除</button>`;
+        html += `<button class="btn btn-danger btn-sm" data-perm="table:delete" onclick="doDelete(${t.id})"><svg class="icon icon-sm"><use href="#i-trash"/></svg>${tt('删除')}</button>`;
         html += '</div>';
 
         html += '</div>';
@@ -129,16 +145,16 @@ function promptRename(tableId) {
     const t = findTable(tableId);
     if (!t) return;
 
-    const input = prompt('请输入新的表格名称：', t.tableName);
+    const input = prompt(tt('请输入新的表格名称：'), t.tableName);
     if (input === null) return;                     // 用户取消
 
     const name = input.trim();
     if (name.length === 0) {
-        showToast('表格名称不能为空', 'error');
+        showToast(tt('表格名称不能为空'), 'error');
         return;
     }
     if (name.length > 100) {
-        showToast('表格名称不能超过 100 个字符', 'error');
+        showToast(tt('表格名称不能超过 100 个字符'), 'error');
         return;
     }
     if (name === t.tableName) return;               // 没变化就不打扰后端
@@ -147,26 +163,26 @@ function promptRename(tableId) {
         .then(() => {
             t.tableName = name;                     // 就地更新，避免整页重载
             renderManageList();
-            showToast('✅ 重命名成功', 'success');
+            showToast('✅ ' + tt('重命名成功'), 'success');
         })
-        .catch(err => showToast('❌ 重命名失败：' + err.message, 'error'));
+        .catch(err => showToast('❌ ' + tt('重命名失败：{msg}', { msg: err.message }), 'error'));
 }
 
 /** 复制。返回的是新表格信息（UploadResult），用新表名回显更直观 */
 function doDuplicate(tableId) {
     duplicateTable(tableId)
         .then(copy => {
-            const name = copy && copy.tableName ? copy.tableName : '副本';
-            showToast('✅ 已复制为「' + name + '」', 'success');
+            const name = copy && copy.tableName ? copy.tableName : tt('副本');
+            showToast('✅ ' + tt('已复制为「{name}」', { name: name }), 'success');
             loadManageList();                       // 列表需要重新拉取（多了一张表）
         })
-        .catch(err => showToast('❌ 复制失败：' + err.message, 'error'));
+        .catch(err => showToast('❌ ' + tt('复制失败：{msg}', { msg: err.message }), 'error'));
 }
 
 /** 导出 Excel / CSV */
 function doExport(tableId, kind) {
     const t = findTable(tableId);
-    const base = t ? t.tableName : '数据';
+    const base = t ? t.tableName : 'data';
     const today = new Date().toISOString().slice(0, 10);
 
     const task = kind === 'csv'
@@ -174,24 +190,24 @@ function doExport(tableId, kind) {
         : exportExcelBlob(tableId).then(blob => downloadBlob(blob, `${base}_${today}.xlsx`));
 
     task
-        .then(() => showToast('✅ 导出成功', 'success'))
-        .catch(err => showToast('❌ 导出失败：' + err.message, 'error'));
+        .then(() => showToast('✅ ' + tt('导出成功'), 'success'))
+        .catch(err => showToast('❌ ' + tt('导出失败：{msg}', { msg: err.message }), 'error'));
 }
 
 /** 删除（二次确认；删除进回收站，可在回收站页恢复） */
 function doDelete(tableId) {
     const t = findTable(tableId);
-    const name = t ? t.tableName : '该表格';
+    const name = t ? t.tableName : tt('该表格');
     // 不写死「30 天内可恢复」：保留天数由服务端配置决定，这里的数字一旦过期就成了假承诺
-    if (!confirm(`确定要删除「${name}」吗？删除后进回收站，可在「回收站」页恢复。`)) return;
+    if (!confirm(tt('确定要删除「{name}」吗？删除后进回收站，可在「回收站」页恢复。', { name: name }))) return;
 
     deleteTable(tableId)
         .then(msg => {
             manageTables = manageTables.filter(x => x.id !== tableId);
             renderManageList();
-            showToast('✅ ' + (msg || '已删除'), 'success');
+            showToast('✅ ' + tt(msg || '已删除'), 'success');
         })
-        .catch(err => showToast('❌ 删除失败：' + err.message, 'error'));
+        .catch(err => showToast('❌ ' + tt('删除失败：{msg}', { msg: err.message }), 'error'));
 }
 
 // ================================================================
@@ -207,7 +223,7 @@ function toggleAutoExport(tableId, enabled) {
     setAutoExport(tableId, enabled)
         .then(msg => {
             if (t) t.autoExportEnabled = enabled;
-            showToast('✅ ' + (msg || (enabled ? '已开启每日自动导出' : '已关闭每日自动导出')), 'success');
+            showToast('✅ ' + tt(msg || (enabled ? '已开启每日自动导出' : '已关闭每日自动导出')), 'success');
         })
         .catch(err => {
             // 失败必须把勾选状态还原：界面显示「开着」而实际没开，
@@ -251,10 +267,10 @@ function renderExportList() {
         html += '<div class="export-main">';
         html += `<span class="export-name" title="${escapeHtml(s.fileName)}">${escapeHtml(s.tableName)}</span>`;
         html += `<span class="export-meta">${escapeHtml(formatTime(s.createdAt))}`
-            + ` · ${s.rowCount} 行 · ${formatBytes(s.sizeBytes)}</span>`;
+            + ` · ${tt('{n} 行', { n: s.rowCount })} · ${formatBytes(s.sizeBytes)}</span>`;
         html += '</div>';
         html += `<button class="btn btn-outline btn-sm" onclick="downloadExport(${s.id})">`
-            + '<svg class="icon icon-sm"><use href="#i-download"/></svg>下载</button>';
+            + '<svg class="icon icon-sm"><use href="#i-download"/></svg>' + tt('下载') + '</button>';
         html += '</div>';
     }
     host.innerHTML = html;
@@ -264,7 +280,7 @@ function renderExportList() {
 /** 下载某份报表（文件名用服务端登记的那份，避免前端再造一套命名规则） */
 function downloadExport(snapshotId) {
     const item = exportItems.find(x => x.id === snapshotId);
-    const name = item ? item.fileName : `报表_${snapshotId}.xlsx`;
+    const name = item ? item.fileName : `export_${snapshotId}.xlsx`;
 
     downloadExportBlob(snapshotId)
         .then(blob => downloadBlob(blob, name))

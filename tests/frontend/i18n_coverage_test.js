@@ -17,6 +17,7 @@ const ROOT = path.join(__dirname, '..', '..', 'ExcelToWeb', 'wwwroot');
 // 页面 -> 该页加载的字典文件（顺序无关，最后合并成一个 map）
 const PAGES = {
     'index.html': ['i18n-en.js', 'i18n-en-editor.js', 'i18n-en-editor-modals.js'],
+    'tables.html': ['i18n-en.js', 'i18n-en-tables.js'],
     'dashboard.html': ['i18n-en.js', 'i18n-en-dashboard.js'],
     'audit.html': ['i18n-en.js', 'i18n-en-audit.js'],
     'trash.html': ['i18n-en.js', 'i18n-en-trash.js'],

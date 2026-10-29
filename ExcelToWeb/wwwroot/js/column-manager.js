@@ -45,7 +45,7 @@ function renderColumnDraft() {
         // 有公式的列在列名后标一个 fx，并把公式原文显示出来 ——
         // 否则用户只会看到一列怎么改都改不动的格子，不知道是被公式接管了
         const fxTag = (c.expr || '').trim()
-            ? `<span class="col-tag col-tag-fx" title="公式：${escapeHtml(c.expr)}">fx</span>`
+            ? `<span class="col-tag col-tag-fx" title="${escapeHtml(tt('公式：{expr}', { expr: c.expr }))}">fx</span>`
             : '';
         return `<div class="col-draft-row">
             <span class="col-draft-index">${i + 1}</span>
@@ -177,7 +177,7 @@ function saveColumnStructure() {
         })
         .then(result => {
             closeColumnModal();
-            showToast('✅ ' + (result.message || tt('列结构已更新')), 'success');
+            showToast('✅ ' + tt(result.message || '列结构已更新'), 'success');
             // 隐藏列 / 列宽里已失效的键清理掉
             const nameSet = new Set(names);
             hiddenColumns = hiddenColumns.filter(h => nameSet.has(h));

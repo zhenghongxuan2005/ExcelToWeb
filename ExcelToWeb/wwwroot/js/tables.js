@@ -145,7 +145,7 @@ function deleteCurrentTable() {
 
     deleteTable(currentTableId)
         .then(msg => {
-            showToast('✅ ' + (msg || tt('表格已删除')), 'success');
+            showToast('✅ ' + tt(msg || '表格已删除'), 'success');
             allTables = allTables.filter(t => t.id !== currentTableId);
             currentTableId = null;
             currentHeaders = [];

@@ -386,5 +386,8 @@ I18n.register({
     '请先生成预览，确认数字没问题再导出':
         'Generate a preview and check the numbers before exporting',
     '导出成功（含原始数据表与「透视」表）':
-        'Exported — includes the source data sheet and a "Pivot" sheet'
+        'Exported — includes the source data sheet and a "Pivot" sheet',
+
+    // 列管理弹窗里 fx 标记的悬停气泡（公式原文是用户数据，只有前缀要翻）
+    '公式：{expr}': 'Formula: {expr}'
 });
