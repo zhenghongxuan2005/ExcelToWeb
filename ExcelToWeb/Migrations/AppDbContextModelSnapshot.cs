@@ -139,6 +139,9 @@ namespace ExcelToWeb.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<bool>("AutoExportEnabled")
+                        .HasColumnType("bit");
+
                     b.Property<string>("ColumnMetaJson")
                         .HasColumnType("nvarchar(max)");
 
@@ -175,6 +178,53 @@ namespace ExcelToWeb.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("DynamicTables");
+                });
+
+            modelBuilder.Entity("ExcelToWeb.Models.ExportSnapshot", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(260)
+                        .HasColumnType("nvarchar(260)");
+
+                    b.Property<string>("RelativePath")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.Property<int>("RowCount")
+                        .HasColumnType("int");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("TableId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TableName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TableId");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.ToTable("ExportSnapshots");
                 });
 
             modelBuilder.Entity("ExcelToWeb.Models.RefreshToken", b =>
@@ -325,6 +375,17 @@ namespace ExcelToWeb.Migrations
                 {
                     b.HasOne("ExcelToWeb.Models.DynamicTable", "Table")
                         .WithMany("Rows")
+                        .HasForeignKey("TableId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Table");
+                });
+
+            modelBuilder.Entity("ExcelToWeb.Models.ExportSnapshot", b =>
+                {
+                    b.HasOne("ExcelToWeb.Models.DynamicTable", "Table")
+                        .WithMany()
                         .HasForeignKey("TableId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

@@ -110,6 +110,19 @@ public class ExcelController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>开关某张表的每日自动导出（后台 Hangfire 任务据此挑选要导出的表）</summary>
+    [HttpPut("tables/{tableId:int}/auto-export")]
+    [Authorize(Policy = Permission.TableWrite)]
+    public async Task<IActionResult> SetAutoExport(int tableId, [FromBody] AutoExportRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
+
+        var result = await _service.SetAutoExportAsync(tableId, userId, request.Enabled);
+        if (!result.Success) return BadRequest(result);
+        return Ok(result);
+    }
+
     /// <summary>复制表格（表结构 + 全部数据行），源表保持不变</summary>
     [HttpPost("duplicate")]
     [Authorize(Policy = Permission.TableWrite)]
@@ -370,7 +383,7 @@ public class ExcelController : ControllerBase
     /// <summary>
     /// 审计中心：跨该用户全部表格的审计时间线（支持表格 / 操作类型 / 时间范围筛选 + 分页）。
     /// 直接注入 AuditService 而不走 ExcelService 门面：数据归属校验已在 join 里完成，
-    /// 同时也为门面省出宝贵的行数预算（400 行上限）。
+    /// 同时也为门面省出海量行数（门面只留编排，细节都在协作类里）。
     /// 参数名用 actionType 而非 action，避开 MVC 的路由值保留字。
     /// </summary>
     [HttpGet("audit-center")]

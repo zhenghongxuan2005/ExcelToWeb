@@ -8,6 +8,8 @@ let manageTables = [];
 document.addEventListener('DOMContentLoaded', () => {
     if (!Shell.requireLogin()) return;
     loadManageList();
+    // 报表列表与表格列表并行拉取：两者互不依赖，串行只会让首屏多等一个 RTT
+    loadExportList();
 });
 
 /** 拉取全部表格并渲染 */
@@ -87,6 +89,13 @@ function renderManageList() {
         html += `<span><svg class="icon icon-sm"><use href="#i-clock"/></svg>创建 ${escapeHtml(formatTime(t.createdAt))}</span>`;
         html += `<span><svg class="icon icon-sm"><use href="#i-refresh"/></svg>更新 ${escapeHtml(formatTime(t.updatedAt))}</span>`;
         html += '</div>';
+
+        // 每日自动导出开关。挂在 data-perm 下：只读账号看到的是「关」而且是禁用的，
+        // 不能交互却显示成开启，会让人以为报表在生成
+        html += '<label class="card-toggle" data-perm="table:write">'
+            + `<input type="checkbox"${t.autoExportEnabled ? ' checked' : ''}`
+            + ` onchange="toggleAutoExport(${t.id}, this.checked)">`
+            + '<span>每日自动导出</span></label>';
 
         html += '<div class="card-actions">';
         html += `<button class="btn btn-primary btn-sm" onclick="openTable(${t.id})"><svg class="icon icon-sm"><use href="#i-edit"/></svg>打开</button>`;
@@ -169,11 +178,12 @@ function doExport(tableId, kind) {
         .catch(err => showToast('❌ 导出失败：' + err.message, 'error'));
 }
 
-/** 删除（二次确认；删除进回收站，30 天内可恢复） */
+/** 删除（二次确认；删除进回收站，可在回收站页恢复） */
 function doDelete(tableId) {
     const t = findTable(tableId);
     const name = t ? t.tableName : '该表格';
-    if (!confirm(`确定要删除「${name}」吗？删除后进回收站，30 天内可恢复。`)) return;
+    // 不写死「30 天内可恢复」：保留天数由服务端配置决定，这里的数字一旦过期就成了假承诺
+    if (!confirm(`确定要删除「${name}」吗？删除后进回收站，可在「回收站」页恢复。`)) return;
 
     deleteTable(tableId)
         .then(msg => {
@@ -185,8 +195,94 @@ function doDelete(tableId) {
 }
 
 // ================================================================
+// 定时导出（Hangfire 每日任务产出的 xlsx 快照）
+// ================================================================
+
+let exportItems = [];
+
+/** 切换某张表的「每日自动导出」 */
+function toggleAutoExport(tableId, enabled) {
+    const t = findTable(tableId);
+
+    setAutoExport(tableId, enabled)
+        .then(msg => {
+            if (t) t.autoExportEnabled = enabled;
+            showToast('✅ ' + (msg || (enabled ? '已开启每日自动导出' : '已关闭每日自动导出')), 'success');
+        })
+        .catch(err => {
+            // 失败必须把勾选状态还原：界面显示「开着」而实际没开，
+            // 用户会以为明天有报表，到第二天发现什么都没有
+            if (t) t.autoExportEnabled = !enabled;
+            renderManageList();
+            showToast('❌ ' + err.message, 'error');
+        });
+}
+
+/** 拉取报表列表 */
+function loadExportList() {
+    const panel = document.getElementById('exportsPanel');
+    if (!panel) return;
+
+    fetchExports()
+        .then(items => {
+            exportItems = items || [];
+            renderExportList();
+        })
+        .catch(() => {
+            // 报表是附加信息，取不到就整块不显示，不影响表格管理本身
+            panel.hidden = true;
+        });
+}
+
+/** 渲染报表列表；没有任何快照时整块隐藏，不摆一张空卡占位 */
+function renderExportList() {
+    const host = document.getElementById('exportList');
+    const panel = document.getElementById('exportsPanel');
+    if (!host || !panel) return;
+
+    if (exportItems.length === 0) {
+        panel.hidden = true;
+        return;
+    }
+
+    let html = '';
+    for (const s of exportItems) {
+        html += '<div class="export-row">';
+        html += '<div class="export-main">';
+        html += `<span class="export-name" title="${escapeHtml(s.fileName)}">${escapeHtml(s.tableName)}</span>`;
+        html += `<span class="export-meta">${escapeHtml(formatTime(s.createdAt))}`
+            + ` · ${s.rowCount} 行 · ${formatBytes(s.sizeBytes)}</span>`;
+        html += '</div>';
+        html += `<button class="btn btn-outline btn-sm" onclick="downloadExport(${s.id})">`
+            + '<svg class="icon icon-sm"><use href="#i-download"/></svg>下载</button>';
+        html += '</div>';
+    }
+    host.innerHTML = html;
+    panel.hidden = false;
+}
+
+/** 下载某份报表（文件名用服务端登记的那份，避免前端再造一套命名规则） */
+function downloadExport(snapshotId) {
+    const item = exportItems.find(x => x.id === snapshotId);
+    const name = item ? item.fileName : `报表_${snapshotId}.xlsx`;
+
+    downloadExportBlob(snapshotId)
+        .then(blob => downloadBlob(blob, name))
+        .catch(err => showToast('❌ ' + err.message, 'error'));
+}
+
+/** 字节数 → 可读大小 */
+function formatBytes(bytes) {
+    if (!bytes || bytes < 0) return '0 B';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+// ================================================================
 // 暴露给内联 onclick
 // ================================================================
 Object.assign(window, {
-    openTable, promptRename, doDuplicate, doExport, doDelete
+    openTable, promptRename, doDuplicate, doExport, doDelete,
+    toggleAutoExport, downloadExport
 });

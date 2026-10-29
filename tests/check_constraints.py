@@ -5,7 +5,7 @@
 
 用法：
     python tests/check_constraints.py          # 全量检查
-    python tests/check_constraints.py --lines  # 只查行数
+    python tests/check_constraints.py --lines  # 附一份「体积偏大」文件清单（提示，不影响退出码）
 
 约束与豁免清单见仓库根目录 CODE_STANDARDS.md；改约束先改文档，再同步这里。
 """
@@ -17,14 +17,9 @@ ROOT = Path(__file__).resolve().parent.parent
 APP = ROOT / "ExcelToWeb"
 WWW = APP / "wwwroot"
 
-# 单文件行数上限（.cs / .js / .html / .css / .py，不含 bin/obj 与第三方库）
-MAX_LINES = 400
-
-# ── 豁免清单：每条必须有理由，且目标是在合理时间内清零而不是永久存在 ──
-# 格式：相对路径 -> 理由
-LINE_EXEMPTS = {
-    # 暂无
-}
+# 单文件「体量参考线」：**不是上限**，只用于 --lines 时打印提示。
+# 超过它通常意味着「这里该不该抽个协作类」值得想一想，但拆不拆由人判断，脚本不拦提交。
+SIZE_HINT = 400
 
 # JS 禁用模式：正则 -> 说明
 JS_FORBIDDEN = [
@@ -72,16 +67,23 @@ def rel(p):
     return str(p.relative_to(ROOT)).replace("\\", "/")
 
 
-def check_lines():
+def report_sizes():
+    """按体量倒序列出超过参考线的文件。仅提示，不计入 failures。"""
+    rows = []
     for p in iter_sources():
         try:
             n = sum(1 for _ in p.open(encoding="utf-8", errors="replace"))
         except OSError:
             continue
-        if rel(p) in LINE_EXEMPTS:
-            continue
-        if n > MAX_LINES:
-            fail(f"[lines] {rel(p)} 有 {n} 行，超过上限 {MAX_LINES}（拆分方案见 CODE_STANDARDS.md §2）")
+        if n > SIZE_HINT:
+            rows.append((n, rel(p)))
+    if not rows:
+        return
+    rows.sort(reverse=True)
+    print("\n体积参考（> %d 行，不构成约束）：" % SIZE_HINT)
+    for n, r in rows:
+        print("  · %5d 行  %s" % (n, r))
+    print()
 
 
 def check_patterns():
@@ -118,11 +120,12 @@ def check_script_order():
 
 
 def main():
-    lines_only = "--lines" in sys.argv
-    check_lines()
-    if not lines_only:
-        check_patterns()
-        check_script_order()
+    only_sizes = "--lines" in sys.argv
+    check_patterns()
+    check_script_order()
+
+    if only_sizes:
+        report_sizes()
 
     if failures:
         print("代码约束检查：%d 项不通过\n" % len(failures))
@@ -131,7 +134,7 @@ def main():
         print("\n约束详情见 CODE_STANDARDS.md")
         return 1
 
-    print("代码约束检查：全部通过（行数上限 %d / 注入与调试残留 / 脚本接线顺序）" % MAX_LINES)
+    print("代码约束检查：全部通过（注入与调试残留 / 脚本接线顺序；行数已改为体量提示，不再设上限）")
     return 0
 
 

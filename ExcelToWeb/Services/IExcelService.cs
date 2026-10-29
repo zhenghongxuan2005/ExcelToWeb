@@ -17,6 +17,10 @@ public interface IExcelService
     Task<byte[]?> ExportCsvAsync(int tableId, int userId);
     Task<byte[]?> DownloadTemplateAsync(int tableId, int userId);
     Task<List<TableInfoDto>> GetTablesAsync(int userId);
+
+    /// <summary>开关某张表的每日自动导出（后台 Hangfire 任务据此挑选要导出的表）</summary>
+    Task<ApiResponse> SetAutoExportAsync(int tableId, int userId, bool enabled);
+
     Task<ApiResponse> DeleteTableAsync(int tableId, int userId);
     Task<ApiResponse> RenameTableAsync(int tableId, int userId, string newName);
     Task<ApiResponse<UploadResult>> DuplicateTableAsync(int tableId, int userId);

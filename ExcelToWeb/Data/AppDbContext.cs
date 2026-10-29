@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<ValidationRule> ValidationRules => Set<ValidationRule>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<ExportSnapshot> ExportSnapshots => Set<ExportSnapshot>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -81,6 +82,26 @@ public class AppDbContext : DbContext
         // AuditLog：按表 + 时间倒序查询是主路径
         modelBuilder.Entity<AuditLog>()
             .HasIndex(a => new { a.TableId, a.CreatedAt });
+
+        // 导出快照：按「用户 + 时间倒序」列列表是主路径；表被彻底删除时连带删掉快照
+        modelBuilder.Entity<ExportSnapshot>()
+            .HasOne(s => s.Table)
+            .WithMany()
+            .HasForeignKey(s => s.TableId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<ExportSnapshot>()
+            .HasIndex(s => new { s.UserId, s.CreatedAt });
+        modelBuilder.Entity<ExportSnapshot>()
+            .HasIndex(s => s.TableId);
+        modelBuilder.Entity<ExportSnapshot>()
+            .Property(s => s.TableName)
+            .HasMaxLength(200);
+        modelBuilder.Entity<ExportSnapshot>()
+            .Property(s => s.FileName)
+            .HasMaxLength(260);
+        modelBuilder.Entity<ExportSnapshot>()
+            .Property(s => s.RelativePath)
+            .HasMaxLength(400);
 
         // RefreshToken：按指纹精确查找是主路径；整族吊销与会话列表各用一条索引
         modelBuilder.Entity<RefreshToken>()

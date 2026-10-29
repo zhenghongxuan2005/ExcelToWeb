@@ -205,6 +205,15 @@ function purgeTableForever(tableId) {
     return request('/excel/trash/' + tableId, { method: 'DELETE' });
 }
 
+/**
+ * 回收站保留策略（当前是 { retentionDays: 30 }）。
+ * 保留天数由服务端下发，前端不再各写一份常量——两边硬编码同一个数字，
+ * 一旦后台清理的配置改了，页面上的「N 天后自动清除」就会开始说谎。
+ */
+function fetchTrashPolicy() {
+    return request('/excel/trash/policy');
+}
+
 /** 重命名表格 */
 function renameTable(tableId, tableName) {
     return request('/excel/rename', {

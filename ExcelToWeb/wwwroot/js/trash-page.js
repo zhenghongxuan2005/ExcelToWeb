@@ -7,12 +7,15 @@
 //       卡片样式复用 table.css 的 table-card，与表格管理页视觉一致。
 // ================================================================
 
-const TRASH_RETENTION_DAYS = 30;
+// 保留天数的**兜底值**：真实值由 /api/excel/trash/policy 下发（后台清理任务用的是同一份配置）。
+// 这里保留一个默认值只是为了「策略接口临时失败时页面还能出来」，不让请求失败变成白屏。
+const TRASH_RETENTION_FALLBACK = 30;
 
+let trashRetentionDays = TRASH_RETENTION_FALLBACK;
 let trashItems = [];
 
 // ----- 初始化（脚本在 body 末尾加载，DOM 已就绪） -----
-(function initTrashPage() {
+(async function initTrashPage() {
     'use strict';
 
     const token = localStorage.getItem('token');
@@ -24,8 +27,23 @@ let trashItems = [];
     const userInfoEl = document.getElementById('userInfo');
     if (userInfoEl && username) userInfoEl.textContent = username;
 
+    // 先拿策略再拉列表：列表渲染时就要用「N 天后自动清除」里的 N，
+    // 反过来（先渲染再改口径）会让用户看到一次 30 天后跳成别的数字
+    await loadRetentionPolicy();
     loadTrashList();
 })();
+
+/** 读取保留天数；失败保持兜底值，绝不抛出（它只是文案精度，不是功能依赖） */
+async function loadRetentionPolicy() {
+    try {
+        const policy = await fetchTrashPolicy();
+        const days = policy && policy.retentionDays;
+        if (typeof days === 'number' && days > 0) trashRetentionDays = days;
+    } catch (e) {
+        // 服务端没给就用兜底值：宁可文案里的天数不准，也不要整页报错
+        trashRetentionDays = TRASH_RETENTION_FALLBACK;
+    }
+}
 
 /** 拉取回收站列表并渲染 */
 function loadTrashList() {
@@ -64,7 +82,7 @@ function renderTrashList() {
         host.innerHTML = '<div class="empty-state">'
             + '<div class="empty-icon"><svg class="icon"><use href="#i-inbox"/></svg></div>'
             + '<p>' + tt('回收站是空的') + '</p>'
-            + '<p class="empty-sub">' + tt('删除的表格会出现在这里，30 天内可恢复') + '</p>'
+            + '<p class="empty-sub">' + tt('删除的表格会出现在这里，{n} 天内可恢复', { n: trashRetentionDays }) + '</p>'
             + '<a class="btn btn-primary" href="/tables.html" style="margin-top:14px;">'
             + '<svg class="icon"><use href="#i-columns"/></svg>' + tt('查看表格管理') + '</a>'
             + '</div>';
@@ -100,12 +118,12 @@ function renderTrashList() {
     if (typeof Authz !== "undefined") Authz.apply(host);
 }
 
-/** 删除时间（UTC ISO）→ 剩余保留天数（向上取整，删除当天算 30） */
+/** 删除时间（UTC ISO）→ 剩余保留天数（向上取整，删除当天算满期） */
 function daysRemaining(deletedAtIso) {
     const deleted = new Date(deletedAtIso).getTime();
-    if (isNaN(deleted)) return TRASH_RETENTION_DAYS;
+    if (isNaN(deleted)) return trashRetentionDays;
     const elapsed = Date.now() - deleted;
-    const left = TRASH_RETENTION_DAYS - elapsed / 86400000;
+    const left = trashRetentionDays - elapsed / 86400000;
     return Math.max(0, Math.ceil(left));
 }
 

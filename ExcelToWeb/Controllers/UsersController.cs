@@ -1,4 +1,5 @@
 using ExcelToWeb.Auth;
+using ExcelToWeb.Caching;
 using ExcelToWeb.Data;
 using ExcelToWeb.DTOs;
 using ExcelToWeb.Models;
@@ -22,12 +23,18 @@ public class UsersController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly ITokenService _tokenService;
+    private readonly AppCache _cache;
     private readonly ILogger<UsersController> _logger;
 
-    public UsersController(AppDbContext db, ITokenService tokenService, ILogger<UsersController> logger)
+    public UsersController(
+        AppDbContext db,
+        ITokenService tokenService,
+        AppCache cache,
+        ILogger<UsersController> logger)
     {
         _db = db;
         _tokenService = tokenService;
+        _cache = cache;
         _logger = logger;
     }
 
@@ -84,6 +91,11 @@ public class UsersController : ControllerBase
         var previous = user.Role;
         user.Role = next;
         await _db.SaveChangesAsync();
+
+        // 缓存失效是「降级立即生效」的真正关键：库里改了、缓存不删，接下来最多 5 分钟
+        // 仍按旧角色放行。顺序也不能反——必须先提交数据库再删缓存，
+        // 反过来的话删完到提交之间如果有人命中缓存，会把旧角色又写回去。
+        await _cache.RemoveAsync(CacheKeys.UserRole(user.Id));
 
         // 权限变更属于安全事件：留一条日志，事后可追溯是谁把谁降了级
         _logger.LogInformation("成员角色变更：{UserId}（{Username}）{From} → {To}，操作人 {OperatorId}",

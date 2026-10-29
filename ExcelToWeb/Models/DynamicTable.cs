@@ -27,8 +27,16 @@ public class DynamicTable
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
+    /// 是否开启每日定时导出（Hangfire 的 daily-export 任务据此挑表）。
+    /// 默认关闭而不是默认开启：绝大多数表不需要每天存一份快照，
+    /// 全开会变成「每张表每天一个 xlsx」，磁盘涨得比价值快。
+    /// </summary>
+    public bool AutoExportEnabled { get; set; }
+
+    /// <summary>
     /// 软删除时间（UPGRADE_PLAN 功能 9 回收站）：null = 活表；
-    /// 非 null = 已进回收站（30 天内可恢复，过期由 RecycleBinCleanupService 物理删除）。
+    /// 非 null = 已进回收站（保留期内可恢复，过期由 Hangfire 的 recycle-bin-cleanup 任务物理删除）。
+    /// 保留天数见 Services/RetentionPolicy.cs（唯一真源，前端通过 /api/excel/trash/policy 取）。
     /// 可空列不会污染唯一约束 / 索引，这是软删除方案里代价最小的形态。
     /// </summary>
     public DateTime? DeletedAt { get; set; }

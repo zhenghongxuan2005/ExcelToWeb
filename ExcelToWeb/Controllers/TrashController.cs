@@ -19,14 +19,29 @@ public class TrashController : ControllerBase
 {
     private readonly TrashService _trash;
     private readonly ITokenService _tokenService;
+    private readonly IConfiguration _configuration;
 
-    public TrashController(TrashService trash, ITokenService tokenService)
+    public TrashController(TrashService trash, ITokenService tokenService, IConfiguration configuration)
     {
         _trash = trash;
         _tokenService = tokenService;
+        _configuration = configuration;
     }
 
     private int GetUserId() => _tokenService.GetUserId(User) ?? 0;
+
+    /// <summary>
+    /// 保留策略：前端拿它渲染「N 天后自动清除」和空状态里的「N 天内可恢复」。
+    /// 这些文案以前在前端硬编码 30 天，与后台清理服务的常量各写一份——
+    /// 两处一旦不同步，用户看到的期限就是错的。现在只有一个真源（配置 → 这里 → 前端）。
+    /// </summary>
+    [HttpGet("policy")]
+    [Authorize(Policy = Permission.TableRead)]
+    public IActionResult Policy() =>
+        Ok(ApiResponse<TrashPolicyDto>.Ok(new TrashPolicyDto
+        {
+            RetentionDays = RetentionPolicy.TrashDays(_configuration)
+        }));
 
     /// <summary>回收站列表：已删除的表格（删除时间 + 行数）</summary>
     [HttpGet]

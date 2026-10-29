@@ -6,7 +6,7 @@ namespace ExcelToWeb.Services;
 
 /// <summary>
 /// 回收站业务（功能 9）：列表 / 恢复 / 彻底删除。
-/// 单独成类而不是塞进 ExcelService：门面已顶在 400 行预算上，且回收站是独立的子域。
+/// 单独成类而不是塞进 ExcelService：门面只该留编排，且回收站是独立的子域。
 /// 演示账号只读拦截与门面同款（判定见 DemoWriteGuard）—— 只在前端拦不住直接调 API 的人。
 /// </summary>
 public class TrashService

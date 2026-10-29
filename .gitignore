@@ -375,3 +375,6 @@ appsettings.*.local.json
 # 本机若有 VS 自动生成的 .sln 副本则不入库，避免同一解决方案两份定义。
 *.sln
 !*.slnx
+# 运行时产物：定时导出的报表快照（App_Data/exports）与 Serilog 日志，属本地状态，不入库
+App_Data/
+logs/

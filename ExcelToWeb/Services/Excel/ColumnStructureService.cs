@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ExcelToWeb.Caching;
 using ExcelToWeb.Data;
 using ExcelToWeb.DTOs;
 using ExcelToWeb.Models;
@@ -22,12 +23,15 @@ public class ColumnStructureService
     private readonly AppDbContext _db;
     private readonly TableRepository _repository;
     private readonly RuleService _rules;
+    private readonly AppCache _cache;
 
-    public ColumnStructureService(AppDbContext db, TableRepository repository, RuleService rules)
+    public ColumnStructureService(
+        AppDbContext db, TableRepository repository, RuleService rules, AppCache cache)
     {
         _db = db;
         _repository = repository;
         _rules = rules;
+        _cache = cache;
     }
 
     public async Task<ApiResponse> UpdateHeadersAsync(int tableId, int userId, UpdateHeadersRequest request)
@@ -143,6 +147,10 @@ public class ColumnStructureService
             await _rules.MigrateForColumnsAsync(userId, tableId, renames, droppedForRules);
 
             await tx.CommitAsync();
+
+            // 这里绕过了 TableRepository.SaveColumnMetaAsync（结构变更要连表头、合并区域一起写），
+            // 所以列元数据缓存的失效得自己做一次 —— 漏了就会出现「改了列名，列设置里还是旧列」
+            await _cache.RemoveAsync(CacheKeys.ColumnMeta(tableId));
 
             return ApiResponse.Ok(
                 $"列结构已更新：新增 {added.Count} 列，删除 {dropped.Count} 列，重命名 {renames.Count} 列");

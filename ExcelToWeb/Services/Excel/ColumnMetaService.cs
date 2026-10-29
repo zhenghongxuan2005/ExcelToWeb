@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ExcelToWeb.Caching;
 using ExcelToWeb.DTOs;
 using ExcelToWeb.Models;
 
@@ -20,16 +21,33 @@ public class ColumnMetaService
     private const int MaxEntries = 200;
 
     private readonly TableRepository _repository;
+    private readonly AppCache _cache;
 
-    public ColumnMetaService(TableRepository repository) => _repository = repository;
+    public ColumnMetaService(TableRepository repository, AppCache cache)
+    {
+        _repository = repository;
+        _cache = cache;
+    }
 
-    /// <summary>读取某表的列元数据；表不存在或从未调整过列时返回空字典</summary>
+    /// <summary>
+    /// 读取某表的列元数据；表不存在或从未调整过列时返回空字典。
+    ///
+    /// 这里缓存的是**反序列化之后的字典**，不是列元数据原文：
+    /// 原文本来就跟着 DynamicTable 一起从库里取回来了，缓存它等于多一次网络往返；
+    /// 真正被反复执行的是 <see cref="Parse"/> 加下游遍历（表格加载、看板、导出都会走一遍）。
+    ///
+    /// 归属校验（<c>FindTableAsync</c>）必须在读缓存**之前**做完：
+    /// 缓存键只有 tableId，跳过校验就等于「知道表 id 就能读别人的列设置」。
+    /// </summary>
     public async Task<Dictionary<string, ColumnMetaDto>> GetAsync(int tableId, int userId)
     {
         var table = await _repository.FindTableAsync(tableId, userId);
-        return table == null
-            ? new Dictionary<string, ColumnMetaDto>()
-            : Parse(table.ColumnMetaJson);
+        if (table == null) return new Dictionary<string, ColumnMetaDto>();
+
+        return await _cache.GetOrCreateAsync(
+            CacheKeys.ColumnMeta(tableId),
+            _ => Task.FromResult(Parse(table.ColumnMetaJson)),
+            CacheTtl.ColumnMeta);
     }
 
     /// <summary>

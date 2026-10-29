@@ -1,12 +1,17 @@
 using System.Text;
 using System.Threading.RateLimiting;
 using ExcelToWeb.Auth;
+using ExcelToWeb.Caching;
 using ExcelToWeb.Data;
 using ExcelToWeb.Helpers;
 using ExcelToWeb.HealthChecks;
+using ExcelToWeb.Jobs;
 using ExcelToWeb.Middleware;
 using ExcelToWeb.Services;
 using ExcelToWeb.Services.Excel;
+using Hangfire;
+using Hangfire.Dashboard;
+using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -19,6 +24,7 @@ using OfficeOpenXml;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
+using StackExchange.Redis;
 
 // EPPlus 许可证（非商业用途）。
 // EPPlus 7+ 移除了 ExcelPackage.LicenseContext，改为在 ExcelPackage.License 上显式声明；
@@ -64,8 +70,80 @@ builder.Host.UseSerilog((context, config) =>
 });
 
 // ===== 数据库 =====
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+
+// ===== 分布式缓存 =====
+// 默认走进程内内存实现：本地开发、单机部署、自动化测试都不需要额外装 Redis。
+// 配 Cache:Provider=redis 时切到 Redis（Cache:Redis:Connection 必填）。
+// 业务代码只依赖 IDistributedCache 抽象，切换后端不需要改任何一行业务逻辑。
+//
+// 为什么接口选 IDistributedCache 而不是 IMemoryCache：
+// 一旦按容器多副本部署，内存缓存是「每副本一份」。改完角色后主动失效只打到一个副本，
+// 其余副本还拿着旧角色继续放行——这不叫缓存不一致，这叫权限漏洞。
+// 直接上分布式抽象，单机时它会退化成进程内字典，没有额外成本。
+var cacheProvider = builder.Configuration["Cache:Provider"] ?? "memory";
+if (cacheProvider.Equals("redis", StringComparison.OrdinalIgnoreCase))
+{
+    var redisConnection = builder.Configuration["Cache:Redis:Connection"];
+    if (string.IsNullOrWhiteSpace(redisConnection))
+    {
+        throw new InvalidOperationException(
+            "Cache:Provider=redis 时必须通过 Cache:Redis:Connection（或环境变量 Cache__Redis__Connection）提供连接串");
+    }
+
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        var redisOptions = ConfigurationOptions.Parse(redisConnection);
+        // 启动时连不上不要抛：多副本滚动更新、Redis 比应用晚起来都属于正常情况，
+        // 缓存不可用应该降级成「直接走数据库」，而不是让整个应用起不来。
+        redisOptions.AbortOnConnectFail = false;
+        // 超时压到 1 秒：默认 5 秒会让「Redis 不可达」时每个请求都额外等好几秒，
+        // 比不用缓存还慢（实测未调之前一个请求能拖到 25 秒）。AppCache 还有熔断兜底。
+        redisOptions.ConnectTimeout = 1000;
+        redisOptions.SyncTimeout = 1000;
+        redisOptions.ConnectRetry = 1;
+
+        options.ConfigurationOptions = redisOptions;
+        // 实例前缀让「同一个 Redis 被多个应用共用」时键不打架，也方便按前缀整体清理
+        options.InstanceName = builder.Configuration["Cache:Redis:InstanceName"] ?? "exceltoweb:";
+    });
+}
+else
+{
+    builder.Services.AddDistributedMemoryCache();
+}
+builder.Services.AddSingleton<AppCache>();
+
+// ===== 后台任务调度（Hangfire）=====
+// 换掉原来的「手写 BackgroundService + Task.Delay(24h)」循环，理由见 Jobs/RecycleBinCleanupJob.cs：
+// 执行记录可查、不因进程重启丢掉一整轮、多副本下靠存储里的锁保证只跑一次。
+//
+// 任务状态存在业务库里（HangFire.* 表，由 Hangfire 自己建，不走 EF 迁移）：
+// 换来的是「不额外引入一套中间件」；代价是业务库与任务调度耦合，库里锁表时任务也会卡。
+// 真到那一步再把它换到独立的库/Redis 存储即可，代码不用动。
+var hangfireEnabled = builder.Configuration.GetValue<bool>("Hangfire:Enabled");
+if (hangfireEnabled)
+{
+    builder.Services.AddHangfire(config => config
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UseSqlServerStorage(connectionString, new SqlServerStorageOptions
+        {
+            CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+            // 滑动可见性超时 + 关掉全局锁：这两个是 Hangfire 在 SQL Server 上的官方推荐配置，
+            // 前者避免长任务被误判为「worker 已死」而被重复执行，后者减少跨实例的锁竞争
+            SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+            QueuePollInterval = TimeSpan.Zero,
+            UseRecommendedIsolationLevel = true,
+            DisableGlobalLocks = true
+        }));
+
+    // WorkerCount 给 2 而不是默认的 20：本项目只有两条轻量任务，
+    // 开一堆空闲 worker 只会让它们对着 SQL Server 空轮询。
+    builder.Services.AddHangfireServer(options => options.WorkerCount = 2);
+}
 
 // ===== JWT 认证 =====
 // 密钥不进仓库：本地开发用 dotnet user-secrets（Jwt:Key），生产环境用环境变量 Jwt__Key。
@@ -152,9 +230,14 @@ builder.Services.AddScoped<TableImportService>();
 builder.Services.AddScoped<IExcelService, ExcelService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<RefreshTokenService>();
-// 回收站（功能 9）：接口层直接注入 TrashService；过期清理由后台服务周期执行
+// 回收站（功能 9）：接口层直接注入 TrashService；过期清理由 Hangfire 的 recycle-bin-cleanup 任务执行
 builder.Services.AddScoped<TrashService>();
-builder.Services.AddHostedService<RecycleBinCleanupService>();
+// 定时导出的产物服务：控制器查/下载它，后台任务写它，两边共用一套目录与命名规则
+builder.Services.AddScoped<ExportSnapshotService>();
+// Hangfire 任务类。Hangfire 通过 DI 创建任务实例，这里必须注册，
+// 否则调度到点会报「无法解析类型」。用 Scoped：任务里各自开 scope 取 DbContext
+builder.Services.AddScoped<RecycleBinCleanupJob>();
+builder.Services.AddScoped<DailyExportJob>();
 // ExcelService 的演示账号只读拦截需要读当前 HTTP 请求的 JWT claims
 builder.Services.AddHttpContextAccessor();
 
@@ -317,6 +400,39 @@ using (var scope = app.Services.CreateScope())
     await DemoSeeder.SeedAsync(db, repository, logger);
 }
 
+// ===== 注册重复任务（Hangfire recurring jobs）=====
+// AddOrUpdate 是幂等的：每次启动都用代码里的 cron 覆盖存储里的定义，
+// 所以「改调度时间」只需要改这里的两个字面量并重启。
+// 反过来也是约束：**不要在 Dashboard 上手工改 cron**，下次重启会被覆盖回代码里的值。
+if (hangfireEnabled)
+{
+    using var jobScope = app.Services.CreateScope();
+    var recurring = jobScope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+
+    // 用服务器本地时区而不是 UTC：这两条任务的名字里就写着「每天几点」，
+    // 运维看日志时也该看到本地时间。容器部署时记得把 TZ 设成 Asia/Shanghai。
+    var timeZone = TimeZoneInfo.Local;
+
+    // 回收站清理：每天 03:00，物理删除超过保留期的表格 + 过期/吊销的刷新令牌
+    recurring.AddOrUpdate<RecycleBinCleanupJob>(
+        "recycle-bin-cleanup",
+        job => job.RunAsync(),
+        "0 3 * * *",
+        new RecurringJobOptions { TimeZone = timeZone });
+
+    // 每日报表：每天 02:00，为所有开启「自动导出」的表格生成 xlsx 快照
+    recurring.AddOrUpdate<DailyExportJob>(
+        "daily-export",
+        job => job.RunAsync(),
+        "0 2 * * *",
+        new RecurringJobOptions { TimeZone = timeZone });
+
+    // 启动即补跑一次清理：进程可能整天没起来，或刚部署完还不到下次调度时间。
+    // 清理是幂等的（只删「该删的」），多跑一次没有副作用；
+    // 不补跑反而会出现「过期表一直躺在回收站里」——旧的手写循环原本也是启动先清一次。
+    recurring.Trigger("recycle-bin-cleanup");
+}
+
 // ===== 中间件管道 =====
 app.UseMiddleware<ExceptionMiddleware>();
 
@@ -361,5 +477,19 @@ app.MapControllers();
 // 就绪探针：只跑带 ready 标签的检查（SQL 连通性），数据库不可用时返回 503。
 app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = r => r.Tags.Contains("ready") });
+
+// ===== Hangfire Dashboard（默认仅开发环境）=====
+// Dashboard 默认对**任何能访问到它的人**开放：里面能看到任务名、参数、异常栈，
+// 还能手动触发 / 删除任务——暴露在公网上等于把调度权交出去。
+// 又因为本项目前端用 JWT（存 localStorage），浏览器直接访问 /hangfire 带不上 Authorization 头，
+// 做不成「登录后按角色放行」，所以退一步：只开给本机 + 生产环境默认关闭（Hangfire:DashboardEnabled）。
+// 需要远程看的时候走 SSH 隧道 / 内网访问，不要把开关打开到公网。
+if (hangfireEnabled && app.Configuration.GetValue<bool>("Hangfire:DashboardEnabled"))
+{
+    app.MapHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = [new LocalRequestsOnlyAuthorizationFilter()]
+    });
+}
 
 app.Run();

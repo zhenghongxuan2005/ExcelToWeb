@@ -78,13 +78,24 @@
 - **结构化日志（Serilog）**：开发环境输出控制台，生产输出按天滚动的 JSON 文件（保留 14 天）；导入批插耗时、保存耗时、限流拒绝（含来源 IP）、乐观并发冲突等关键路径均有埋点，可直接被日志平台 / Application Insights 摄取
 - **健康检查**：`/health`（存活）与 `/health/ready`（就绪，验证数据库连通）
 
+### 后台任务与缓存
+- **Hangfire 调度**（`Jobs/`）：任务状态存业务库（`HangFire.*` 表，Hangfire 自建，不走 EF 迁移），多副本部署时靠存储里的分布式锁保证同一条任务只跑一次；执行记录（起止时间、耗时、异常栈）可在 Dashboard 查
+  - `recycle-bin-cleanup`（每天 03:00）：物理删除超过保留期的回收站表格 + 过期/已吊销的刷新令牌；应用启动时额外补跑一次
+  - `daily-export`（每天 02:00）：为开启了「每日自动导出」的表格生成 xlsx 快照，产物落 `App_Data/exports/{userId}/`，保留 14 天，并自愈清理「库里已无记录」的孤儿文件
+- **Hangfire Dashboard**：`/hangfire`，**默认只在开发环境挂载且仅允许本机访问**（前端用 JWT，浏览器直接访问带不上令牌，做不成登录后放行；暴露公网等于交出调度权）
+- **分布式缓存**（`Caching/`）：业务只依赖 `IDistributedCache`，默认进程内内存实现，`Cache:Provider=redis` 切 Redis
+  - 缓存**用户角色**（5 分钟兜底 TTL）：RBAC 每请求要读一次角色，改角色时主动失效——降级立即生效靠的是「写时删缓存」，不是短 TTL
+  - 缓存**列元数据解析结果**（10 分钟兜底 TTL）：写路径集中在 `TableRepository.SaveColumnMetaAsync`（唯一失效点）+ 列结构变更处
+  - 缓存读写失败一律降级为「未命中」，不让缓存故障影响主流程
+  - **降级之外还有熔断**：连续失败 2 次后暂停使用缓存 30 秒，期间请求直接走数据库。只靠 try/catch 是不够的——Redis 不可达时每次调用都要等连接超时，实测一个普通请求能拖到 25 秒，比不用缓存还糟；加熔断后除第一次（约 5 秒）以外，全部回到毫秒级
+
 ### 界面
 - **八个页面**：`index.html` 表格编辑、`login.html` 登录注册、`tables.html` 表格管理、`dashboard.html` 数据看板、`audit.html` 审计中心、`trash.html` 回收站、`settings.html` 设置、`help.html` 使用帮助
 - **搜索 / 排序 / 分页**：全局搜索命中高亮；排序与分页只做显示层裁剪，不改写底层数据，编辑始终作用于真实行
 - **列自定义**：按需隐藏列、调整列宽，偏好写入服务端列元数据并在下次打开时恢复
 - **选中统计**：勾选若干行后，对纯数字列自动求和 / 求平均
 - **审计中心**：跨全部表格的审计时间线，按表格 / 操作 / 时间筛选，支持分页
-- **回收站**：删除的表格进入回收站保留 30 天，可随时恢复或彻底删除；过期由后台服务自动物理清除
+- **回收站**：删除的表格进入回收站保留 30 天（`Trash:RetentionDays` 可配，前端通过 `/api/excel/trash/policy` 取天数，不自己写死），可随时恢复或彻底删除；过期由 Hangfire 任务自动物理清除
 - **设置页**：账号与密码状态、修改密码、会话管理、偏好设置（主题 / 每页行数 / 表格字号三档 / 网格线开关）与关于信息；偏好存本机 `localStorage`，字号与网格线在表格页即时生效
 - **帮助页速查**：帮助中心带页内锚点导航与完整键盘快捷键速查表
 - **拖拽上传**：把 Excel / CSV 拖到页面上即可导入，与「上传」按钮共用同一套导入流程
@@ -108,6 +119,8 @@
 | 限流 | 内置 `Microsoft.AspNetCore.RateLimiting`（固定窗口 + 按 IP 分区） |
 | Excel 读写 | EPPlus 8.7.0（原生 `net10.0` 目标框架），`ExcelPackage.License.SetNonCommercialPersonal(...)` 声明非商业用途 |
 | 日志 | Serilog.AspNetCore 10.0.0（控制台 + 按天滚动 JSON 文件） |
+| 后台任务 | Hangfire 1.8.25（`Hangfire.AspNetCore` + `Hangfire.SqlServer`，SQL Server 存储） |
+| 缓存 | `Microsoft.Extensions.Caching.StackExchangeRedis` 10.0.14 / 内置 `AddDistributedMemoryCache`，按配置切换 |
 | API 文档 | Swashbuckle.AspNetCore 7.2.0（Swagger UI，仅开发环境启用） |
 | 前端 | 原生 HTML / CSS / JavaScript，无构建步骤；图表用 ECharts 5.5.1（CDN，jsDelivr 失败自动切 npmmirror） |
 | 测试 | xUnit（单元）+ Python / Node 脚本（黑盒回归） |
@@ -139,15 +152,21 @@ ExcelToWeb/
     ├── Controllers/
     │   ├── AuthController.cs     # 注册 / 登录 / Windows 登录 / 刷新令牌 / 会话管理 / 修改密码
     │   ├── ExcelController.cs    # 表格 CRUD、列结构、列元数据、计算列、透视、导入导出、规则、审计
-    │   └── TrashController.cs    # 回收站：列表 / 恢复 / 彻底删除
+    │   ├── TrashController.cs    # 回收站：列表 / 恢复 / 彻底删除 / 保留策略
+    │   ├── UsersController.cs    # 成员管理（RBAC）：账号列表 / 改角色
+    │   └── ExportsController.cs  # 定时导出报表：列表 / 下载 / 开发环境手动触发
+    ├── Auth/                     # RBAC：角色与权限码映射、授权处理器、403 响应统一出口
+    ├── Caching/                  # 分布式缓存门面（AppCache）+ 缓存键与 TTL 常量
+    ├── Jobs/                     # Hangfire 任务：回收站清理、每日导出报表
     ├── Services/
     │   ├── IExcelService.cs      # 对外的 Excel 服务契约
     │   ├── ExcelService.cs       # 门面：编排下列协作类，本身只做流程串联与异常收敛
+    │   ├── RetentionPolicy.cs    # 保留期唯一真源（回收站 / 导出快照），配置驱动
     │   ├── TokenService.cs       # JWT 签发与用户 ID 提取
     │   ├── RefreshTokenService.cs# 刷新令牌签发 / 轮换 / 重用检测 / 会话列表
     │   ├── TrashService.cs       # 回收站：恢复 / 彻底删除（含演示账号只读拦截）
     │   ├── DemoSeeder.cs         # 演示账号与样例表的幂等 seed（含密码自愈）
-    │   └── Excel/                # Excel 协作类（按职责拆分，单文件 ≤ 400 行）
+    │   └── Excel/                # Excel 协作类（按职责拆分，单一职责而非凑行数）
     │       ├── ExcelSheetReader.cs      # xlsx 解析 → 表头 + 数据行 + 合并区域
     │       ├── CsvSheetReader.cs        # CSV 解析（编码嗅探 UTF-8/GBK、分隔符检测、引号字段）
     │       ├── TableImportService.cs    # 导入编排：解析 → 建表 → 批插（Excel / CSV 共用链路）
@@ -366,12 +385,23 @@ ExcelToWeb/
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | `GET` | `/api/excel/trash` | 回收站列表（表名、数据行数、删除时间） |
+| `GET` | `/api/excel/trash/policy` | 保留策略（`retentionDays`），前端据此渲染「N 天后自动清除」，不再自己写死天数 |
 | `POST` | `/api/excel/trash/{id}/restore` | 恢复表格（清掉删除标记，数据原样回到表格列表） |
 | `DELETE` | `/api/excel/trash/{id}` | 彻底删除（物理删表，并清理关联的审计日志与校验规则） |
 | `GET` | `/api/excel/audit-logs` | **单表**审计：`tableId` 必填，`rowIndex?` 可精确到行（编辑器内弹窗用） |
 | `GET` | `/api/excel/audit-center` | **跨表**审计：`tableId?`、`actionType?`、`from?`、`to?`、`page`、`pageSize`（审计中心页用） |
 
-> 回收站中的表格超过 30 天后，由后台服务 `RecycleBinCleanupService`（每 24 小时一轮）自动物理清除。
+> 回收站中的表格超过保留期（`Trash:RetentionDays`，默认 30 天）后，由 Hangfire 的 `recycle-bin-cleanup` 任务（每天 03:00，启动时补跑一次）自动物理清除。
+
+### 定时导出与后台任务
+
+| 方法 | 路径 | 权限 | 说明 |
+| --- | --- | --- | --- |
+| `PUT` | `/api/excel/tables/{id}/auto-export` | `table:write` | 开关某张表的「每日自动导出」 |
+| `GET` | `/api/exports` | `table:read` | 当前用户最近 50 份导出报表 |
+| `GET` | `/api/exports/{id}/download` | `table:read` | 下载报表（校验归属，别人的 id 一律 404） |
+| `POST` | `/api/exports/run-now` | `member:manage` | **仅开发环境**：把 `daily-export` 排进队列，不必等到凌晨两点 |
+| `GET` | `/hangfire` | 本机 | Hangfire Dashboard，`Hangfire:DashboardEnabled` 控制，生产默认关闭 |
 
 ### 健康检查
 
@@ -394,7 +424,7 @@ ExcelToWeb/
 - 单元测试全部指向不依赖数据库的纯函数/纯类，零 mock；`FormulaLexer`、`FormulaParser` 是 internal 类，经 `InternalsVisibleTo` 直接测
 - 黑盒套件由 `tests/run.py` 一键编排：代码约束守门 → 起服务（5185）→ `backend/*.py` → `frontend/*.js`，当前共 28 项
 - 前端用例不依赖浏览器：Node `vm` 沙箱 + DOM 桩（`tests/frontend/helpers/dom-harness.js`），直接读 `wwwroot` 源文件，因此改前端必跑
-- **约束守门**（`tests/check_constraints.py`，`run.py` 的第 0 项，不过则后面全跳过）：单文件 ≤ 400 行、禁 `eval` / `new Function` / `alert` / `document.write`、`index.html` 脚本加载顺序、共享模块装配审计；规则细节见 [CODE_STANDARDS.md](CODE_STANDARDS.md)
+- **约束守门**（`tests/check_constraints.py`，`run.py` 的第 0 项，不过则后面全跳过）：禁 `eval` / `new Function` / `alert` / `document.write`、禁用 `Console.WriteLine` 与空 catch、`index.html` 脚本加载顺序、共享模块装配审计；行数**不再是约束**（`--lines` 只打印体量提示）。规则细节见 [CODE_STANDARDS.md](CODE_STANDARDS.md)
 - GitHub Actions（`.github/workflows/ci.yml`）按同样顺序跑全部门禁：`dotnet build ExcelToWeb.slnx` → `dotnet test` → 约束守门 → 黑盒回归（ubuntu runner + SQL Server 容器服务）
 
 > 前置：Python 3.x、Node 20+（仅跑测试需要）。测试固定连 `http://localhost:5185`，可用环境变量 `TEST_BASE_URL` 改端口；`run.py` 用 `dotnet run --no-build`，**改了 C# 要先 `dotnet build`**，否则测的是旧二进制。
@@ -546,7 +576,16 @@ curl -L "http://localhost:5185/api/excel/export?tableId=1" \
 | `Cors:AllowedOrigins` | 允许跨域的来源数组。**开发环境忽略此项**（一律放开，便于 `file://` 或独立前端 dev server 调试）；生产环境只放行此处列出的来源，留空则不启用跨域（前端由本应用同源托管，通常无需配置） |
 | `Auth:EnableWindows` | 是否启用 Windows 集成身份验证（Negotiate）。默认 `false`；`appsettings.Development.json` 中为 `true`。关闭时 `/api/auth/windows` 返回 404。Azure 等无域环境保持关闭 |
 | `RateLimit:AuthPermitLimit` | 登录 / 注册接口按 IP 的每分钟放行次数（固定窗口），未配置时代码默认 `10`。反向代理后部署需开启转发头，否则所有请求会算作代理 IP 一个配额 |
+| `Cache:Provider` | `memory`（默认，进程内内存实现）或 `redis`。多副本部署时应设为 `redis`：内存缓存每个副本各存一份，改角色后的主动失效只能打到其中一个副本 |
+| `Cache:Redis:Connection` | Redis 连接串（`Provider=redis` 时必填，缺失直接启动失败），如 `localhost:6379` |
+| `Cache:Redis:InstanceName` | 键前缀，默认 `exceltoweb:`；多个应用共用一个 Redis 时用来隔离 |
+| `Hangfire:Enabled` | 是否启用后台任务调度，默认 `true`。关闭后 `/api/exports/run-now` 返回 503、`/hangfire` 不挂载，业务接口不受影响 |
+| `Hangfire:DashboardEnabled` | 是否挂载 `/hangfire` Dashboard。`appsettings.Development.json` 为 `true`，生产默认 `false`（Dashboard 能看到任务参数与异常栈、能手动触发任务，且只对本机请求放行） |
+| `Trash:RetentionDays` | 回收站保留天数，默认 `30`。后台清理与前端文案共用这一份（`Services/RetentionPolicy.cs`） |
+| `Export:RetentionDays` | 定时导出快照保留天数，默认 `14` |
 | `Logging:LogLevel` | 日志级别（Serilog 会接管输出：控制台 + 生产按天滚动 JSON 文件，保留 14 天） |
+
+后台任务的 cron 写在 `Program.cs` 的 `RecurringJob.AddOrUpdate` 里（每次启动覆盖存储中的定义），调度时区取服务器本地时区——容器部署时记得设 `TZ=Asia/Shanghai`。导出快照落 `App_Data/exports/`（已在 `.gitignore` 中排除）。
 
 本地开发端口默认为 5185（`Program.cs` 仅在「开发环境且未设置 `ASPNETCORE_URLS`」时兜底监听）；生产环境改由 `ASPNETCORE_URLS` 决定（Azure 容器默认 8080），不会再被硬编码端口覆盖。
 

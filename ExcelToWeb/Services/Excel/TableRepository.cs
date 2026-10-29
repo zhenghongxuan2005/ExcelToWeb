@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using ExcelToWeb.Caching;
 using ExcelToWeb.Data;
 using ExcelToWeb.DTOs;
 using ExcelToWeb.Models;
@@ -14,11 +15,13 @@ namespace ExcelToWeb.Services.Excel;
 public class TableRepository
 {
     private readonly AppDbContext _db;
+    private readonly AppCache _cache;
     private readonly ILogger<TableRepository> _logger;
 
-    public TableRepository(AppDbContext db, ILogger<TableRepository> logger)
+    public TableRepository(AppDbContext db, AppCache cache, ILogger<TableRepository> logger)
     {
         _db = db;
+        _cache = cache;
         _logger = logger;
     }
 
@@ -63,9 +66,33 @@ public class TableRepository
                 TableName = t.TableName,
                 Headers = t.Headers,
                 CreatedAt = t.CreatedAt,
-                UpdatedAt = t.UpdatedAt
+                UpdatedAt = t.UpdatedAt,
+                AutoExportEnabled = t.AutoExportEnabled
             })
             .ToListAsync();
+
+    /// <summary>开启/关闭某表的每日自动导出（归属校验在调用方按 FindTableAsync 做完）</summary>
+    public async Task SetAutoExportAsync(DynamicTable table, bool enabled)
+    {
+        table.AutoExportEnabled = enabled;
+        // 不动 UpdatedAt：这是「调度偏好」不是数据变更，不该让表在列表里跳到最前
+        await _db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// 后台任务用：取出所有开启了自动导出的活表（跨用户）。
+    /// 只返回导出需要的字段，不加载 Rows —— 每张表的行数据由导出服务按需再查，
+    /// 一次性把全站数据行拉进内存是这类定时任务最常见的翻车方式。
+    /// </summary>
+    public Task<List<DynamicTable>> GetAutoExportTablesAsync() =>
+        _db.DynamicTables
+            .AsNoTracking()
+            .Where(t => t.AutoExportEnabled && t.DeletedAt == null)
+            .OrderBy(t => t.Id)
+            .ToListAsync();
+
+    /// <summary>某表的行数（不做整表加载：定时导出只需要数字，不需要把数据读进内存）</summary>
+    public Task<int> CountRowsAsync(int tableId) => _db.DynamicRows.CountAsync(r => r.TableId == tableId);
 
     /// <summary>取当前用户全部表格名（含空表；不含回收站里的表——那里的表名视为可复用）</summary>
     public Task<List<string>> GetTableNamesAsync(int userId) =>
@@ -182,7 +209,8 @@ public class TableRepository
 
     /// <summary>
     /// 软删除（功能 9 回收站）：只打删除标记，数据行 / 审计 / 校验规则原样保留，
-    /// 30 天内可在回收站恢复；过期由 RecycleBinCleanupService 调 PurgeExpiredAsync 物理清除。
+    /// 保留期内可在回收站恢复（天数见 Services/RetentionPolicy.cs）；
+    /// 过期由 Hangfire 的 recycle-bin-cleanup 任务调 PurgeExpiredAsync 物理清除。
     /// </summary>
     public async Task SoftDeleteAsync(DynamicTable table)
     {
@@ -222,6 +250,10 @@ public class TableRepository
             await transaction.RollbackAsync();
             throw;
         }
+
+        // 表没了，列元数据缓存也要跟着走。IDENTITY 不复用 id，理论上留着也无害，
+        // 但缓存里留着一份「已不存在的表」的键属于纯垃圾，且一旦哪天改成可复用 id 就是数据串门
+        await _cache.RemoveAsync(CacheKeys.ColumnMeta(table.Id));
     }
 
     /// <summary>回收站列表：该用户已软删除的表格（按删除时间倒序），行数用子查询统计</summary>
@@ -273,6 +305,11 @@ public class TableRepository
         table.ColumnMetaJson = metaJson;
         if (touchUpdatedAt) table.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
+
+        // 列元数据缓存的**唯一**失效点：调列宽、改隐藏、存/删公式三条路径最终都落到这里
+        // （ColumnMetaService.SaveAsync 与 ComputedColumnService.SaveFormulaAsync）。
+        // 放在仓储而不是两个调用方里，是为了新增调用方时不会忘记失效。
+        await _cache.RemoveAsync(CacheKeys.ColumnMeta(table.Id));
     }
 
     /// <summary>

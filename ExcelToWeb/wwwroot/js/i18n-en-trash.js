@@ -15,8 +15,8 @@ I18n.register({
     '加载失败：{msg}': 'Could not load: {msg}',
     '{n} 个已删除表格': '{n} deleted tables',
     '回收站是空的': 'The trash is empty',
-    '删除的表格会出现在这里，30 天内可恢复':
-        'Deleted tables show up here and can be restored within 30 days',
+    '删除的表格会出现在这里，{n} 天内可恢复':
+        'Deleted tables show up here and can be restored within {n} days',
     '查看表格管理': 'Go to Tables',
     '{n} 行数据': '{n} rows of data',
     '删除于 {time}': 'Deleted {time}',

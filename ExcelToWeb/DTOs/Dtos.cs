@@ -109,6 +109,9 @@ public class TableInfoDto
     public List<string> Headers { get; set; } = new();
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+
+    /// <summary>是否已开启每日自动导出（表格管理页据此渲染开关）</summary>
+    public bool AutoExportEnabled { get; set; }
 }
 
 public class TableDataDto
@@ -270,8 +273,37 @@ public class TrashItemDto
     /// <summary>回收站里的数据行数（恢复前让用户知道里面有多少数据）</summary>
     public int RowCount { get; set; }
 
-    /// <summary>删除时间（UTC）。距此 30 天后会被后台自动物理清除</summary>
+    /// <summary>删除时间（UTC）。超过保留期（见 TrashPolicyDto）后由后台任务物理清除</summary>
     public DateTime DeletedAt { get; set; }
+}
+
+/// <summary>
+/// 回收站保留策略。保留天数由服务端下发，前端不再自己写一份常量 ——
+/// 之前两边各硬编码一个 30，改配置时只改得动一处，「还有 N 天清除」和真实清理时间必然漂移。
+/// </summary>
+public class TrashPolicyDto
+{
+    public int RetentionDays { get; set; }
+}
+
+// ===== 定时导出（Hangfire） =====
+
+/// <summary>一份定时导出的产物</summary>
+public class ExportSnapshotDto
+{
+    public int Id { get; set; }
+    public int TableId { get; set; }
+    public string TableName { get; set; } = string.Empty;
+    public string FileName { get; set; } = string.Empty;
+    public long SizeBytes { get; set; }
+    public int RowCount { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+/// <summary>开启 / 关闭某张表的每日自动导出</summary>
+public class AutoExportRequest
+{
+    public bool Enabled { get; set; }
 }
 
 // ===== 成员管理（RBAC） =====

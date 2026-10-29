@@ -24,6 +24,7 @@ public class ExcelService : IExcelService
     private readonly PivotService _pivot;
     private readonly PivotExportService _pivotExport;
     private readonly AuditService _audit;
+    private readonly IConfiguration _configuration;
 
     public ExcelService(
         ILogger<ExcelService> logger,
@@ -37,7 +38,8 @@ public class ExcelService : IExcelService
         ComputedColumnService computed,
         PivotService pivot,
         PivotExportService pivotExport,
-        AuditService audit)
+        AuditService audit,
+        IConfiguration configuration)
     {
         _logger = logger;
         _httpContextAccessor = httpContextAccessor;
@@ -51,6 +53,7 @@ public class ExcelService : IExcelService
         _pivot = pivot;
         _pivotExport = pivotExport;
         _audit = audit;
+        _configuration = configuration;
     }
 
     // ================================================================
@@ -149,7 +152,7 @@ public class ExcelService : IExcelService
     }
 
     // ================================================================
-    // 删除表格（软删除：进回收站，30 天内可恢复；彻底删除见 TrashService）
+    // 删除表格（软删除：进回收站，保留期内可恢复；彻底删除见 TrashService）
     // ================================================================
     public async Task<ApiResponse> DeleteTableAsync(int tableId, int userId)
     {
@@ -162,7 +165,10 @@ public class ExcelService : IExcelService
         await _repository.SoftDeleteAsync(table);
 
         _logger.LogInformation("用户 {UserId} 删除表格 {TableId}（已进回收站）", userId, tableId);
-        return ApiResponse.Ok("表格已删除，30 天内可在回收站恢复");
+        // 天数跟着配置走，不写死：后台清理用的是同一份 RetentionPolicy，
+        // 两边不一致时用户会看到「说好 30 天，第 7 天就没了」
+        var days = RetentionPolicy.TrashDays(_configuration);
+        return ApiResponse.Ok($"表格已删除，{days} 天内可在回收站恢复");
     }
 
     // ================================================================
@@ -321,6 +327,29 @@ public class ExcelService : IExcelService
 
     // ---- 获取表格列表 ----
     public Task<List<TableInfoDto>> GetTablesAsync(int userId) => _repository.GetTableInfosAsync(userId);
+
+    /// <summary>
+    /// 开启 / 关闭某张表的每日自动导出（Hangfire 的 daily-export 任务据此挑表）。
+    /// 属于「配置写入」，演示账号同样只读。
+    /// </summary>
+    public async Task<ApiResponse> SetAutoExportAsync(int tableId, int userId, bool enabled)
+    {
+        if (IsDemoUser) return ApiResponse.Fail(DemoWriteGuard.ReadOnlyMessage);
+
+        var table = await _repository.FindTableAsync(tableId, userId);
+        if (table == null) return ApiResponse.Fail("表格不存在");
+
+        if (table.AutoExportEnabled == enabled)
+            return ApiResponse.Ok("设置未变化");
+
+        await _repository.SetAutoExportAsync(table, enabled);
+        _logger.LogInformation("用户 {UserId} 将表格 {TableId}「{TableName}」的每日自动导出设为 {Enabled}",
+            userId, tableId, table.TableName, enabled);
+
+        return ApiResponse.Ok(enabled
+            ? $"已开启「{table.TableName}」的每日自动导出"
+            : $"已关闭「{table.TableName}」的每日自动导出");
+    }
 
     // ================================================================
     // 颜色规则（委托给 RuleService，此处只做对外语义包装）
