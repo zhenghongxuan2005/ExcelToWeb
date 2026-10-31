@@ -3,6 +3,38 @@
 // 依赖：state.js（全局状态）、utils.js、api.js、tables.js（refreshData）
 // ================================================================
 
+/**
+ * 保存成功后用服务端回传的行替换本地数据。
+ *
+ * 服务端已经把「保存后的行」带回来了（新的行主键 + 重算过的计算列），
+ * 用它替换就不必再 GET 一次整表 —— 大表上那是第二次全量往返。
+ *
+ * 行主键必须换成新的：整表替换重新分配了 identity，旧主键全部作废。
+ * 不换的话下一次保存按主键匹配不到旧行，计算列的历史原值又会丢。
+ *
+ * 回传里没有 rows（老服务端，或服务端发现库内行数对不上）时退回整表重取。
+ */
+function applySavedRows(result, tableId) {
+    const rows = result && result.rows;
+    if (!Array.isArray(rows)) {
+        refreshData({ keepView: true, silent: true });
+        return false;
+    }
+
+    currentRows = rows;
+    // 数据基线已变：旧撤销快照里的行主键作废，撤回去再保存会匹配不到旧行
+    resetHistory();
+    renderTable();
+    if (typeof updatePageMeta === 'function') updatePageMeta();
+
+    // 页头副标题的「最后保存」读的是列表里那张表，同步一下才不是旧时间
+    if (result.updatedAt && typeof allTables !== 'undefined' && allTables) {
+        const table = allTables.find(t => String(t.id) === String(tableId));
+        if (table) table.updatedAt = result.updatedAt;
+    }
+    return true;
+}
+
 function saveData() {
     if (!currentTableId) {
         showToast(tt('请先上传一个 Excel 文件'), 'error');
@@ -108,12 +140,12 @@ function saveData() {
             setStatus(tt('保存中...'));
             return saveTableData(currentTableId, validRows, currentRows.length === 0)
                 .then(result => {
-                    showToast('✅ ' + tt(result.message || '保存成功'), 'success');
+                    // 服务端回传了「保存后的行」就直接替换（含新行主键与重算的计算列），
+                    // 省掉一次整表往返；回传缺行时才退回重取。
+                    // 这里不做 resetFilter/resetSort：排序与筛选是视图状态，与这次保存无关。
+                    applySavedRows(result, currentTableId);
+                    showToast('✅ ' + tt('保存成功'), 'success');
                     setStatus(tt('已保存'));
-                    // 重取是为了拿到服务端算好的计算列值；但排序/筛选是视图状态，
-                    // 与这次保存无关，清掉等于无故丢掉用户刚才的操作顺序。
-                    // silent：别再弹「已刷新」把「保存成功」顶掉。
-                    refreshData({ keepView: true, silent: true });
                 });
         })
         .catch(err => showToast('❌ ' + tt('保存失败：{msg}', { msg: err.message }), 'error'));

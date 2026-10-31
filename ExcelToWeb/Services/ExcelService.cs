@@ -87,7 +87,16 @@ public class ExcelService : IExcelService
         if (table == null)
             return ApiResponse<TableDataDto>.NotFound("表格不存在");
 
-        var dataRows = await _repository.GetRowDataAsync(tableId);
+        // 带主键读：主键随后以 RowPayloadGuard.RowIdKey 塞进每一行下发。
+        // 保存是整表替换，服务端要靠它认出「客户端这行原来是哪行」，
+        // 才能把计算列在库里的原值补回去（见 RestoreComputedOriginals）。
+        var pairs = await _repository.GetRowsWithIdAsync(tableId);
+        var dataRows = new List<Dictionary<string, object>>(pairs.Count);
+        foreach (var (id, data) in pairs)
+        {
+            data[RowPayloadGuard.RowIdKey] = id;
+            dataRows.Add(data);
+        }
 
         // 列视图偏好随数据一起下发，前端不必再多发一次请求
         var meta = ColumnMetaService.Parse(table.ColumnMetaJson);
@@ -108,16 +117,16 @@ public class ExcelService : IExcelService
     // ================================================================
     // 保存数据（整表替换）
     // ================================================================
-    public async Task<ApiResponse> SaveTableDataAsync(int tableId, int userId, List<Dictionary<string, object>> rows, string? userName = null, bool allowEmpty = false)
+    public async Task<ApiResponse<SaveTableDataDto>> SaveTableDataAsync(int tableId, int userId, List<Dictionary<string, object>> rows, string? userName = null, bool allowEmpty = false)
     {
-        if (IsDemoUser) return ApiResponse.Fail(DemoWriteGuard.ReadOnlyMessage);
+        if (IsDemoUser) return DemoReadOnly<SaveTableDataDto>();
 
         try
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var table = await _repository.FindTableAsync(tableId, userId);
             if (table == null)
-                return ApiResponse.NotFound("表格不存在");
+                return ApiResponse<SaveTableDataDto>.NotFound("表格不存在");
 
             var meta = ColumnMetaService.Parse(table.ColumnMetaJson);
 
@@ -128,35 +137,65 @@ public class ExcelService : IExcelService
             if (rejected != null)
             {
                 _logger.LogWarning("拒绝保存表格 {TableId}（用户 {UserId}）：{Reason}", tableId, userId, rejected);
-                return ApiResponse.Fail(rejected);
+                return ApiResponse<SaveTableDataDto>.Fail(rejected);
             }
+
+            // 旧行（带主键）：既是审计 diff 的底稿，也是「计算列原值」的来源
+            var previousRows = await _repository.GetRowsWithIdAsync(tableId);
+            var oldRows = previousRows.Select(p => p.Data).ToList();
 
             // 计算列的值是按公式算出来的，客户端回传的行里带着它们。
             // 落库前必须抹掉：否则计算列的值会混进 DataJson，之后源列改了它就变成
             // 一份永远不更新的陈旧数据 ——「实时算」的全部好处当场作废。
             ComputedColumnService.Strip(meta, rows);
 
-            // 保存前取旧数据，用于审计 diff（读取失败不应阻断保存，故放在 try 内但由 AuditService 自身兜底）
-            var oldRows = await _repository.GetRowDataAsync(tableId);
+            // 再按行主键把「库里本来就有的原值」补回来。顺序不能反：
+            // Strip 是「整列删掉」，Restore 是「按旧行填回去」，反过来做等于白填。
+            ComputedColumnService.RestoreComputedOriginals(meta, rows, previousRows);
+
+            // 行主键是传输元信息，落库前去掉；留着会变成 DataJson 里的一列，
+            // 下次读出来就多一列「__rid」，导出也会跟着带上
+            RowPayloadGuard.RemoveRowId(rows);
 
             await _repository.ReplaceRowsAsync(table, rows);
 
             // 变更历史：异步落库，失败只记日志（见 AuditService）
             await _audit.RecordSaveAsync(tableId, userName ?? "未知用户", oldRows, rows, table.Headers);
 
+            // 整表替换会重新分配 identity，旧主键全部作废。把新主键发回前端，
+            // 它下一次保存才认得出「哪一行是原来的哪一行」。
+            // 顺序即插入顺序（identity 单调递增），与提交的行数组一一对应。
+            var newIds = await _repository.GetRowIdsAsync(tableId);
+            if (!RowPayloadGuard.AttachRowIds(newIds, rows))
+            {
+                // 数量对不上说明中间有别的东西动过这张表，宁可不发主键也不要错位发送
+                _logger.LogWarning(
+                    "保存后行数不一致：表 {TableId} 提交 {Submitted} 行、库内 {Stored} 行，本次不回传行主键",
+                    tableId, rows.Count, newIds.Count);
+            }
+
+            // 计算列按新数据重算：与 GetTableDataAsync 下发时同一口径，
+            // 前端拿到就能直接渲染，不用再整表 GET 一次
+            ComputedColumnService.Apply(table.Headers, meta, rows);
+
             _logger.LogInformation("保存表格 {TableId} 完成，用户 {UserId}，{RowCount} 行，耗时 {ElapsedMs} ms", tableId, userId, rows.Count, sw.ElapsedMilliseconds);
-            return ApiResponse.Ok($"成功保存 {rows.Count} 条数据");
+            return ApiResponse<SaveTableDataDto>.Ok(new SaveTableDataDto
+            {
+                Saved = rows.Count,
+                Rows = rows,
+                UpdatedAt = table.UpdatedAt
+            }, $"成功保存 {rows.Count} 条数据");
         }
         catch (ConcurrencyConflictException)
         {
             // 冲突次数是「乐观并发真的在工作」的直接证据，记 Warning 便于日志平台筛选统计
             _logger.LogWarning("并发冲突：保存表格 {TableId}（用户 {UserId}）时版本已过期，已回滚", tableId, userId);
-            return ApiResponse.Fail("表格刚被其他人（或另一个标签页）修改，请刷新后再保存");
+            return ApiResponse<SaveTableDataDto>.Fail("表格刚被其他人（或另一个标签页）修改，请刷新后再保存");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "保存表格数据失败：表 {TableId}，用户 {UserId}", tableId, userId);
-            return ApiResponse.Fail("保存失败，请稍后重试");
+            return ApiResponse<SaveTableDataDto>.Fail("保存失败，请稍后重试");
         }
     }
 

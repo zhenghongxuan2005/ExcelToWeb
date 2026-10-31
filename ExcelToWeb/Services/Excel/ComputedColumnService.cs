@@ -69,6 +69,45 @@ public class ComputedColumnService
         }
     }
 
+    /// <summary>
+    /// 落库前把「计算列在库里的原值」按行主键补回来。
+    ///
+    /// 修的是保存路径上一个会静默丢数据的缺口：用户给已有列（比如「数量」）设了公式，
+    /// 读出来显示的是算好的值；保存时 Strip 会把这一列的键整个删掉 —— 而保存是整表替换，
+    /// 「该列在库里的原值」也跟着一起没了，取消公式后整列空白。
+    /// Strip 本身没问题（算出来的值绝不能落库），缺的是「旧值还在，别扔」这一步。
+    ///
+    /// 只按行主键匹配，绝不按行下标：前端可以增删行，下标一错位就会把 A 行的值写到 B 行，
+    /// 属于静默错位，比留空更难查。新增行没有主键 → 该列保持无值（它本来也没有历史数据）。
+    /// </summary>
+    public static void RestoreComputedOriginals(
+        Dictionary<string, ColumnMetaDto>? meta,
+        List<Dictionary<string, object>>? rows,
+        IReadOnlyList<(int Id, Dictionary<string, object> Data)>? previousRows)
+    {
+        if (rows == null || rows.Count == 0) return;
+
+        var computed = ComputedNames(meta);
+        if (computed.Count == 0 || previousRows == null || previousRows.Count == 0) return;
+
+        // 主键 → 旧行。行数过万时也只是多一份引用，不复制行内容
+        var previous = new Dictionary<int, Dictionary<string, object>>(previousRows.Count);
+        foreach (var item in previousRows) previous[item.Id] = item.Data;
+
+        foreach (var row in rows)
+        {
+            var id = RowPayloadGuard.RowIdOf(row);
+            if (id == null || !previous.TryGetValue(id.Value, out var old)) continue;
+
+            foreach (var name in computed)
+            {
+                // 有原值就还原；公式是给「新列」设的时候旧行本来就没这一列，保持没有
+                if (old.TryGetValue(name, out var value)) row[name] = value;
+                else row.Remove(name);
+            }
+        }
+    }
+
     /// <summary>列名是否是计算列（有公式即算）</summary>
     public static bool IsComputed(Dictionary<string, ColumnMetaDto>? meta, string column) =>
         meta != null && meta.TryGetValue(column, out var item) && !string.IsNullOrEmpty(item?.Expr);

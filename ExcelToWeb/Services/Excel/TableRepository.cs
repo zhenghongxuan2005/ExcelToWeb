@@ -73,6 +73,40 @@ public class TableRepository
         return rows.Select(r => DeserializeRow(r.DataJson)).ToList();
     }
 
+    /// <summary>
+    /// 读取行数据 + 行主键，按 id 升序。
+    /// 只给保存路径用：整表替换前要知道「客户端这一行原来是哪一行」，
+    /// 才能把计算列在库里的原值按主键补回去（见 ComputedColumnService.RestoreComputedOriginals）。
+    ///
+    /// 不直接复用 GetRowDataAsync 再另查一次 id：那样两张列表的顺序没有任何保证，
+    /// 按顺序 zip 是「看起来能跑、改一行 SQL 就错位」的典型写法。
+    /// </summary>
+    public async Task<List<(int Id, Dictionary<string, object> Data)>> GetRowsWithIdAsync(int tableId)
+    {
+        var rows = await _db.DynamicRows
+            .AsNoTracking()
+            .Where(r => r.TableId == tableId)
+            .OrderBy(r => r.Id)
+            .Select(r => new { r.Id, r.DataJson })
+            .ToListAsync();
+
+        return rows.Select(r => (r.Id, DeserializeRow(r.DataJson))).ToList();
+    }
+
+    /// <summary>
+    /// 保存后取回该表的新行主键（只查一列）。
+    /// 整表替换会重新分配 identity，客户端手里的旧主键全部作废，必须换成新的，
+    /// 否则下一次保存匹配不到任何旧行，计算列原值又会丢。
+    /// 顺序即插入顺序（identity 单调递增），与提交的行数组一一对应。
+    /// </summary>
+    public Task<List<int>> GetRowIdsAsync(int tableId) =>
+        _db.DynamicRows
+            .AsNoTracking()
+            .Where(r => r.TableId == tableId)
+            .OrderBy(r => r.Id)
+            .Select(r => r.Id)
+            .ToListAsync();
+
     /// <summary>返回当前用户的全部表格（含暂无数据行的空表；不含回收站里的表）</summary>
     public Task<List<TableInfoDto>> GetTableInfosAsync(int userId) =>
         _db.DynamicTables

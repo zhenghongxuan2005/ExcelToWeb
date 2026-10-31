@@ -78,6 +78,10 @@ public class TableImportService
             await _repository.AddTableAsync(table);
             await _repository.BulkInsertRowsAsync(table.Id, sheet.Rows);
 
+            // 新表也要把行主键带回前端：拿到的就是「带主键的行」，
+            // 之后给某列设公式再保存，才能把计算列的原值对回原行（见 RowPayloadGuard.RowIdKey）
+            RowPayloadGuard.AttachRowIds(await _repository.GetRowIdsAsync(table.Id), sheet.Rows);
+
             _logger.LogInformation("用户 {UserId} 上传表格 {TableName}（工作表 {SheetName}），共 {RowCount} 行",
                 userId, table.TableName, sheet.SheetName, sheet.Rows.Count);
 

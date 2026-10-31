@@ -201,6 +201,12 @@ else:
     check("去重后的表头可被 PUT /headers 接受（下游不再拒绝重名）",
           st == 200 and r.get("success"), r)
 
+# 下发的行里现在多一个 __rid（行主键，保存时按它把计算列的原值补回原行）。
+# 它不是数据列：断言「值都在」时按表头取值，别把主键一起排进去。
+def values_by_header(row, headers):
+    return sorted(str(row[h]) for h in headers)
+
+
 # ---------- 2) 名字长得像 _2：不撞名、不堆叠后缀 ----------
 print("\n--- 2) 名字本身含 _2 的情形 ---")
 data = upload(TOKEN, ["A", "A", "A_2"], [["1", "2", "3"]], name="suffix.xlsx")
@@ -209,7 +215,8 @@ if not data:
 else:
     check("A / A / A_2 -> [A, A_2, A_3]（不产生 A_2_2）",
           data["headers"] == ["A", "A_2", "A_3"], data["headers"])
-    check("三列的值都在", sorted(data["rows"][0].values()) == ["1", "2", "3"], data["rows"][0])
+    check("三列的值都在", values_by_header(data["rows"][0], data["headers"]) == ["1", "2", "3"],
+          data["rows"][0])
 
 # ---------- 3) 超长表头 ----------
 print("\n--- 3) 超长表头夹到 100 字符 ---")
@@ -222,7 +229,7 @@ else:
     check("两个表头都 <= 100 字符", all(len(h) <= 100 for h in hs), [len(h) for h in hs])
     check("两个表头互不相同", hs[0] != hs[1], hs)
     check("第二个表头以 _2 结尾", hs[1].endswith("_2"), hs[1])
-    check("值未被覆盖", sorted(data["rows"][0].values()) == ["1", "2"], data["rows"][0])
+    check("值未被覆盖", values_by_header(data["rows"][0], hs) == ["1", "2"], data["rows"][0])
 
 # ---------- 4) 空表头补的「列N」与真实表头撞名 ----------
 print("\n--- 4) 空表头补名撞车 ---")
@@ -232,7 +239,7 @@ if not data:
 else:
     hs = data["headers"]
     check("空表头补名后与已有「列2」去重", hs == ["列2", "列2_2", "x"], hs)
-    check("三列的值都在", sorted(data["rows"][0].values()) == ["a", "b", "c"], data["rows"][0])
+    check("三列的值都在", values_by_header(data["rows"][0], hs) == ["a", "b", "c"], data["rows"][0])
 
 # ---------- 5) 不重名的文件行为不变（回归） ----------
 print("\n--- 5) 正常文件不受影响 ---")

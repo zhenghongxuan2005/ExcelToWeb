@@ -104,6 +104,9 @@ check("数据还在", names() == ["甲", "乙", "丙"], names())
 
 # ===== 5. 计算列的键必须放行 =====
 print("\n[5] 计算列")
+orig = [str(x.get("数量")) for x in snapshot()[1]]
+check("设公式前的原值是 1/2/3", orig == ["1", "2", "3"], orig)
+
 st, r = call("PUT", "/excel/formula",
              {"tableId": tid, "columnName": "数量", "formula": "1+1"}, token=token)
 check("设置计算列成功", st == 200 and r.get("success"), r)
@@ -111,18 +114,19 @@ check("设置计算列成功", st == 200 and r.get("success"), r)
 rows = snapshot()[1]
 check("读取时按公式算出值（都应该变成 2）",
       rows and all(str(x.get("数量")) == "2" for x in rows), rows[:2])
+check("每行都带上了行主键 __rid", rows and all(x.get("__rid") for x in rows), rows[:2])
 
 st, r = call("POST", "/excel/save", {"tableId": tid, "rows": rows}, token=token)
 check("带计算列的保存被放行（不误判成未知列）", st == 200 and r.get("success"), (st, r.get("message")))
 
-# 清掉公式：Strip 的作用就是让「算出来的 2」别进 DataJson，
-# 否则取消公式后页面会一直显示一份陈旧的数字
+# 清掉公式之后要做两件事，缺一不可：
+#   · Strip：算出来的 2 不能落库，否则取消公式后页面会一直显示一份陈旧数字
+#   · RestoreComputedOriginals：库里本来就有的 1/2/3 必须还在（整表替换不该把它们删了）
 st, r = call("PUT", "/excel/formula",
              {"tableId": tid, "columnName": "数量", "formula": ""}, token=token)
 check("取消计算列成功", st == 200 and r.get("success"), r)
 vals = [str(x.get("数量")) for x in snapshot()[1]]
-check("计算列算出的值没有写进库（清掉公式后不会残留 2）",
-      all(v != "2" for v in vals), vals)
+check("清掉公式后原值 1/2/3 还在（不是被抹成空）", vals == orig, vals)
 
 # ===== 6. 正常保存照旧（不能因为加守门把主路径改坏）=====
 print("\n[6] 正常保存")

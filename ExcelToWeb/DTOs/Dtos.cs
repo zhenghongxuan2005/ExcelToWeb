@@ -135,6 +135,26 @@ public class TableDataDto
 }
 
 /// <summary>
+/// 保存（整表替换）的返回。除了「存了几条」，还把**保存后的行**原样带回去：
+/// 前端直接用它替换 currentRows，不必再 GET 一次整表 —— 大表上那是第二次全量往返。
+///
+/// Rows 里的每行带两样客户端需要、但库里不存的东西：
+///   · 新的行主键（见 RowPayloadGuard.RowIdKey）—— 整表替换后 id 会重新分配，下次保存靠它对回原行
+///   · 重算过的计算列值 —— 值不落库，只在内存里算，回读和数据一起下发的那个口径一致
+/// </summary>
+public class SaveTableDataDto
+{
+    /// <summary>本次实际落库的行数</summary>
+    public int Saved { get; set; }
+
+    /// <summary>保存后的行（含行主键与计算列值），前端直接替换本地数据</summary>
+    public List<Dictionary<string, object>> Rows { get; set; } = new();
+
+    /// <summary>表格的更新时间（UTC），前端用它刷新页头「最后保存」</summary>
+    public DateTime UpdatedAt { get; set; }
+}
+
+/// <summary>
 /// 单列的视图元数据。只保存用户显式调整过的偏好（列宽 / 是否隐藏），以及计算列的公式。
 /// 列的数据类型（数字 / 日期 / 文本）在导出时按数据实时推断，不落库。
 /// </summary>

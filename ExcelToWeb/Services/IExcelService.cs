@@ -16,8 +16,10 @@ public interface IExcelService
     /// <summary>
     /// 整表保存。allowEmpty = false（默认）时空行集会被拒绝——保存是整表替换，
     /// 空数组等于清空整表；只有用户明确确认过「清空全部行」才允许传 true。
+    /// 返回体里带着**保存后的行**（新的行主键 + 重算过的计算列），前端直接替换本地数据，
+    /// 不必再 GET 一次整表。
     /// </summary>
-    Task<ApiResponse> SaveTableDataAsync(int tableId, int userId, List<Dictionary<string, object>> rows, string? userName = null, bool allowEmpty = false);
+    Task<ApiResponse<SaveTableDataDto>> SaveTableDataAsync(int tableId, int userId, List<Dictionary<string, object>> rows, string? userName = null, bool allowEmpty = false);
     Task<byte[]?> ExportExcelAsync(int tableId, int userId);
     Task<byte[]?> ExportCsvAsync(int tableId, int userId);
     Task<byte[]?> DownloadTemplateAsync(int tableId, int userId);
