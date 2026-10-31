@@ -115,9 +115,7 @@ document.addEventListener('i18n:change', () => {
 
     updatePageMeta();
     renderTable();
-    setStatus(tt('已加载: {name} ({n}行)', {
-        name: getTableName(currentTableId), n: currentRows.length
-    }));
+    setStatus(tt('已加载'));
 });
 
 // ================================================================

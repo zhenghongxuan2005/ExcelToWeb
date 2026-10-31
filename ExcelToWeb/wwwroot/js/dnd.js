@@ -51,7 +51,7 @@ function uploadFile(file, sheetIndex) {
             if (data.mergeCount > 0) {
                 showToast(tt('已记录 {n} 个合并区域，导出时会按原样还原', { n: data.mergeCount }), 'info');
             }
-            setStatus(tt('已加载: {name} ({n}行)', { name: data.tableName, n: data.rows.length }));
+            setStatus(tt('已加载'));
             loadTableList();
         })
         .catch(err => {

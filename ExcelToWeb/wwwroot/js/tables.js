@@ -100,7 +100,9 @@ function loadTableData(tableId) {
                 // 加载新数据源，旧表格的撤销快照必须作废
                 resetHistory();
                 Promise.all([loadColorRules(), loadRefValues()]).then(() => renderTable());
-                setStatus(tt('已加载: {name} ({n}行)', { name: getTableName(tableId), n: currentRows.length }));
+                // 状态栏只说「动作完成」，表名与行列数在页头（副标题 + meta-pill），
+                // 同一件事不在一个页头里说两遍
+                setStatus(tt('已加载'));
                 showToast('✅ ' + tt('已切换到: {name}', { name: getTableName(tableId) }), 'success');
             } else {
                 currentHeaders = [];

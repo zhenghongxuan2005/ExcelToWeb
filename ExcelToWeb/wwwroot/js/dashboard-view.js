@@ -51,8 +51,9 @@ function renderStatCards(model) {
     const stats = model.stats;
     return '<div class="stats-grid">'
         + statCard('blue', '#i-table', tt('总记录数'), fmtNumber(model.totalRows), tt('行'),
-            tt('{tables} 张表 · {groups} 个{dim}', {
-                tables: fmtNumber(model.tableCount),
+            // 副标题只说「这些记录由几个分组构成」：这张卡的数是记录数，
+            // 混进「库里一共几张表」既不是这个数的来源，也和当前看板无关
+            tt('{groups} 个{dim}', {
                 groups: fmtNumber(model.groupCount),
                 dim: escapeHtml(model.dim)
             }))

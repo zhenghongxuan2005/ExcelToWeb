@@ -18,7 +18,7 @@ I18n.register({
     // ===== 统计卡 =====
     '总记录数': 'Total records',
     '行': 'rows',
-    '{tables} 张表 · {groups} 个{dim}': '{tables} tables · {groups} groups by {dim}',
+    '{groups} 个{dim}': '{groups} groups by {dim}',
     '{metric}合计': '{metric} total',
     '{n} 条记录 · 均值 {avg}': '{n} records · mean {avg}',
     '平均{metric}': 'Avg {metric}',

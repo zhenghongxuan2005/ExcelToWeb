@@ -96,7 +96,7 @@ I18n.register({
     '无表格，请上传 Excel': 'No table yet — upload an Excel file',
     '未知表格': 'Unknown table',
     '加载中...': 'Loading table…',
-    '已加载: {name} ({n}行)': 'Loaded: {name} ({n} rows)',
+    '已加载': 'Loaded',
     '已切换到: {name}': 'Switched to: {name}',
     '该表格没有数据': 'This table has no rows',
     '加载失败：{msg}': 'Could not load: {msg}',

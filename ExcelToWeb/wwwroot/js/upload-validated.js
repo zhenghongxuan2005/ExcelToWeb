@@ -46,7 +46,7 @@ function uploadWithValidation() {
                 // 整表被替换，撤销栈随之作废
                 resetHistory();
                 renderTable();
-                setStatus(tt('已加载: {name} ({n}行)', { name: currentTableId, n: currentRows.length }));
+                setStatus(tt('已加载'));
             }
             fileInput.value = '';
         })

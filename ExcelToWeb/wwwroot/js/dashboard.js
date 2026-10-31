@@ -170,7 +170,8 @@ function buildViewModel(dim, metric) {
         metric: metric,
         stats: valueStats(values),
         groupCount: Object.keys(groupData(dim, metric)).length,
-        tableCount: tablesCache.length,
+        // 不往视图里塞 tablesCache.length：看板看的是当前这一张表，
+        // 「库里共几张表」与统计卡上的记录数没有关系
         totalRows: rows.length,
         rate: completionInfo(metric)
     };
