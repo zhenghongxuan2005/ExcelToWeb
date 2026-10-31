@@ -161,7 +161,7 @@ check("空名称被拒绝（400）", st == 400 and not r.get("success"), r)
 st, r = call("PUT", "/excel/rename", {"tableId": base_id, "tableName": "x" * 101}, token=token)
 check("超长名称被拒绝（400）", st == 400, r)
 st, r = call("PUT", "/excel/rename", {"tableId": 99999999, "tableName": "nope"}, token=token)
-check("不存在的表返回 400 且提示友好", st == 400 and r.get("message") == "表格不存在", r)
+check("不存在的表返回 404 且提示友好", st == 404 and r.get("message") == "表格不存在", r)
 
 print("\n[4] 复制")
 st, r = call("POST", "/excel/duplicate", {"tableId": base_id}, token=token)
@@ -248,9 +248,9 @@ st2, r2 = call("POST", "/auth/login", {"username": "smoke3other", "password": "o
 other_token = (r2.get("data") or {}).get("token")
 if other_token:
     st, r = call("PUT", "/excel/rename", {"tableId": base_id, "tableName": "hacked"}, token=other_token)
-    check("他人无法重命名", st == 400 and r.get("message") == "表格不存在", r)
+    check("他人无法重命名", st == 404 and r.get("message") == "表格不存在", r)
     st, r = call("POST", "/excel/duplicate", {"tableId": base_id}, token=other_token)
-    check("他人无法复制", st == 400 and r.get("message") == "表格不存在", r)
+    check("他人无法复制", st == 404 and r.get("message") == "表格不存在", r)
     st, r = call("GET", "/excel/query?tableId=%d" % base_id, token=token)
     check("越权尝试未改动表名", (r.get("data") or {}).get("tableName") == "步骤3-重命名后",
           (r.get("data") or {}).get("tableName"))

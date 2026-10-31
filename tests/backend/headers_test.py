@@ -322,9 +322,9 @@ print("\n[7] 越权 / 未登录 / 不存在的表")
 st, r = call("PUT", "/excel/headers", {"tableId": base_id, "headers": ["x"]})
 check("未登录调用返回 401", st == 401, r)
 st, r = call("PUT", "/excel/headers", {"tableId": base_id, "headers": ["x"]}, token=other_token)
-check("他人操作本账号的表被拒", st == 400 and r.get("message") == "表格不存在", r)
+check("他人操作本账号的表被拒", st == 404 and r.get("message") == "表格不存在", r)
 st, r = call("PUT", "/excel/headers", {"tableId": 99999999, "headers": ["x"]}, token=token)
-check("不存在的表返回 400 友好提示", st == 400 and r.get("message") == "表格不存在", r)
+check("不存在的表返回 400 友好提示", st == 404 and r.get("message") == "表格不存在", r)
 
 # ============================================================
 print("\n[8] 清理")

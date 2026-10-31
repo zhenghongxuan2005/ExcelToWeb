@@ -393,5 +393,14 @@ I18n.register({
 
     // 空表格保存前的二次确认（保存 = 整表替换，空行集等于清空）
     '当前表格没有任何行，保存会清空整张表的数据。确定继续吗？':
-        'This table has no rows, so saving will clear all of its data. Continue?'
+        'This table has no rows, so saving will clear all of its data. Continue?',
+
+    // 行号列表头的悬停说明（表头文字是「#」，数据列可能真的叫「序号」）
+    '行号': 'Row',
+    '按左侧日期筛选当前表格': 'Filter this table by the date on the left',
+
+    // 保存成功但回读失败：两件事要分开说，否则会被当成「保存没生效」
+    '数据已保存，但重新加载失败：{msg}。请手动点刷新':
+        'Data saved, but reloading failed: {msg}. Please refresh manually',
+    '已保存（回读失败）': 'Saved (reload failed)'
 });

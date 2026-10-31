@@ -194,10 +194,9 @@ ExcelToWeb/
     │       ├── ExcelNumber.cs           # 数值 / 日期口径（导出与求值共用）
     │       ├── RowValidator.cs          # 按校验规则逐行校验
     │       ├── RuleService.cs           # 配色规则 / 校验规则读写
-    │       ├── RowDateFilter.cs         # 按日期列前缀筛选
     │       ├── AuditService.cs          # 审计日志写入与跨表查询
     │       ├── DemoWriteGuard.cs        # 演示账号只读拦截（服务端强制）
-    │       └── RecycleBinCleanupService.cs # 后台清理：物理删除回收站中超 30 天的表格
+    │       └── RowPayloadGuard.cs       # 整表保存守门：拒绝空行集与未知列
     ├── Data/
     │   └── AppDbContext.cs       # DbSet 定义与实体映射（索引、精度、级联删除）
     ├── Migrations/               # EF Core 迁移：Baseline / AddRefreshTokens / AddSoftDelete

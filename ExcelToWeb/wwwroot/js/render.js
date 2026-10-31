@@ -136,7 +136,9 @@ function renderTable() {
     // col-pin / col-pin-1 / col-pin-2 用于冻结「勾选列 + 序号列」（样式见 table.css）
     let html = '<table><thead><tr>';
     html += '<th class="cell-center col-pin col-pin-1" style="width:36px; min-width:36px;"><input type="checkbox" id="selectAll" onchange="toggleAllCheckboxes()" /></th>';
-    html += '<th class="cell-center col-pin col-pin-2" style="width:44px; min-width:44px;">' + tt('序号') + '</th>';
+    // 行号列表头用「#」而不是「序号」：数据里本来就可能有一列叫「序号」，
+    // 那样表头会出现两个「序号」，左边不可排序、右边可排序，用户分不清哪个是行号
+    html += '<th class="cell-center col-pin col-pin-2" style="width:44px; min-width:44px;" title="行号">#</th>';
     for (const h of visibleHeaders) {
         const order = sortOrderOf(h);
         // 排序指示器平时隐藏（悬停该列才出现），只有真正参与排序的列常显 ——

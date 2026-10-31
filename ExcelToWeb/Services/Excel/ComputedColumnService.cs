@@ -125,7 +125,7 @@ public class ComputedColumnService
         if (request == null) return ApiResponse.Fail("请求为空");
 
         var table = await _repository.FindTableAsync(tableId, userId);
-        if (table == null) return ApiResponse.Fail("表格不存在");
+        if (table == null) return ApiResponse.NotFound("表格不存在");
 
         var column = (request.ColumnName ?? string.Empty).Trim();
         var headers = table.Headers ?? new List<string>();

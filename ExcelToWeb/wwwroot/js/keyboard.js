@@ -198,3 +198,23 @@ function handleCellKeydown(e) {
 }
 
 document.addEventListener('keydown', handleCellKeydown);
+
+// ================================================================
+// Ctrl+S / Cmd+S 保存
+// ----------------------------------------------------------------
+// Excel 用户的本能。不拦的话浏览器会弹出「另存为网页」，等于白按一次，
+// 还容易让人以为站点不支持快捷键。这里在文档级监听（不限于单元格），
+// 但弹窗打开时不抢：弹窗里可能有自己的提交语义。
+// ================================================================
+function handleSaveShortcut(e) {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    if (typeof e.key !== 'string' || e.key.toLowerCase() !== 's') return;
+
+    if (document.querySelector('.modal-overlay.show, .modal.show, [data-modal-open="1"]')) return;
+    if (typeof saveData !== 'function') return;
+
+    e.preventDefault();
+    saveData();
+}
+
+document.addEventListener('keydown', handleSaveShortcut);

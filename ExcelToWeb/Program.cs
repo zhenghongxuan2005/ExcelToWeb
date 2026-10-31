@@ -3,10 +3,12 @@ using System.Threading.RateLimiting;
 using ExcelToWeb.Auth;
 using ExcelToWeb.Caching;
 using ExcelToWeb.Data;
+using ExcelToWeb.Filters;
 using ExcelToWeb.Helpers;
 using ExcelToWeb.HealthChecks;
 using ExcelToWeb.Jobs;
 using ExcelToWeb.Middleware;
+using ExcelToWeb.Models;
 using ExcelToWeb.Services;
 using ExcelToWeb.Services.Excel;
 using Hangfire;
@@ -15,6 +17,7 @@ using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -257,6 +260,30 @@ builder.Services.AddHealthChecks()
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new UtcDateTimeJsonConverter()));
+
+// 参数绑定失败（如 ?tableId=abc、缺 columnName）默认返回 ValidationProblemDetails，
+// 里面既没有 message 字段、错误文案还是英文，前端只能显示「请求失败」。
+// 统一成项目自己的 ApiResponse 形状，并把框架消息换成中文、点名出错的参数。
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        // 取第一个出错的参数名（KeyValuePair 的默认值 Key 为 null，故走 Select 而不是 FirstOrDefault().Key）
+        var field = context.ModelState
+            .Where(kv => kv.Value is { Errors.Count: > 0 })
+            .Select(kv => kv.Key)
+            .FirstOrDefault();
+        var message = string.IsNullOrWhiteSpace(field)
+            ? "请求参数格式不正确"
+            : $"参数 {field.TrimStart('$', '.')} 缺失或格式不正确";
+
+        return new BadRequestObjectResult(ApiResponse.Fail(message));
+    };
+});
+
+// 查询串里的 tableId 缺失 → 400「缺少 tableId 参数」，不要退化成 404「表格不存在」
+builder.Services.AddScoped<RequireTableIdFilter>();
+builder.Services.Configure<MvcOptions>(options => options.Filters.Add<RequireTableIdFilter>());
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {

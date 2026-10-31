@@ -69,7 +69,7 @@ public class ColumnStructureService
         }
 
         var table = await _repository.FindTableAsync(tableId, userId);
-        if (table == null) return ApiResponse.Fail("表格不存在");
+        if (table == null) return ApiResponse.NotFound("表格不存在");
 
         var oldHeaders = table.Headers ?? new List<string>();
 

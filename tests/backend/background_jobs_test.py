@@ -91,9 +91,9 @@ check("列表回读为已开启", row is not None and row.get("autoExportEnabled
 st, r = call("PUT", "/excel/tables/%d/auto-export" % table_id, {"enabled": True}, token=tok)
 check("重复开启幂等", st == 200 and r.get("success") is True, r)
 
-# 越权：不存在的表 id 要被拒（不是 500）
+# 越权：不存在的表 id 要被拒（404「表格不存在」，不是 500，也不是 400 参数错误）
 st, r = call("PUT", "/excel/tables/999999/auto-export", {"enabled": True}, token=tok)
-check("不存在的表返回业务失败", st == 400 and r.get("success") is False, r)
+check("不存在的表返回业务失败", st == 404 and r.get("success") is False, r)
 
 # ===== 4. 真的跑一次后台任务 =====
 st, r = call("POST", "/exports/run-now", token=tok)

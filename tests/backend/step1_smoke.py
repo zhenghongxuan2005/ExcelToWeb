@@ -179,7 +179,7 @@ check("失败后原有 4 行完好（未丢数据）", st2 == 200 and len(r2["da
       len(r2["data"]["rows"]) if st2 == 200 else r2)
 
 st, r = call("POST", "/excel/save", {"tableId": 99999999, "rows": [{"a": "1"}]}, token=token)
-check("保存不存在的表返回「表格不存在」", st == 400 and r.get("message") == "表格不存在", (st, r))
+check("保存不存在的表返回「表格不存在」", st == 404 and r.get("message") == "表格不存在", (st, r))
 
 print("\n[6] 颜色规则（前端条件格式弹窗依赖的接口）")
 rules = [

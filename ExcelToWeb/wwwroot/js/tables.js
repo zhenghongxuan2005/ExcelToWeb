@@ -163,9 +163,22 @@ function deleteCurrentTable() {
         .catch(err => showToast('❌ ' + tt('删除失败：{msg}', { msg: err.message }), 'error'));
 }
 
-function refreshData() {
+/**
+ * 从服务端重取整表。
+ * @param {{keepView?: boolean, silent?: boolean}} [opts]
+ *   keepView —— 保留排序与列筛选。保存后的重取属于「同一份数据的回读」，
+ *               用户的排序/筛选是视图状态、与数据无关，清掉它等于无故丢失操作；
+ *               手动刷新（工具栏按钮 / 命令面板）仍走默认的清理行为，
+ *               因为那代表「重新拉一份干净数据」。
+ *   silent   —— 不弹「已刷新」也不改状态栏。保存流程自己已经提示过「已保存」，
+ *               再弹一条会把上一条顶掉，用户反而看不清到底存没存上。
+ */
+function refreshData(opts) {
+    const keepView = !!(opts && opts.keepView);
+    const silent = !!(opts && opts.silent);
+
     // 列筛选是纯视图状态，刷新时先清掉（撤销栈由下面的 resetHistory 一并清）
-    if (typeof resetFilter === 'function') resetFilter();
+    if (!keepView && typeof resetFilter === 'function') resetFilter();
     if (!currentTableId) {
         showToast(tt('请先上传一个 Excel 文件'), 'error');
         return;
@@ -180,16 +193,23 @@ function refreshData() {
             if (data && data.headers && data.rows) {
                 currentHeaders = data.headers;
                 currentRows = data.rows;
-                resetSort();
+                if (!keepView) resetSort();
                 Promise.all([loadColorRules(), loadRefValues()]).then(() => renderTable());
-                showToast('✅ ' + tt('已刷新'), 'success');
-                setStatus(tt('已刷新 ({n}行)', { n: data.rows.length }));
+                // 保存后的回读不再打扰用户（上一条 toast 是「已保存」，状态栏也是）
+                if (!silent) {
+                    showToast('✅ ' + tt('已刷新'), 'success');
+                    setStatus(tt('已刷新 ({n}行)', { n: data.rows.length }));
+                }
             }
         })
         .catch(err => {
             hideTableSkeleton();
-            showToast('❌ ' + tt('刷新失败：{msg}', { msg: err.message }), 'error');
-            setStatus(tt('刷新失败'));
+            // 保存后的回读失败要区分开：数据已经存进去了，失败的是「再读一遍」，
+            // 直接说「刷新失败」会让人以为保存没生效
+            showToast('❌ ' + (silent
+                ? tt('数据已保存，但重新加载失败：{msg}。请手动点刷新', { msg: err.message })
+                : tt('刷新失败：{msg}', { msg: err.message })), 'error');
+            setStatus(silent ? tt('已保存（回读失败）') : tt('刷新失败'));
             console.error(err);
         });
 }

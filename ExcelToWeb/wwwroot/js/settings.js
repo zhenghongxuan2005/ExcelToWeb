@@ -71,6 +71,16 @@ function paintAccountType(user) {
             : '本地密码由服务器校验：修改后其他设备无需重新登录，下次登录请使用新密码。');
     }
     if (noteEl) noteEl.hidden = false;
+
+    // 没有本地密码就把整个表单锁死：原先提示条说「无法在此修改」，
+    // 下面三个输入框和保存按钮却照样能填、能点，填完只会得到一句后端报错
+    const form = document.getElementById('passwordForm');
+    const disabledNote = document.getElementById('passwordDisabledNote');
+    if (form) {
+        form.dataset.passwordLocked = hasPassword ? '0' : '1';
+        form.querySelectorAll('input, button').forEach(el => { el.disabled = !hasPassword; });
+    }
+    if (disabledNote) disabledNote.hidden = hasPassword;
 }
 
 // ================================================================
@@ -82,6 +92,12 @@ function initPasswordForm() {
 
     form.addEventListener('submit', e => {
         e.preventDefault();
+
+        // 账号没有本地密码（Windows 集成身份验证）时表单是锁着的，
+        // 这里再挡一道：回车 / 程序触发提交都不该发出注定失败的请求
+        if (form.dataset.passwordLocked === '1') {
+            return showToast(tr('当前账号没有本地密码，无法在这里修改'), 'error');
+        }
 
         const oldPwd = document.getElementById('oldPassword').value;
         const newPwd = document.getElementById('newPassword').value;

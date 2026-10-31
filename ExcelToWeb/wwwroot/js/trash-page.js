@@ -73,6 +73,9 @@ function renderTrashList() {
     if (!host) return;
 
     if (countEl) {
+        // 空回收站时整条隐藏：.stats-bar 自带背景与下边框，留一个空 div 会在
+        // 「保留 N 天」那段说明下面画出一条没有任何内容的横条
+        countEl.hidden = trashItems.length === 0;
         countEl.textContent = trashItems.length === 0
             ? ''
             : tt('{n} 个已删除表格', { n: trashItems.length });

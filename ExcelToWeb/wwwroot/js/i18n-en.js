@@ -106,6 +106,10 @@ I18n.register({
         'Accounts created by Windows integrated authentication have no local password, so it cannot be changed here.',
     '本地密码由服务器校验：修改后其他设备无需重新登录，下次登录请使用新密码。':
         'The local password is verified by the server. Other devices stay signed in; use the new password next time.',
+    '当前账号使用 Windows 集成身份验证，没有本地密码，无需也无法在此修改。':
+        'This account signs in with Windows integrated authentication and has no local password, so there is nothing to change here.',
+    '当前账号没有本地密码，无法在这里修改':
+        'This account has no local password, so it cannot be changed here',
 
     // ===== 设置页：修改密码 =====
     '修改密码': 'Change password',

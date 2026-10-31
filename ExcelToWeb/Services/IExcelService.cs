@@ -11,7 +11,8 @@ public interface IExcelService
 
     /// <summary>列出文件里的工作表，供「多工作表时选一张导入」使用</summary>
     Task<ApiResponse<List<SheetInfoDto>>> ListSheetsAsync(IFormFile file);
-    Task<ApiResponse<TableDataDto>> GetTableDataAsync(int tableId, int userId, string? date = null);
+    /// <summary>取整表数据（含列视图偏好与实时算出的计算列）；筛选由前端做视图裁剪</summary>
+    Task<ApiResponse<TableDataDto>> GetTableDataAsync(int tableId, int userId);
     /// <summary>
     /// 整表保存。allowEmpty = false（默认）时空行集会被拒绝——保存是整表替换，
     /// 空数组等于清空整表；只有用户明确确认过「清空全部行」才允许传 true。

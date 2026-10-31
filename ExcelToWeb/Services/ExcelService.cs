@@ -77,19 +77,17 @@ public class ExcelService : IExcelService
         _imports.ListSheetsAsync(file);
 
     // ---- 查询数据 ----
-    public async Task<ApiResponse<TableDataDto>> GetTableDataAsync(int tableId, int userId, string? date = null)
+    // 只返回整表：按日期 / 按列的筛选都是前端在已加载的数据上做的视图裁剪
+    // （见 js/filter.js 的注释）。原先这里还有一个 date 分支，按日期前缀过滤后
+    // 把结果当成整表下发，前端再拿来整表保存就会把其余日期删掉 ——
+    // 前端早就不传这个参数了，它成了没人用、行为又危险的遗留分支，故移除。
+    public async Task<ApiResponse<TableDataDto>> GetTableDataAsync(int tableId, int userId)
     {
         var table = await _repository.FindTableAsync(tableId, userId);
         if (table == null)
-            return ApiResponse<TableDataDto>.Fail("表格不存在");
+            return ApiResponse<TableDataDto>.NotFound("表格不存在");
 
         var dataRows = await _repository.GetRowDataAsync(tableId);
-
-        // 按日期过滤（日期列的识别与匹配见 RowDateFilter）
-        if (!string.IsNullOrEmpty(date))
-        {
-            dataRows = dataRows.Where(row => RowDateFilter.Matches(row, date)).ToList();
-        }
 
         // 列视图偏好随数据一起下发，前端不必再多发一次请求
         var meta = ColumnMetaService.Parse(table.ColumnMetaJson);
@@ -119,7 +117,7 @@ public class ExcelService : IExcelService
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var table = await _repository.FindTableAsync(tableId, userId);
             if (table == null)
-                return ApiResponse.Fail("表格不存在");
+                return ApiResponse.NotFound("表格不存在");
 
             var meta = ColumnMetaService.Parse(table.ColumnMetaJson);
 
@@ -171,7 +169,7 @@ public class ExcelService : IExcelService
 
         var table = await _repository.FindTableAsync(tableId, userId);
         if (table == null)
-            return ApiResponse.Fail("表格不存在");
+            return ApiResponse.NotFound("表格不存在");
 
         await _repository.SoftDeleteAsync(table);
 
@@ -209,7 +207,7 @@ public class ExcelService : IExcelService
 
         var table = await _repository.FindTableAsync(tableId, userId);
         if (table == null)
-            return ApiResponse.Fail("表格不存在");
+            return ApiResponse.NotFound("表格不存在");
 
         await _repository.RenameAsync(table, name);
 
@@ -225,7 +223,7 @@ public class ExcelService : IExcelService
         {
             var table = await _repository.FindTableAsync(tableId, userId);
             if (table == null)
-                return ApiResponse<UploadResult>.Fail("表格不存在");
+                return ApiResponse<UploadResult>.NotFound("表格不存在");
 
             var rows = await _repository.GetRowDataAsync(tableId);
 
@@ -329,7 +327,7 @@ public class ExcelService : IExcelService
         if (!built.Success || built.Data == null) return ApiResponse<byte[]>.Fail(built.Message);
 
         var bytes = await _pivotExport.RenderAsync(tableId, userId, built.Data, request);
-        if (bytes == null) return ApiResponse<byte[]>.Fail("表格不存在");
+        if (bytes == null) return ApiResponse<byte[]>.NotFound("表格不存在");
 
         _logger.LogInformation("用户 {UserId} 导出表格 {TableId} 的透视表：{ValueLabel}",
             userId, tableId, built.Data.ValueLabel);
@@ -348,7 +346,7 @@ public class ExcelService : IExcelService
         if (IsDemoUser) return ApiResponse.Fail(DemoWriteGuard.ReadOnlyMessage);
 
         var table = await _repository.FindTableAsync(tableId, userId);
-        if (table == null) return ApiResponse.Fail("表格不存在");
+        if (table == null) return ApiResponse.NotFound("表格不存在");
 
         if (table.AutoExportEnabled == enabled)
             return ApiResponse.Ok("设置未变化");
@@ -403,7 +401,7 @@ public class ExcelService : IExcelService
 
         var table = await _repository.FindTableAsync(tableId, userId);
         if (table == null)
-            return ApiResponse.Fail("表格不存在");
+            return ApiResponse.NotFound("表格不存在");
 
         var count = await _rules.ReplaceValidationRulesAsync(tableId, rules);
         return ApiResponse.Ok($"成功保存 {count} 条校验规则");

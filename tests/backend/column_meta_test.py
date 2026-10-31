@@ -288,11 +288,11 @@ print("\n[5] 越权 / 未登录 / 不存在的表")
 st, r = call("PUT", "/excel/column-meta", {"tableId": base_id, "meta": {}})
 check("未登录返回 401", st == 401, r)
 st, r = call("PUT", "/excel/column-meta", {"tableId": base_id, "meta": {}}, token=other_token)
-check("他人操作本账号的表被拒", st == 400 and r.get("message") == "表格不存在", r)
+check("他人操作本账号的表被拒", st == 404 and r.get("message") == "表格不存在", r)
 st, r = call("GET", "/excel/column-meta?tableId=%d" % base_id, token=other_token)
 check("他人读取返回空 meta", r.get("data") == {}, r)
 st, r = call("PUT", "/excel/column-meta", {"tableId": 99999999, "meta": {}}, token=token)
-check("不存在的表返回友好提示", st == 400 and r.get("message") == "表格不存在", r)
+check("不存在的表返回友好提示", st == 404 and r.get("message") == "表格不存在", r)
 
 # ============================================================
 print("\n[6] 导出 xlsx 带格式")

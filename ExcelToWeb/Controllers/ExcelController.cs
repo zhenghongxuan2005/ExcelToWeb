@@ -29,6 +29,23 @@ public class ExcelController : ControllerBase
 
     private int GetUserId() => _tokenService.GetUserId(User) ?? 0;
 
+    /// <summary>
+    /// 服务层失败结果 → HTTP 状态码。三种情况必须分开：
+    /// 资源不存在 404、有身份但没权限 403、其余（参数缺失 / 业务校验没过）400。
+    /// 一律 400 会让「少了 tableId」和「这张表不存在」看起来是同一件事。
+    /// </summary>
+    private IActionResult Failure(ApiResponse result) => result.Error switch
+    {
+        ApiErrorKind.NotFound => NotFound(result),
+        ApiErrorKind.Forbidden => StatusCode(StatusCodes.Status403Forbidden, result),
+        _ => BadRequest(result)
+    };
+
+    /// <summary>字符串必填参数（如 columnName）为空时返回 400</summary>
+    private IActionResult? MissingParam(string? value, string name) => string.IsNullOrWhiteSpace(value)
+        ? BadRequest(ApiResponse.Fail($"缺少 {name} 参数"))
+        : null;
+
     // ================================================================
     // 表格核心接口
     // ================================================================
@@ -41,7 +58,7 @@ public class ExcelController : ControllerBase
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
         var result = await _service.UploadExcelAsync(file, userId, sheetIndex ?? 0);
-        if (!result.Success) return BadRequest(result);
+        if (!result.Success) return Failure(result);
         return Ok(result);
     }
 
@@ -57,18 +74,18 @@ public class ExcelController : ControllerBase
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
         var result = await _service.ListSheetsAsync(file);
-        if (!result.Success) return BadRequest(result);
+        if (!result.Success) return Failure(result);
         return Ok(result);
     }
 
     [HttpGet("query")]
-    public async Task<IActionResult> Query(int tableId, string? date = null)
+    public async Task<IActionResult> Query(int tableId)
     {
         var userId = GetUserId();
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
-        var result = await _service.GetTableDataAsync(tableId, userId, date);
-        if (!result.Success) return NotFound(result);
+        var result = await _service.GetTableDataAsync(tableId, userId);
+        if (!result.Success) return Failure(result);
         return Ok(result);
     }
 
@@ -82,7 +99,7 @@ public class ExcelController : ControllerBase
         // 用户名随 JWT 下发（ClaimTypes.Name），用于变更历史署名
         var result = await _service.SaveTableDataAsync(
             request.TableId, userId, request.Rows, User.Identity?.Name, request.AllowEmpty);
-        if (!result.Success) return BadRequest(result);
+        if (!result.Success) return Failure(result);
         return Ok(result);
     }
 
@@ -94,7 +111,7 @@ public class ExcelController : ControllerBase
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
         var result = await _service.DeleteTableAsync(tableId, userId);
-        if (!result.Success) return BadRequest(result);
+        if (!result.Success) return Failure(result);
         return Ok(result);
     }
 
@@ -107,7 +124,7 @@ public class ExcelController : ControllerBase
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
         var result = await _service.RenameTableAsync(request.TableId, userId, request.TableName);
-        if (!result.Success) return BadRequest(result);
+        if (!result.Success) return Failure(result);
         return Ok(result);
     }
 
@@ -120,7 +137,7 @@ public class ExcelController : ControllerBase
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
         var result = await _service.SetAutoExportAsync(tableId, userId, request.Enabled);
-        if (!result.Success) return BadRequest(result);
+        if (!result.Success) return Failure(result);
         return Ok(result);
     }
 
@@ -133,7 +150,7 @@ public class ExcelController : ControllerBase
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
         var result = await _service.DuplicateTableAsync(request.TableId, userId);
-        if (!result.Success) return BadRequest(result);
+        if (!result.Success) return Failure(result);
         return Ok(result);
     }
 
@@ -150,7 +167,7 @@ public class ExcelController : ControllerBase
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
         var result = await _service.UpdateHeadersAsync(request.TableId, userId, request);
-        if (!result.Success) return BadRequest(result);
+        if (!result.Success) return Failure(result);
         return Ok(result);
     }
 
@@ -176,7 +193,7 @@ public class ExcelController : ControllerBase
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
         var result = await _service.SaveColumnMetaAsync(request.TableId, userId, request);
-        if (!result.Success) return BadRequest(result);
+        if (!result.Success) return Failure(result);
         return Ok(result);
     }
 
@@ -193,7 +210,7 @@ public class ExcelController : ControllerBase
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
         var result = await _service.SaveFormulaAsync(request.TableId, userId, request);
-        if (!result.Success) return BadRequest(result);
+        if (!result.Success) return Failure(result);
         return Ok(result);
     }
 
@@ -209,7 +226,7 @@ public class ExcelController : ControllerBase
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
         var result = await _service.BuildPivotAsync(request.TableId, userId, request);
-        if (!result.Success) return BadRequest(result);
+        if (!result.Success) return Failure(result);
         return Ok(result);
     }
 
@@ -241,7 +258,7 @@ public class ExcelController : ControllerBase
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
         var bytes = await _service.ExportExcelAsync(tableId, userId);
-        if (bytes == null) return BadRequest(ApiResponse.Fail("表格不存在"));
+        if (bytes == null) return NotFound(ApiResponse.NotFound("表格不存在"));
 
         return File(bytes,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -255,7 +272,7 @@ public class ExcelController : ControllerBase
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
         var bytes = await _service.ExportCsvAsync(tableId, userId);
-        if (bytes == null) return BadRequest(ApiResponse.Fail("表格不存在"));
+        if (bytes == null) return NotFound(ApiResponse.NotFound("表格不存在"));
 
         return File(bytes, "text/csv; charset=utf-8", $"数据_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
     }
@@ -267,7 +284,7 @@ public class ExcelController : ControllerBase
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
         var bytes = await _service.DownloadTemplateAsync(tableId, userId);
-        if (bytes == null) return BadRequest(ApiResponse.Fail("表格不存在"));
+        if (bytes == null) return NotFound(ApiResponse.NotFound("表格不存在"));
 
         return File(bytes,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -306,7 +323,7 @@ public class ExcelController : ControllerBase
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
         var result = await _service.SaveColorRulesAsync(userId, rules);
-        if (!result.Success) return BadRequest(result);
+        if (!result.Success) return Failure(result);
         return Ok(result);
     }
 
@@ -335,7 +352,7 @@ public class ExcelController : ControllerBase
             return BadRequest(ApiResponse.Fail("规则不能为空"));
 
         var result = await _service.SaveValidationRulesAsync(rules[0].TableId, userId, rules);
-        if (!result.Success) return BadRequest(result);
+        if (!result.Success) return Failure(result);
         return Ok(result);
     }
 
@@ -351,7 +368,7 @@ public class ExcelController : ControllerBase
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
         var result = await _service.UploadWithValidationAsync(file, tableId, userId);
-        if (!result.Success) return BadRequest(result);
+        if (!result.Success) return Failure(result);
         return Ok(result);
     }
 
@@ -365,8 +382,9 @@ public class ExcelController : ControllerBase
     {
         var userId = GetUserId();
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
+        if (MissingParam(columnName, "columnName") is IActionResult bad) return bad;
 
-        var values = await _service.GetColumnValuesAsync(tableId, userId, columnName ?? string.Empty);
+        var values = await _service.GetColumnValuesAsync(tableId, userId, columnName);
         return Ok(ApiResponse<List<string>>.Ok(values));
     }
 

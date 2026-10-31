@@ -197,7 +197,7 @@ public class TableImportService
         {
             var table = await _repository.FindTableAsync(tableId, userId);
             if (table == null)
-                return ApiResponse<ValidationResult>.Fail("表格不存在");
+                return ApiResponse<ValidationResult>.NotFound("表格不存在");
 
             var sheet = IsCsv(file)
                 ? await _csvReader.ReadAsync(file)

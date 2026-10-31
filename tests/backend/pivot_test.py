@@ -137,7 +137,7 @@ if base:
     check("不支持的聚合方式被拒（400）", st == 400, (st, r))
 
     st, r = pivot(base, "金额", row="地区", token=TOKEN2)
-    check("别人的表查不到（400）", st == 400 and "不存在" in (r.get("message") or ""), (st, r.get("message")))
+    check("别人的表查不到（404）", st == 404 and "不存在" in (r.get("message") or ""), (st, r.get("message")))
 
 # ---------- 2) sum：格子 / 行列合计 / 总计 ----------
 print("\n--- 2) 求和：格子与三个方向的合计 ---")

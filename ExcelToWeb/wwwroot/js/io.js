@@ -110,7 +110,10 @@ function saveData() {
                 .then(result => {
                     showToast('✅ ' + tt(result.message || '保存成功'), 'success');
                     setStatus(tt('已保存'));
-                    refreshData();
+                    // 重取是为了拿到服务端算好的计算列值；但排序/筛选是视图状态，
+                    // 与这次保存无关，清掉等于无故丢掉用户刚才的操作顺序。
+                    // silent：别再弹「已刷新」把「保存成功」顶掉。
+                    refreshData({ keepView: true, silent: true });
                 });
         })
         .catch(err => showToast('❌ ' + tt('保存失败：{msg}', { msg: err.message }), 'error'));

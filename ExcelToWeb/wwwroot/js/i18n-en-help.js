@@ -50,6 +50,8 @@ I18n.register({
     '聚焦全表搜索': 'Focus the table search',
     '打开命令面板（跨页面快速跳转 / 执行操作）':
         'Open the command palette (jump between pages / run actions)',
+    '保存当前表格（拦截浏览器的「另存为网页」）':
+        'Save the current table (takes over the browser\'s "Save page as")',
 
     // ===== 常见问题标题 =====
     '上传后提示「文件解析失败」怎么办？': 'The upload says "could not parse the file" — what now?',

@@ -79,6 +79,19 @@ function resetFilter() {
     filterKeyword = '';
     const dateInput = document.getElementById('filterDate');
     if (dateInput) dateInput.value = '';
+    syncDateFilterButton();
+}
+
+/**
+ * 日期框为空时禁用「按日期筛选」按钮。
+ * 这个按钮只认它旁边的日期输入框，空日期点下去原本只弹一条 3 秒的 toast，
+ * 用户看到的就是「按钮点了没反应」。禁用 + 悬停说明，因果当场可见。
+ */
+function syncDateFilterButton() {
+    const btn = document.getElementById('applyDateFilterBtn');
+    if (!btn) return;
+    const dateInput = document.getElementById('filterDate');
+    btn.disabled = !(dateInput && dateInput.value);
 }
 
 /** 提示条上显示的筛选说明 */
@@ -353,3 +366,22 @@ function clearFilter() {
     showToast('✅ ' + tt('已清除筛选'), 'success');
     setStatus(tt('已清除筛选'));
 }
+
+// 日期框一变就同步按钮可用状态（首次加载也要同步一次：默认无日期 → 按钮禁用）
+// 绑定标记放在模块内，不往 DOM 上挂 dataset：测试桩里 dateInput 常常只是个空对象。
+let dateFilterBound = false;
+(function initDateFilterButton() {
+    const bind = () => {
+        const dateInput = document.getElementById('filterDate');
+        if (!dateInput || dateFilterBound) return;
+        if (typeof dateInput.addEventListener !== 'function') return;
+        dateInput.addEventListener('input', syncDateFilterButton);
+        dateInput.addEventListener('change', syncDateFilterButton);
+        dateFilterBound = true;
+        syncDateFilterButton();
+    };
+    bind();
+    if (typeof document.readyState === 'string' && document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bind);
+    }
+})();

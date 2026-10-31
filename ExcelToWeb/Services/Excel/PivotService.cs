@@ -47,7 +47,7 @@ public class PivotService
         if (request == null) return ApiResponse<PivotResultDto>.Fail("请求为空");
 
         var table = await _repository.FindTableAsync(tableId, userId);
-        if (table == null) return ApiResponse<PivotResultDto>.Fail("表格不存在");
+        if (table == null) return ApiResponse<PivotResultDto>.NotFound("表格不存在");
 
         var headers = table.Headers ?? new List<string>();
         var valueField = (request.ValueField ?? string.Empty).Trim();

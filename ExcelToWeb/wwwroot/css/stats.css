@@ -92,6 +92,12 @@
     align-items: center;
 }
 
+/* display:flex 会盖掉 [hidden] 的 UA 规则：回收站为空时统计栏必须真的不占位，
+   否则「保留 N 天」那段说明下面会留一条空白横条 */
+.stats-bar[hidden] {
+    display: none;
+}
+
     .stats-bar strong {
         font-weight: 600;
         color: var(--text-1);
