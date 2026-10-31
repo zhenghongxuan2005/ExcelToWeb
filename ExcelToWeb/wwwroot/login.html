@@ -220,17 +220,30 @@
         }
 
         // 尝试 Windows 集成身份验证（浏览器自动协商，无需输入账号密码）
+        // manual=true 来自按钮点击：用户明确要求免密登录，可以让浏览器弹凭据框；
+        // manual=false 来自页面加载：**绝不能**触发浏览器凭据框，否则表单会被盖住。
         async function tryWindowsLogin(manual) {
             // 手动点击按钮时先征求用户同意，不悄悄登录
             if (manual && !confirm(tr('确定使用当前 Windows 账号登录吗？'))) return;
 
             const statusEl = document.getElementById('windowsStatus');
-            statusEl.classList.remove('hidden');
-            document.getElementById('loginForm').classList.add('hidden');
+            const formEl = document.getElementById('loginForm');
+
+            // 只有用户主动点击时才把表单换成「正在自动登录」；
+            // 静默探测期间表单保持可见，探测失败也不会让人对着空白等。
+            if (manual) {
+                statusEl.classList.remove('hidden');
+                formEl.classList.add('hidden');
+            }
 
             let success = false;
             try {
-                const res = await fetch('/api/auth/windows', { credentials: 'include' });
+                // X-Auth-Silent 让服务端在拿不到凭据时**不要**发 401 挑战，
+                // 而是回一个普通响应。挑战一旦发出，浏览器就弹系统凭据框。
+                const res = await fetch('/api/auth/windows', {
+                    credentials: 'include',
+                    headers: manual ? {} : { 'X-Auth-Silent': '1' }
+                });
                 if (res.ok) {
                     const result = await res.json();
                     if (result.success && result.data) {
@@ -249,9 +262,9 @@
                 console.error('Windows 登录失败:', err);
             }
 
-            // 失败则回退到账号密码表单
+            // 失败则回退到账号密码表单（静默探测时表单本来就没藏，这里是无害的兜底）
             statusEl.classList.add('hidden');
-            document.getElementById('loginForm').classList.remove('hidden');
+            formEl.classList.remove('hidden');
             if (manual && !success) showToast(tr('Windows 登录不可用或已被拒绝，请使用账号密码登录'), 'error');
         }
 
@@ -274,6 +287,11 @@
                 document.getElementById('loginForm').classList.remove('hidden');
                 return;
             }
+
+            // 先把表单亮出来，再去做静默探测。探测本身不会再弹凭据框（见 tryWindowsLogin），
+            // 但网络慢或接口卡住时，用户至少能直接手输账号密码，而不是对着空卡片干等。
+            document.getElementById('loginForm').classList.remove('hidden');
+
             const token = localStorage.getItem('token');
             if (token) {
                 try {

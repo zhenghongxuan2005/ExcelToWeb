@@ -112,6 +112,28 @@
     margin-bottom: 28px;
 }
 
+/* ===== 表单字段：标签在上、输入框占满整行 =====
+   必须显式声明块级堆叠。dash.css 里也有一个 .field，是看板筛选行用的
+   inline-flex 横排；login.css 比它先加载，不加作用域就会被它盖掉 ——
+   结果标签和输入框挤在同一行，输入框按 flex 收缩，宽度随标签长度变化，
+   注册页三个框（用户名/密码/确认密码）的左边缘因此呈阶梯状参差。 */
+.auth-card .field {
+    display: block;
+    margin-bottom: 16px;
+}
+
+.auth-card .field-label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-2);
+}
+
+.auth-card .field .input {
+    width: 100%;
+}
+
 .auth-status {
     text-align: center;
     color: var(--text-3);

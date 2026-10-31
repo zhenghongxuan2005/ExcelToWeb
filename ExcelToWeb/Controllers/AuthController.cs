@@ -141,9 +141,21 @@ public class AuthController : ControllerBase
 
         // 手动触发协商（等价于 [Authorize(AuthenticationSchemes = Negotiate)]）：
         // 首次访问无凭据时 Challenge 返回 401，浏览器自动带 Windows 凭据重试。
+        //
+        // 但首页加载时的「静默探测」不能走这条路：Challenge 会让浏览器立刻弹一个
+        // 系统级「登录以访问此站点」凭据框，而这时用户并没有要求登录 —— 弹框盖在
+        // 登录表单上面，不点取消就进不去（实测可停十秒以上）。所以静默探测带
+        // X-Auth-Silent 头，失败时只回一个普通 200，把「不行」当数据告诉前端。
+        var silentProbe = Request.Headers.ContainsKey("X-Auth-Silent");
+
         var authResult = await HttpContext.AuthenticateAsync(NegotiateDefaults.AuthenticationScheme);
         if (!authResult.Succeeded)
+        {
+            if (silentProbe)
+                return Ok(ApiResponse.Fail("当前浏览器未提供 Windows 凭据"));
+
             return Challenge(NegotiateDefaults.AuthenticationScheme);
+        }
 
         // 形如 "DOMAIN\zhangsan" 或 "PC01\zhangsan"
         var windowsName = authResult.Principal?.Identity?.Name;

@@ -15,9 +15,11 @@
 """
 import sys
 import time
+import urllib.error
+import urllib.request
 
 sys.path.insert(0, "tests/backend/helpers")
-from smoke_base import call, ensure_user, login, make_xlsx
+from smoke_base import BASE, call, ensure_user, login, make_xlsx
 
 fails = 0
 
@@ -108,6 +110,37 @@ rows_base = len((base.get("data") or {}).get("rows") or [])
 rows_date = len((withdate.get("data") or {}).get("rows") or [])
 check("不带 date 返回 3 行", st == 200 and rows_base == 3, rows_base)
 check("带 date 仍返回整表（多余参数被忽略，不再过滤）", st2 == 200 and rows_date == 3, rows_date)
+
+# ===== 6. Windows 静默探测不能发 401 挑战 =====
+# 登录页加载时会探测一次 Windows 免密登录。一旦服务端回 401 + WWW-Authenticate: Negotiate，
+# 浏览器就会弹系统凭据框盖住登录表单，用户不点取消就进不去。所以静默探测必须回 200。
+print("\n[6] Windows 登录：静默探测不弹凭据框")
+
+
+def windows_probe(silent):
+    req = urllib.request.Request(BASE + "/auth/windows")
+    if silent:
+        req.add_header("X-Auth-Silent", "1")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status, resp.headers.get("WWW-Authenticate"), resp.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        return e.code, e.headers.get("WWW-Authenticate"), e.read().decode("utf-8", "replace")
+
+
+st_silent, chal_silent, body_silent = windows_probe(True)
+if st_silent == 404:
+    # Auth:EnableWindows=false（无域部署的默认值）时不暴露该端点，这条无从验证
+    print("  SKIP Windows 集成认证未启用（Auth:EnableWindows=false）")
+else:
+    check("静默探测返回 200（不是 401）", st_silent == 200, (st_silent, body_silent))
+    check("静默探测不带 WWW-Authenticate（浏览器不会弹框）", chal_silent is None, chal_silent)
+    check("响应体给出可读的失败原因", "Windows" in body_silent, body_silent)
+
+    st_plain, chal_plain, _ = windows_probe(False)
+    check("普通请求仍是 401 + Negotiate 挑战（手动点按钮才走这条）",
+          st_plain == 401 and chal_plain is not None and "Negotiate" in chal_plain,
+          (st_plain, chal_plain))
 
 print("\n%s（%d 项失败）" % ("状态码约定：全部通过" if fails == 0 else "状态码约定：存在失败", fails))
 sys.exit(1 if fails != 0 else 0)
