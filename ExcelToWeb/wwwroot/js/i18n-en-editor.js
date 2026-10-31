@@ -389,5 +389,9 @@ I18n.register({
         'Exported — includes the source data sheet and a "Pivot" sheet',
 
     // 列管理弹窗里 fx 标记的悬停气泡（公式原文是用户数据，只有前缀要翻）
-    '公式：{expr}': 'Formula: {expr}'
+    '公式：{expr}': 'Formula: {expr}',
+
+    // 空表格保存前的二次确认（保存 = 整表替换，空行集等于清空）
+    '当前表格没有任何行，保存会清空整张表的数据。确定继续吗？':
+        'This table has no rows, so saving will clear all of its data. Continue?'
 });

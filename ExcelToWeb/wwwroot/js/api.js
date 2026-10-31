@@ -242,11 +242,13 @@ function queryTableData(tableId, date) {
     return request(url);
 }
 
-function saveTableData(tableId, rows) {
+function saveTableData(tableId, rows, allowEmpty) {
     return request('/excel/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tableId, rows })
+        // allowEmpty 只在用户确认过「清空全部行」时为 true；服务端默认拒绝空行集，
+        // 否则一次取数失败 + 一次点保存就等于静默删库
+        body: JSON.stringify({ tableId, rows, allowEmpty: !!allowEmpty })
     });
 }
 

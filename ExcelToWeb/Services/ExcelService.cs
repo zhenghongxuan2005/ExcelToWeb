@@ -110,7 +110,7 @@ public class ExcelService : IExcelService
     // ================================================================
     // 保存数据（整表替换）
     // ================================================================
-    public async Task<ApiResponse> SaveTableDataAsync(int tableId, int userId, List<Dictionary<string, object>> rows, string? userName = null)
+    public async Task<ApiResponse> SaveTableDataAsync(int tableId, int userId, List<Dictionary<string, object>> rows, string? userName = null, bool allowEmpty = false)
     {
         if (IsDemoUser) return ApiResponse.Fail(DemoWriteGuard.ReadOnlyMessage);
 
@@ -121,10 +121,21 @@ public class ExcelService : IExcelService
             if (table == null)
                 return ApiResponse.Fail("表格不存在");
 
+            var meta = ColumnMetaService.Parse(table.ColumnMetaJson);
+
+            // 整表替换前的入参守门：空行集会清空整表、未知列会变成永远显示不出来的
+            // 幽灵数据，两者都返回 200「成功」，所以必须在这里拦。放在 Strip 之前：
+            // 计算列的键要放行（Strip 之后它们已经被抹掉，就分不清「漏传」和「本来就不存在」）
+            var rejected = RowPayloadGuard.Validate(table.Headers, meta, rows, allowEmpty);
+            if (rejected != null)
+            {
+                _logger.LogWarning("拒绝保存表格 {TableId}（用户 {UserId}）：{Reason}", tableId, userId, rejected);
+                return ApiResponse.Fail(rejected);
+            }
+
             // 计算列的值是按公式算出来的，客户端回传的行里带着它们。
             // 落库前必须抹掉：否则计算列的值会混进 DataJson，之后源列改了它就变成
             // 一份永远不更新的陈旧数据 ——「实时算」的全部好处当场作废。
-            var meta = ColumnMetaService.Parse(table.ColumnMetaJson);
             ComputedColumnService.Strip(meta, rows);
 
             // 保存前取旧数据，用于审计 diff（读取失败不应阻断保存，故放在 try 内但由 AuditService 自身兜底）

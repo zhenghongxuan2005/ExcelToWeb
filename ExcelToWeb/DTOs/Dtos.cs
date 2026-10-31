@@ -65,7 +65,16 @@ public class ChangePasswordRequest
 public class SaveRequest
 {
     public int TableId { get; set; }
+
+    /// <summary>整表替换的数据行。空数组默认被拒（见 RowPayloadGuard），避免误清空</summary>
     public List<Dictionary<string, object>> Rows { get; set; } = new();
+
+    /// <summary>
+    /// 允许用空行集覆盖表格，等价于「清空全部数据」。
+    /// 只有用户在界面上明确确认过清空才会带 true。默认 false 是关键：
+    /// 取数失败 / 渲染异常时前端手里可能一行都没有，那时点保存不该把整张表删掉。
+    /// </summary>
+    public bool AllowEmpty { get; set; }
 }
 
 public class UploadResult

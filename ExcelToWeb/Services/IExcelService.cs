@@ -12,7 +12,11 @@ public interface IExcelService
     /// <summary>列出文件里的工作表，供「多工作表时选一张导入」使用</summary>
     Task<ApiResponse<List<SheetInfoDto>>> ListSheetsAsync(IFormFile file);
     Task<ApiResponse<TableDataDto>> GetTableDataAsync(int tableId, int userId, string? date = null);
-    Task<ApiResponse> SaveTableDataAsync(int tableId, int userId, List<Dictionary<string, object>> rows, string? userName = null);
+    /// <summary>
+    /// 整表保存。allowEmpty = false（默认）时空行集会被拒绝——保存是整表替换，
+    /// 空数组等于清空整表；只有用户明确确认过「清空全部行」才允许传 true。
+    /// </summary>
+    Task<ApiResponse> SaveTableDataAsync(int tableId, int userId, List<Dictionary<string, object>> rows, string? userName = null, bool allowEmpty = false);
     Task<byte[]?> ExportExcelAsync(int tableId, int userId);
     Task<byte[]?> ExportCsvAsync(int tableId, int userId);
     Task<byte[]?> DownloadTemplateAsync(int tableId, int userId);

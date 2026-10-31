@@ -18,6 +18,13 @@ function saveData() {
         }
     });
 
+    // 保存是整表替换：手里一行都没有时按「保存」等于清空整张表。
+    // 取数失败 / 渲染异常都可能让 currentRows 变空，所以这里必须问一次
+    // （服务端同样默认拒绝空数组，两道闸各管一段）
+    if (currentRows.length === 0 && !confirm(tt('当前表格没有任何行，保存会清空整张表的数据。确定继续吗？'))) {
+        return;
+    }
+
     fetchValidationRules(currentTableId)
         .then(rules => {
             const errors = [];
@@ -99,7 +106,7 @@ function saveData() {
             }
 
             setStatus(tt('保存中...'));
-            return saveTableData(currentTableId, validRows)
+            return saveTableData(currentTableId, validRows, currentRows.length === 0)
                 .then(result => {
                     showToast('✅ ' + tt(result.message || '保存成功'), 'success');
                     setStatus(tt('已保存'));

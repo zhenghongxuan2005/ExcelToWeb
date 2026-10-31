@@ -80,7 +80,8 @@ public class ExcelController : ControllerBase
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
         // 用户名随 JWT 下发（ClaimTypes.Name），用于变更历史署名
-        var result = await _service.SaveTableDataAsync(request.TableId, userId, request.Rows, User.Identity?.Name);
+        var result = await _service.SaveTableDataAsync(
+            request.TableId, userId, request.Rows, User.Identity?.Name, request.AllowEmpty);
         if (!result.Success) return BadRequest(result);
         return Ok(result);
     }

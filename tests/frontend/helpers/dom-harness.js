@@ -161,6 +161,14 @@ function createHarness(opts) {
     };
     sandbox.window = sandbox;
     sandbox.globalThis = sandbox;
+    // confirm 由用例控制：默认与 frontend_check / p0_test 一致返回 true，
+    // 需要「用户点了取消」的分支时把 __confirm.value 置 false（并可用 calls/msgs 断言问过几次）
+    sandbox.__confirm = { value: true, calls: 0, msgs: [] };
+    sandbox.confirm = function (msg) {
+        sandbox.__confirm.calls++;
+        sandbox.__confirm.msgs.push(String(msg));
+        return sandbox.__confirm.value;
+    };
 
     const ctx = vm.createContext(sandbox);
     // keep 里的标识符保留模块自身的真实实现；stubs 里的补齐本用例不关心的依赖
