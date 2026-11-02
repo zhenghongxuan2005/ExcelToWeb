@@ -33,7 +33,54 @@ function resetHistory() {
     undoHistory = [];
     redoHistory = [];
     if (typeof resetFilter === 'function') resetFilter();
+    // 换了数据源 = 此刻的数据就是「已保存」的状态，未保存基线跟着重设
+    markDataClean();
     updateUndoButtons();
+}
+
+// ================================================================
+// 未保存修改的判定
+// ----------------------------------------------------------------
+// 为什么不设「脏标志位」：写数据的入口有十来处（单元格输入、填充柄、区域粘贴、
+// 查找替换、增删行、批量改值、撤销重做……），逐个挂标志迟早漏一个，而漏掉的
+// 后果是「明明改了却静默放弃询问」，比不提示更糟。改成对比数据指纹：只有一处
+// 计算，任何值变化都会体现在里面，不可能漏。
+//
+// 基线在 loadTableData / applySavedRows / refreshData 里随 resetHistory() 重设。
+// ================================================================
+
+let baselineSignature = '';
+
+/**
+ * 当前数据的指纹：行数 + 所有列取值的滚动哈希。
+ * 只遍历 currentHeaders，所以传输层的 __rid 不会影响判定。
+ */
+function dataSignature() {
+    let h = 2166136261;
+    for (const row of currentRows) {
+        for (const key of currentHeaders) {
+            const v = row[key];
+            const s = v === undefined || v === null ? '' : String(v);
+            for (let i = 0; i < s.length; i++) {
+                h ^= s.charCodeAt(i);
+                h = (h * 16777619) >>> 0;
+            }
+            h = (h ^ 31) >>> 0;   // 分隔符：否则 ["ab",""] 与 ["a","b"] 会算出同一个哈希
+        }
+        h = (h ^ 7) >>> 0;
+    }
+    return currentRows.length + ':' + h;
+}
+
+/** 把当前数据记为「已保存」的基线（数据源切换 / 保存成功后调用） */
+function markDataClean() {
+    baselineSignature = dataSignature();
+}
+
+/** 相对最后一次加载或保存，是否有未落库的修改 */
+function hasUnsavedChanges() {
+    if (!currentTableId) return false;
+    return dataSignature() !== baselineSignature;
 }
 
 /**

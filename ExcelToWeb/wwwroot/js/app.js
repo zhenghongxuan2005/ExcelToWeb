@@ -158,5 +158,25 @@ Object.assign(window, {
     applyColumnMeta, collectColumnMeta, scheduleMetaSave, flushColumnMeta, resetColumnMeta,
     updateSelectionStats,
     // 变更历史
-    openHistoryModal, closeHistoryModal, openRowHistory, clearHistoryFilter
+    openHistoryModal, closeHistoryModal, openRowHistory, clearHistoryFilter,
+    // 未保存修改的判定（切表 / 导出 / 关闭页面前的确认）
+    hasUnsavedChanges
 });
+
+// ================================================================
+// 关闭或刷新页面前：有未保存的修改就问一句
+// ----------------------------------------------------------------
+// 浏览器出于安全考虑不允许自定义这段文案（Chrome / Edge 只显示「更改的内容
+// 可能不会保存」），这里能做的只有「决定弹不弹」。没有监听器时页面会被直接
+// 关掉，用户连一句提示都看不到。
+// ================================================================
+// 守卫写法与 history.js 一致：前端测试的沙箱里没有 window.addEventListener，
+// 直接调用会让整段脚本在加载期就抛错（表现为「所有函数都没挂上」）
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('beforeunload', e => {
+        if (typeof hasUnsavedChanges === 'function' && hasUnsavedChanges()) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+}

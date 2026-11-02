@@ -123,6 +123,16 @@ function loadTableData(tableId) {
 function switchTable() {
     const selector = document.getElementById('tableSelector');
     const tableId = parseInt(selector.value);
+
+    // 切表会把 currentRows 整个换掉，当前表的未保存修改就此蒸发 ——
+    // 用户手滑一下下拉框就白干十分钟，所以必须问一次。
+    // 取消时还要把下拉拨回原值：否则界面显示的是一张表，实际打开的却是另一张。
+    if (currentTableId && hasUnsavedChanges()
+        && !confirm(tt('当前表格有未保存的修改，切换后将丢失。确定切换吗？'))) {
+        selector.value = String(currentTableId);
+        return;
+    }
+
     if (!tableId) {
         currentTableId = null;
         currentHeaders = [];
@@ -178,6 +188,14 @@ function deleteCurrentTable() {
 function refreshData(opts) {
     const keepView = !!(opts && opts.keepView);
     const silent = !!(opts && opts.silent);
+
+    // 刷新 = 拿库里的数据整表覆盖本地，屏幕上的未保存修改就此消失。
+    // silent 表示「这是保存流程自己的回读」——那时数据刚存进去，问一句只会多余；
+    // 其余情况（工具栏刷新 / 改完列结构后的重载 / 命令面板）都要问。
+    if (!silent && currentTableId && hasUnsavedChanges()
+        && !confirm(tt('当前表格有未保存的修改，刷新后会丢失。确定刷新吗？'))) {
+        return;
+    }
 
     // 列筛选是纯视图状态，刷新时先清掉（撤销栈由下面的 resetHistory 一并清）
     if (!keepView && typeof resetFilter === 'function') resetFilter();

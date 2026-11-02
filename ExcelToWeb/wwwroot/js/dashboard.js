@@ -180,9 +180,20 @@ function buildViewModel(dim, metric) {
 // ================================================================
 // 渲染
 // ================================================================
-function renderDashboard() {
+/**
+ * @param {boolean} [keepView] 保留用户当前的维度 / 度量 / 图表类型 / 对数轴。
+ *   只有「数据没变、只是重新贴一遍文案」的场景才传（语言切换）；
+ *   换表时不能传，否则会带着上一张表的列名去找下一张表。
+ */
+function renderDashboard(keepView) {
     const container = document.getElementById('dashboardContent');
     if (!container) return;
+
+    // 这两个 select 马上会被 innerHTML 覆盖，先把用户选的值取出来
+    const dimSel = document.getElementById('dimSelect');
+    const metricSel = document.getElementById('metricSelect');
+    const prevDim = dimSel ? dimSel.value : '';
+    const prevMetric = metricSel ? metricSel.value : '';
 
     disposeChart();
 
@@ -199,13 +210,19 @@ function renderDashboard() {
         return;
     }
 
-    const dim = found.dimensions[0];
-    const metric = pickDefaultMetric(found.metrics);
+    // 语言切换是「同一份数据换个说法」：维度/度量/图表类型/对数轴都沿用，
+    // 否则切一下语言就把用户挑好的分析视图清空了（回到第一维度 + 柱状图）
+    const dim = (keepView && found.dimensions.indexOf(prevDim) !== -1) ? prevDim : found.dimensions[0];
+    const metric = (keepView && found.metrics.indexOf(prevMetric) !== -1)
+        ? prevMetric
+        : pickDefaultMetric(found.metrics);
     const model = buildViewModel(dim, metric);
 
-    // 换表/重渲染时回到默认视图：柱状图、线性轴
-    chartType = 'bar';
-    logScaleOn = false;
+    // 换表 / 重新取数时回到默认视图：柱状图、线性轴
+    if (!keepView) {
+        chartType = 'bar';
+        logScaleOn = false;
+    }
 
     container.innerHTML = renderStatCards(model)
         + renderChartCard({
@@ -346,7 +363,8 @@ function watchThemeAndResize() {    const toggle = document.getElementById('them
 function watchLanguage() {
     document.addEventListener('i18n:change', () => {
         disposeChart();
-        if (rows.length) renderDashboard();
+        // keepView：数据没变，只是文案要换 —— 用户选的维度/度量/图表类型不能跟着重置
+        if (rows.length) renderDashboard(true);
         else fetchDashboardData();
     });
 }

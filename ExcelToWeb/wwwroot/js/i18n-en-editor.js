@@ -402,5 +402,13 @@ I18n.register({
     // 保存成功但回读失败：两件事要分开说，否则会被当成「保存没生效」
     '数据已保存，但重新加载失败：{msg}。请手动点刷新':
         'Data saved, but reloading failed: {msg}. Please refresh manually',
-    '已保存（回读失败）': 'Saved (reload failed)'
+    '已保存（回读失败）': 'Saved (reload failed)',
+
+    // 未保存修改的三处确认：切表、导出 Excel/CSV（导出走后端读库，不含本地修改）
+    '当前表格有未保存的修改，切换后将丢失。确定切换吗？':
+        'This table has unsaved changes that will be lost when you switch. Switch anyway?',
+    '当前有未保存的修改，导出的是上次保存的数据。继续导出吗？':
+        'You have unsaved changes; the file will contain the last saved data. Export anyway?',
+    '当前表格有未保存的修改，刷新后会丢失。确定刷新吗？':
+        'This table has unsaved changes that will be lost on reload. Reload anyway?'
 });

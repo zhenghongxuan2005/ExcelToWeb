@@ -25,6 +25,9 @@ vm.runInContext(`
     resetFilter = function () { __resetFilter++; };
     __resetHistory = 0;
     resetHistory = function () { __resetHistory++; };
+    // 脏数据判定由 history.js 提供，本用例没加载它；这里固定「没有未保存修改」，
+    // 免得 refreshData 先弹一次「刷新会丢失修改」的确认（那条分支在 dirty_guard_test.js 里测）
+    hasUnsavedChanges = function () { return false; };
     __nextQuery = null;
     queryTableData = function () { return Promise.resolve(__nextQuery); };
 `, h.ctx);

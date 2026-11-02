@@ -159,6 +159,13 @@ function exportExcel() {
         showToast(tt('请先上传一个 Excel 文件'), 'error');
         return;
     }
+    // Excel / CSV 导出都由后端读库里已保存的数据生成，屏幕上的未保存修改不在其中。
+    // 不提示的话，用户会对着导出文件找那几处刚改的值 —— 然后以为是自己改丢了。
+    // （「导出当前视图」是纯前端生成、导出所见内容，那条路径不需要问）
+    if (hasUnsavedChanges()
+        && !confirm(tt('当前有未保存的修改，导出的是上次保存的数据。继续导出吗？'))) {
+        return;
+    }
     setStatus(tt('导出中...'));
     exportExcelBlob(currentTableId)
         .then(blob => {
@@ -175,6 +182,11 @@ function exportExcel() {
 function exportCsv() {
     if (!currentTableId) {
         showToast(tt('请先上传一个 Excel 文件'), 'error');
+        return;
+    }
+    // 与 exportExcel 同一口径：后端读库生成，未保存修改不在其中
+    if (hasUnsavedChanges()
+        && !confirm(tt('当前有未保存的修改，导出的是上次保存的数据。继续导出吗？'))) {
         return;
     }
     setStatus(tt('导出中...'));
