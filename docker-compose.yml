@@ -24,6 +24,15 @@ services:
       # Express 版免费、可用于生产，但单库上限 10GB。演示够用；
       # 要跑大数据量可改成 Developer（无大小限制，许可仅限开发测试）。
       MSSQL_PID: Express
+      # SQL Server 默认会把机器上能用的内存尽量吃满。在 2~4GB 的小机器上，
+      # 结果是它把 web 容器挤到 OOM，表现为 sqlserver 反复重启、web 一直 Created。
+      # 小机器把 .env 里的 MSSQL_MEMORY_MB 调到 1024。
+      MSSQL_MEMORY_LIMIT_MB: ${MSSQL_MEMORY_MB:-1536}
+    # Docker 层硬上限，和上面的 MSSQL_MEMORY_LIMIT_MB 是两道不同的闸：
+    # 后者只调 SQL Server 自己的缓冲池，且对已经初始化过的数据卷不会重设
+    # （实测 max server memory 仍是「无限制」），所以再用 cgroup 兜一层。
+    # 超限时容器会被 OOM kill —— 这比让 SQL Server 吃光宿主内存、把 web 也拖死要好。
+    mem_limit: ${MSSQL_MEMORY_MB:-1536}m
     volumes:
       - mssql-data:/var/opt/mssql
     # 用 sqlcmd 真正执行一次查询，而不是只探端口——
@@ -54,6 +63,10 @@ services:
       # （拒绝占位串与短于 32 字符的密钥），部署环境本就该走这条路径。
       ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=ExcelToWebDB;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;Encrypt=False"
       Jwt__Key: ${JWT_KEY:?请在 .env 里设置 JWT_KEY（≥32 字符）}
+      # 部署在反向代理后面（Codespaces 的端口转发、nginx、云平台负载均衡）时设为 true，
+      # 否则应用取不到真实客户端 IP：登录限流按 IP 分区会退化成全局配额。
+      # 直接暴露在公网且前面没有代理时不要开 —— 客户端能伪造 X-Forwarded-For 绕过限流。
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: ${FORWARDED_HEADERS:-false}
       # Linux 容器里没有 Negotiate，显式关闭 Windows 集成登录，走账号密码
       Auth__EnableWindows: "false"
     ports:
