@@ -1,0 +1,70 @@
+# 完整环境一键起：应用 + SQL Server（不需要事先装数据库）
+#
+#   1) cp .env.compose.example .env   # 改掉里面的两个密码
+#   2) docker compose up -d --build
+#   3) 打开 http://localhost:8080
+#
+# 应用启动时会自动跑 EF 迁移、播种演示账号、开启 RCSI（见 Program.cs），
+# 所以不需要手工建库或执行 SQL 脚本。SQL Server 首次启动需要 40~60 秒，
+# web 会等它 healthy 之后再启动，这段时间 `docker compose ps` 里 web 显示 Created 是正常的。
+#
+# 内存要求：SQL Server 容器至少需要 2GB。Docker Desktop 默认配置够用；
+# 若启动即退出，先把 Docker Desktop 的内存调到 4GB 以上。
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: exceltoweb-sql
+    environment:
+      ACCEPT_EULA: "Y"
+      # 变量名刻意不叫 MSSQL_SA_PASSWORD：那是 SQL Server 镜像自己的环境变量名，
+      # 若宿主机环境里残留同名变量，会优先于 .env 生效，导致你改了 .env 却不生效。
+      # 这里用 SQL_SA_PASSWORD 做中间变量，再显式赋给容器。
+      MSSQL_SA_PASSWORD: ${SQL_SA_PASSWORD:?请先复制 .env.compose.example 为 .env 并设置 SQL_SA_PASSWORD}
+      # Express 版免费、可用于生产，但单库上限 10GB。演示够用；
+      # 要跑大数据量可改成 Developer（无大小限制，许可仅限开发测试）。
+      MSSQL_PID: Express
+    volumes:
+      - mssql-data:/var/opt/mssql
+    # 用 sqlcmd 真正执行一次查询，而不是只探端口——
+    # 端口通了但实例还在恢复数据库时，应用连上去仍然会失败。
+    # 2022 镜像带的是 mssql-tools18，旧镜像在 mssql-tools，两条都试一次。
+    # 注意 $$ 是 compose 的转义，运行时才会展开成容器的 $。
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' -b -o /dev/null || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' -b -o /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: exceltoweb-app
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      # 容器内固定监听 8080；Program.cs 只在 Development 且未注入该变量时才回退到 5185，
+      # 所以这里显式给出端口，避免平台探活打不通。
+      ASPNETCORE_URLS: http://+:8080
+      # 不设 ASPNETCORE_ENVIRONMENT，默认 Production —— 会触发 JWT Key 的强校验
+      # （拒绝占位串与短于 32 字符的密钥），部署环境本就该走这条路径。
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=ExcelToWebDB;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;Encrypt=False"
+      Jwt__Key: ${JWT_KEY:?请在 .env 里设置 JWT_KEY（≥32 字符）}
+      # Linux 容器里没有 Negotiate，显式关闭 Windows 集成登录，走账号密码
+      Auth__EnableWindows: "false"
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    volumes:
+      # Data Protection 密钥默认落在容器内 /root/.aspnet/DataProtection-Keys，容器一重建
+      # 就换一套新密钥：已签发的保护数据（防伪 token、临时令牌）全部失效，多副本时还会
+      # 各签各的、彼此解不开。挂到命名卷上让它跨重建保持一致。
+      - dp-keys:/root/.aspnet/DataProtection-Keys
+    restart: unless-stopped
+
+volumes:
+  mssql-data:
+  dp-keys:

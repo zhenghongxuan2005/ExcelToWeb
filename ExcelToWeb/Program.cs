@@ -46,7 +46,8 @@ if (builder.Environment.IsDevelopment()
 }
 
 // ===== 结构化日志（Serilog，UPGRADE_PLAN 功能 7） =====
-// Development 输出控制台便于本地观察；生产输出 JSON 文件（按天滚动、保留 14 天），
+// Development 输出控制台便于本地观察；生产同时输出 stdout 与 JSON 文件（按天滚动、保留 14 天）。
+// stdout 是容器与云平台唯一保证采集的通道，文件那份给单机部署兜底。
 // 字段名与值都是结构化的，可直接被日志采集器 / Application Insights 摄取、按属性检索。
 // Microsoft 命名空间压到 Warning：EF Core 的连接池、路由匹配等框架噪声不淹没业务埋点，
 // 仅保留「应用启动/停止」这条运维最关心的框架日志。
@@ -64,6 +65,11 @@ builder.Host.UseSerilog((context, config) =>
     }
     else
     {
+        // 容器里必须同时写 stdout：docker logs 与各家云平台的日志采集只认 stdout，
+        // 只写文件的话容器一重建日志就彻底消失，线上出问题等于没有日志可查
+        // （这个坑是本地跑 docker compose 才暴露的：docker compose logs web 全空）。
+        // 文件输出保留，方便单机部署直接翻看；两边都是 JSON，格式一致。
+        config.WriteTo.Console(new CompactJsonFormatter());
         config.WriteTo.File(
             new CompactJsonFormatter(),
             Path.Combine("logs", "app-.json"),
@@ -473,11 +479,17 @@ app.UseMiddleware<ExceptionMiddleware>();
 // 与上面 Microsoft 压 Warning 的 override 互不影响——本中间件走 Serilog 自己的类别）
 app.UseSerilogRequestLogging();
 
-// 生产环境启用 HTTPS 重定向与 HSTS。App Service 在网关层终结 TLS 时这两步无副作用，
-// 但能覆盖「裸 Kestrel」场景，避免明文传输凭据。
+// 生产环境启用 HTTPS 重定向与 HSTS，但重定向只在「本进程真的监听 HTTPS」时才挂：
+// 容器与 App Service 都是网关层终结 TLS，进程内只有 http://+:8080，
+// 此时 HttpsRedirection 找不到 HTTPS 端口，会给每个请求刷一条
+// "Failed to determine the https port for redirect" 警告（跑一次 docker compose 才看得见）。
+// HSTS 不依赖进程内端口，照常启用：TLS 即使在网关终结，也要让浏览器记住以后走 https。
+var httpsUrls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "";
+var listensHttps = httpsUrls.Contains("https://", StringComparison.OrdinalIgnoreCase)
+    || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_HTTPS_PORT"));
 if (!app.Environment.IsDevelopment())
 {
-    app.UseHttpsRedirection();
+    if (listensHttps) app.UseHttpsRedirection();
     app.UseHsts();
 }
 

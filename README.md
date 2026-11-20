@@ -8,7 +8,7 @@
 
 - **想先看一眼**：`dotnet run --project ExcelToWeb` → 打开 <http://localhost:5185> → 点登录页的「演示账号」，不用注册就能体验只读样例表
 - **想跑一遍测试**：`python tests/run.py`（起真实服务跑全量黑盒回归，详见 [测试](#测试)）
-- **想部署**：见 [快速开始](#快速开始) 与 [Azure 部署（容器）](#azure-部署容器)
+- **想部署**：一条命令起完整环境（应用 + SQL Server），见 [容器化部署](#容器化部署)
 
 ---
 
@@ -602,7 +602,40 @@ EPPlus 的许可通过 `ExcelPackage.License.SetNonCommercialPersonal("…")` �
 
 Swagger UI 仅在**开发环境**启用，生产环境访问 `/swagger` 返回 404。
 
-### Azure 部署（容器）
+### 容器化部署
+
+#### 方式一：本地一键起（Docker Compose，推荐先走这条）
+
+不需要预先安装 SQL Server —— 一条命令把应用和数据库都起来：
+
+```bash
+cp .env.compose.example .env
+# 编辑 .env：改掉 SQL_SA_PASSWORD，把 JWT_KEY 换成一串 ≥32 位的随机值
+#   生成：openssl rand -base64 32
+docker compose up -d --build
+```
+
+打开 <http://localhost:8080>。首次启动 SQL Server 需要 40~60 秒，`web` 容器会等数据库**真正能执行查询**之后才启动（健康检查跑的是 `SELECT 1`，不是只探端口），所以这段时间 `docker compose ps` 里 `web` 显示 `Created` 是正常现象。
+
+```bash
+docker compose ps                              # sqlserver 应为 healthy
+docker compose logs -f web                     # 观察迁移与演示账号播种日志
+curl -fsS http://localhost:8080/health/ready   # 就绪探针，返回 200 即数据库已通
+docker compose down                            # 停止；加 -v 则连数据卷一起删除
+```
+
+几点说明：
+
+- 应用启动时**自动**执行 EF 迁移、播种演示账号、开启 RCSI，不需要手工建库或跑 SQL 脚本
+- 数据存放在命名卷 `mssql-data` 里，`docker compose down` 不会丢；要彻底重置用 `down -v`
+- Data Protection 密钥单独存在 `dp-keys` 卷里：不挂卷的话容器一重建就换密钥，已签发的保护数据全部失效
+- 应用日志同时写 stdout 与容器内 `logs/`，`docker compose logs -f web` 直接可看（只写文件时 `docker logs` 是空的，这个坑跑一次才发现）
+- SQL Server 容器至少需要 2GB 内存，Docker Desktop 分配不足时会启动即退出
+- `.env` 已加入 `.gitignore`，密码与密钥不会进仓库；模板 `.env.compose.example` 才入库
+- 模板里的 `JWT_KEY` 故意以 `CHANGE_ME_` 开头：不改就会启动失败并提示密钥不合规。这是刻意设的闸门，避免有人拿着公开仓库里的默认密钥直接跑起来
+- 容器内是 Linux，没有 Negotiate，`Auth__EnableWindows` 固定为 `false`，走账号密码登录
+
+#### 方式二：云平台（Azure Container Apps / App Service）
 
 仓库根目录提供多阶段 `Dockerfile`（.NET 10 SDK 构建 + ASP.NET Core 运行时，默认监听 8080）：
 
