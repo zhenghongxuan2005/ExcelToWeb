@@ -12,9 +12,13 @@ namespace ExcelToWeb.Filters;
 /// 一路传到仓储层就是「查无此表」，最后返回 404「表格不存在」。
 /// 于是「你漏了参数」和「这张表真的没了」表现完全一样，排障时按提示走会走反方向。
 ///
-/// 只在参数名恰好是 <c>tableId</c> 的 action 上生效：
+/// 只在参数名恰好是 <c>tableId</c>、且类型是**非可空** <c>int</c> 的 action 上生效：
 /// POST / PUT 的表 id 在 DTO 里，不经过动作参数，交给服务层的「表格不存在」判断
 /// （那种情况 404 是对的——请求形状没错，是资源真的不在）。
+///
+/// <c>int? tableId</c> 必须放过：可空本身就是「可选」的语义。审计中心
+/// （<c>GET /api/excel/audit-center</c>）不传 tableId 表示跨全部表格，
+/// 早期版本按参数名一刀切，把这类合法查询挡成了 400「缺少 tableId 参数」。
 ///
 /// 注意不能只看 <c>ActionArguments</c>：参数完全没传时绑定会失败，
 /// 这个键根本不出现在字典里（不是 0），必须回到 ActionDescriptor 的参数清单判断。
@@ -27,8 +31,13 @@ public sealed class RequireTableIdFilter : IActionFilter
     public void OnActionExecuting(ActionExecutingContext context)
     {
         if (context.ActionDescriptor is not ControllerActionDescriptor action) return;
-        if (!action.Parameters.Any(p => string.Equals(p.Name, "tableId", StringComparison.OrdinalIgnoreCase)))
-            return;
+
+        var param = action.Parameters.FirstOrDefault(p =>
+            string.Equals(p.Name, "tableId", StringComparison.OrdinalIgnoreCase));
+        if (param == null) return;
+
+        // int? 表示可选，不拦；只有非可空的 int 才要求必传
+        if (param.ParameterType != typeof(int)) return;
 
         if (context.ActionArguments.TryGetValue("tableId", out var raw) && raw is int id && id > 0)
             return;

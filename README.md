@@ -10,12 +10,22 @@
 - **想跑一遍测试**：`python tests/run.py`（起真实服务跑全量黑盒回归，详见 [测试](#测试)）
 - **想部署**：一条命令起完整环境（应用 + SQL Server），见 [容器化部署](#容器化部署)
 
+<p align="center">
+  <img src="docs/screenshots/03-editor.png" width="49%" alt="在线表格编辑">
+  <img src="docs/screenshots/04-dashboard.png" width="49%" alt="数据看板">
+</p>
+<p align="center">
+  <img src="docs/screenshots/02-tables.png" width="49%" alt="表格管理">
+  <img src="docs/screenshots/05-audit.png" width="49%" alt="审计中心">
+</p>
+
 ---
 
 ## 目录
 
 - [功能特性](#功能特性)
 - [技术栈](#技术栈)
+- [架构](#架构)
 - [项目结构](#项目结构)
 - [数据模型](#数据模型)
 - [API 接口](#api-接口)
@@ -133,6 +143,51 @@
 | API 文档 | Swashbuckle.AspNetCore 7.2.0（Swagger UI，仅开发环境启用） |
 | 前端 | 原生 HTML / CSS / JavaScript，无构建步骤；图表用 ECharts 5.5.1（CDN，jsDelivr 失败自动切 npmmirror） |
 | 测试 | xUnit（单元）+ Python / Node 脚本（黑盒回归） |
+
+---
+
+## 架构
+
+分层的核心约束只有一条：**Controller 不写业务，门面不写实现**。`ExcelService` 是唯一的编排入口，它注入 10 个各自只管一件事的协作者；任何业务改动都不需要动 Controller。
+
+```mermaid
+flowchart TB
+    UI["浏览器<br/>8 个页面 · 零构建原生 JS"]
+    MW["中间件管道<br/>异常 → 请求日志 → 认证 → 授权 → 限流"]
+    CTRL["5 个 Controller<br/>Auth / Excel / Trash / Users / Exports"]
+    SVC["ExcelService 门面<br/>477 行，只编排不实现"]
+    C1["导入导出<br/>TableImport · ExcelExport"]
+    C2["数据访问<br/>TableRepository"]
+    C3["列与计算<br/>ColumnStructure · ColumnMeta · ComputedColumn"]
+    C4["规则与透视<br/>Rule · Pivot · PivotExport"]
+    C5["审计与守卫<br/>Audit · RowPayloadGuard"]
+    EF["EF Core<br/>AppDbContext"]
+    DB[("SQL Server")]
+    SIDE["横切能力<br/>RBAC · 限流 · Serilog · Hangfire · IDistributedCache"]
+
+    UI -->|"HTTP + JSON + JWT"| MW
+    MW --> CTRL
+    CTRL --> SVC
+    SVC --> C1
+    SVC --> C2
+    SVC --> C3
+    SVC --> C4
+    SVC --> C5
+    C1 --> EF
+    C2 --> EF
+    C3 --> EF
+    C4 --> EF
+    C5 --> EF
+    EF --> DB
+    SIDE -.-> CTRL
+    SIDE -.-> SVC
+```
+
+几处刻意为之的设计：
+
+- **前端零构建**：8 个 HTML 页面 + 54 个原生 JS 模块，由后端 `UseStaticFiles` 托管。代价是脚本加载顺序要手工维护（`index.html` 里的 `<script>` 顺序就是依赖图），收益是没有构建链、改完刷新就生效
+- **门面只编排**：`ExcelService` 没有任何 `if` 业务分支，它只负责「先守门 → 再算 → 再落库 → 再记审计」的顺序。顺序本身就是业务（例如 `Validate → Strip → Restore → RemoveRowId` 不能颠倒）
+- **横切能力不进业务代码**：权限、限流、日志、后台任务全部在管道或特性上，协作者感知不到它们的存在
 
 ---
 
@@ -422,6 +477,15 @@ ExcelToWeb/
 
 ## 测试
 
+三道关，从最便宜的静态检查开始，前一道不过就不必跑后一道：
+
+```mermaid
+flowchart LR
+    A["① 约束守门<br/>静态规则 · 秒级<br/>不过则后面全跳过"] --> B["② xUnit<br/>8 个测试类<br/>纯逻辑 · 零 mock"]
+    B --> C["③ 黑盒回归<br/>42 个用例<br/>起真实服务跑 HTTP"]
+    C --> D["GitHub Actions<br/>push / PR 自动执行"]
+```
+
 测试分两层，各守各的：
 
 | 层 | 位置 | 守什么 | 怎么跑 |
@@ -430,7 +494,7 @@ ExcelToWeb/
 | **黑盒回归**（Python + Node） | `tests/` | 起真实服务后的集成路径：API 行为、导入导出、前端模块接线 | `python tests/run.py` |
 
 - 单元测试全部指向不依赖数据库的纯函数/纯类，零 mock；`FormulaLexer`、`FormulaParser` 是 internal 类，经 `InternalsVisibleTo` 直接测
-- 黑盒套件由 `tests/run.py` 一键编排：代码约束守门 → 起服务（5185）→ `backend/*.py` → `frontend/*.js`，当前共 34 项
+- 黑盒套件由 `tests/run.py` 一键编排：代码约束守门 → 起服务（5185）→ `backend/*.py` → `frontend/*.js`，当前共 42 个用例文件（不含 `helpers/` 下的桩件）
   - 其中 `backend/perf_test.py` 守数据访问层：整表保存（`ExecuteDelete` + 批量重插）后行数与内容不丢、连续保存不翻倍、回收站行数统计准确，并对「加载 / 保存 / 回收站列表」设了 3~5 秒的量级上限——索引一旦丢失或回收站退回逐表子查询，它会立刻报警
 - 前端用例不依赖浏览器：Node `vm` 沙箱 + DOM 桩（`tests/frontend/helpers/dom-harness.js`），直接读 `wwwroot` 源文件，因此改前端必跑
 - **约束守门**（`tests/check_constraints.py`，`run.py` 的第 0 项，不过则后面全跳过）：禁 `eval` / `new Function` / `alert` / `document.write`、禁用 `Console.WriteLine` 与空 catch、`index.html` 脚本加载顺序、共享模块装配审计；行数**不再是约束**（`--lines` 只打印体量提示）。规则细节见 [CODE_STANDARDS.md](CODE_STANDARDS.md)

@@ -142,5 +142,24 @@ else:
           st_plain == 401 and chal_plain is not None and "Negotiate" in chal_plain,
           (st_plain, chal_plain))
 
+# ===== 7. 审计接口：可空的 tableId 不能被当成「漏传」 =====
+# 这条守的是一个真实回归：RequireTableIdFilter 早期只看参数名，
+# 把 int? tableId 也当必填，于是审计中心的「全部表格」查询被挡成 400，
+# 页面直接显示「加载失败: 缺少 tableId 参数」。
+print("\n[7] 审计接口：可空 tableId 与必填 tableId 的区别")
+
+st, r = call("GET", "/excel/audit-center", token=token)
+check("审计中心不传 tableId -> 200（跨全部表格是合法查询）", st == 200 and r.get("success"), (st, msg(r)))
+
+st, r = call("GET", f"/excel/audit-center?tableId={tid}", token=token)
+check("审计中心带 tableId -> 200", st == 200 and r.get("success"), (st, msg(r)))
+
+st, r = call("GET", "/excel/audit-logs", token=token)
+check("单表审计缺 tableId -> 400", st == 400, (st, msg(r)))
+check("错误文案点名 tableId", "tableId" in msg(r), msg(r))
+
+st, r = call("GET", f"/excel/audit-logs?tableId={tid}", token=token)
+check("单表审计带 tableId -> 200", st == 200 and r.get("success"), (st, msg(r)))
+
 print("\n%s（%d 项失败）" % ("状态码约定：全部通过" if fails == 0 else "状态码约定：存在失败", fails))
 sys.exit(1 if fails != 0 else 0)
