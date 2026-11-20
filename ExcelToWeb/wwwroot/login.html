@@ -51,7 +51,7 @@
                 </div>
                 <button class="btn btn-primary" style="width:100%; padding:12px; font-size:15px;" onclick="handleLogin()">登 录</button>
                 <div class="auth-divider">或</div>
-                <button class="btn btn-outline" style="width:100%; padding:11px;" onclick="tryWindowsLogin(true)">
+                <button class="btn btn-outline" id="windowsLoginBtn" style="width:100%; padding:11px;" onclick="tryWindowsLogin(true)">
                     <svg class="icon"><use href="#i-windows"/></svg>使用 Windows 账号登录
                 </button>
                 <button class="btn btn-outline" style="width:100%; padding:11px; margin-top:10px;" onclick="tryDemoLogin()">
@@ -219,6 +219,12 @@
             }
         }
 
+        // 服务端没启用 Windows 集成认证时把入口藏起来，别留一个点了没反应的按钮
+        function hideWindowsEntry() {
+            const btn = document.getElementById('windowsLoginBtn');
+            if (btn) btn.classList.add('hidden');
+        }
+
         // 尝试 Windows 集成身份验证（浏览器自动协商，无需输入账号密码）
         // manual=true 来自按钮点击：用户明确要求免密登录，可以让浏览器弹凭据框；
         // manual=false 来自页面加载：**绝不能**触发浏览器凭据框，否则表单会被盖住。
@@ -244,6 +250,16 @@
                     credentials: 'include',
                     headers: manual ? {} : { 'X-Auth-Silent': '1' }
                 });
+                // 404 = 服务端根本没注册这个端点（Auth:EnableWindows=false，
+                // 例如 Linux 容器 / 未配置域的部署）。此时按钮留在页面上是个陷阱：
+                // 点下去只得到 404，界面毫无反馈，用户会以为「登录坏了」。
+                // 这里顺手把它藏掉，页面加载时那次静默探测就已经能得出结论。
+                if (res.status === 404) {
+                    hideWindowsEntry();
+                    statusEl.classList.add('hidden');
+                    formEl.classList.remove('hidden');
+                    return;
+                }
                 if (res.ok) {
                     const result = await res.json();
                     if (result.success && result.data) {
