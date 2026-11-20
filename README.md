@@ -7,7 +7,8 @@
 
 后端是 ASP.NET Core Web API + EF Core + SQL Server，前端是零构建的原生 HTML/CSS/JavaScript（唯一的外部运行时依赖是数据看板按需从 CDN 加载的 ECharts），静态文件由后端直接托管，一条命令即可跑起来。
 
-- **想先看一眼**：<https://expert-parakeet-6rqrr5j7rp2rjjg-8080.app.github.dev/> —— 演示账号 `demo` / `demo1234`（只读），不用注册。这是 Codespaces 临时实例，停止后地址失效；失效时点上方 `Open in Codespaces` 徽章自己起一份，约 3 分钟
+- **只想看界面**：往下滚动有 4 张真实截图（编辑器 / 看板 / 表格管理 / 审计），不用起环境
+- **想亲手试**：点上方 `Open in Codespaces` 徽章 → `Create codespace` → 按 [docs/DEPLOY.md](docs/DEPLOY.md) 第二节敲四条命令，约 3 分钟起一份带演示数据的实例；账号 `demo` / `demo1234`（只读），不用注册
 - **想在本机跑**：`dotnet run --project ExcelToWeb` → 打开 <http://localhost:5185> → 点登录页的「演示账号」，不用注册就能体验只读样例表
 - **想跑一遍测试**：`python tests/run.py`（起真实服务跑全量黑盒回归，详见 [测试](#测试)）
 - **想部署**：一条命令起完整环境（应用 + SQL Server），见 [容器化部署](#容器化部署)
