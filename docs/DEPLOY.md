@@ -66,6 +66,21 @@ docker compose up -d --build
 且 Codespace 停止后地址失效，重新启动域名会变。所以它适合「面试前后开起来」，
 不适合长期挂着当官网。
 
+### 实测记录（2026-11-20）
+
+| 阶段 | 耗时 |
+| --- | --- |
+| `dotnet publish`（含还原依赖） | 113 s |
+| 拉 SQL Server 2022 镜像 | 49 s |
+| `sqlserver` 启动到 healthy | 17 s |
+| `web` 启动到 healthy | 18 s |
+
+- 默认镜像**自带 Docker**，`docker compose version` 返回 `v5.6.1`
+  （Docker 29 系列的新版本号，命令与 v2 兼容，不用改脚本）
+- `/health/ready` 返回 `Healthy`；端口设成 Public 后，**未登录的浏览器能直接打开**首页与登录页
+- 改代码后重建走了镜像层缓存，约 20 秒；只有首次要等完整构建
+- 结论：这条路可用，2 核 8G 跑 SQL Server + .NET 不紧张
+
 ---
 
 ## 三、零成本公网 B：内网穿透

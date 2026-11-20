@@ -1,12 +1,14 @@
 # ExcelToWeb
 
 [![CI](https://github.com/zhenghongxuan2005/ExcelToWeb/actions/workflows/ci.yml/badge.svg)](https://github.com/zhenghongxuan2005/ExcelToWeb/actions)
+[![Open in Codespaces](https://img.shields.io/badge/Open_in-Codespaces-24292f?logo=github&logoColor=white)](https://codespaces.new/zhenghongxuan2005/ExcelToWeb)
 
 把 Excel 表格搬到浏览器里：上传 `.xlsx` / `.csv` 自动建表，在线编辑、规则校验、条件配色，再导出回 Excel —— 一套完整的「Excel → Web」轻量数据工具。
 
 后端是 ASP.NET Core Web API + EF Core + SQL Server，前端是零构建的原生 HTML/CSS/JavaScript（唯一的外部运行时依赖是数据看板按需从 CDN 加载的 ECharts），静态文件由后端直接托管，一条命令即可跑起来。
 
-- **想先看一眼**：`dotnet run --project ExcelToWeb` → 打开 <http://localhost:5185> → 点登录页的「演示账号」，不用注册就能体验只读样例表
+- **想先看一眼**：<https://expert-parakeet-6rqrr5j7rp2rjjg-8080.app.github.dev/> —— 演示账号 `demo` / `demo1234`（只读），不用注册。这是 Codespaces 临时实例，停止后地址失效；失效时点上方 `Open in Codespaces` 徽章自己起一份，约 3 分钟
+- **想在本机跑**：`dotnet run --project ExcelToWeb` → 打开 <http://localhost:5185> → 点登录页的「演示账号」，不用注册就能体验只读样例表
 - **想跑一遍测试**：`python tests/run.py`（起真实服务跑全量黑盒回归，详见 [测试](#测试)）
 - **想部署**：一条命令起完整环境（应用 + SQL Server），见 [容器化部署](#容器化部署)
 
