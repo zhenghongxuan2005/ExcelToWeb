@@ -161,5 +161,29 @@ check("错误文案点名 tableId", "tableId" in msg(r), msg(r))
 st, r = call("GET", f"/excel/audit-logs?tableId={tid}", token=token)
 check("单表审计带 tableId -> 200", st == 200 and r.get("success"), (st, msg(r)))
 
+# ===== 8. 成员管理：预置 Windows 账号 =====
+# 这是「白名单准入」的配套入口：管理员把 Windows 用户名预先录进来，
+# 名单之外的人无法通过集成认证进入系统。负向断言同样重要 ——
+# 录进一个格式错误的名字，等于给了一个永远匹配不上的授权。
+print("\n[8] 成员管理：预置 Windows 账号")
+
+member = "TEST\\member" + str(int(time.time()))[-6:]
+
+st, r = call("POST", "/users", {"username": member, "role": "Viewer"}, token=token)
+check("预置 Windows 账号 -> 200", st == 200 and r.get("success"), (st, msg(r)))
+
+st, r = call("GET", "/users", token=token)
+names = [x.get("username") for x in (r.get("data") or [])]
+check("成员名单里出现新账号", member in names, names[:8])
+
+st, r = call("POST", "/users", {"username": member, "role": "Editor"}, token=token)
+check("重复添加 -> 400", st == 400, (st, msg(r)))
+
+st, r = call("POST", "/users", {"username": "\\bad", "role": "Viewer"}, token=token)
+check("以反斜杠开头 -> 400", st == 400, (st, msg(r)))
+
+st, r = call("POST", "/users", {"username": "TEST\\bad2", "role": "Nope"}, token=token)
+check("非法角色 -> 400", st == 400, (st, msg(r)))
+
 print("\n%s（%d 项失败）" % ("状态码约定：全部通过" if fails == 0 else "状态码约定：存在失败", fails))
 sys.exit(1 if fails != 0 else 0)

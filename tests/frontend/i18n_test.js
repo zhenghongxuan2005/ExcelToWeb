@@ -23,8 +23,12 @@ console.log('[1] 字典：英文值唯一 / 无中文残留 / 占位符两侧一
     const H = build();
     const keys = [];
     const re = /'([^'\n]*[\u4e00-\u9fa5][^'\n]*)'\s*:/g;
+    // 正则在源码文本上抓 key，抓到的是字面量而非解析后的值：源码里的 \\
+    // 解析后是一个反斜杠。不还原的话，凡是含转义序列的 key（例如
+    // 「Windows 账号，形如 CORP\zhangsan」）都会查不到字典而被误判成「英文值夹中文」。
+    // 只还原 \\ 这一种：\uXXXX 之类的转义如果也一并处理，反而会把正常 key 改坏。
     let m;
-    while ((m = re.exec(dictCode))) keys.push(m[1]);
+    while ((m = re.exec(dictCode))) keys.push(m[1].replace(/\\\\/g, '\\'));
 
     check('字典条目数合理（外壳 + 设置 + 登录）', keys.length >= 80, keys.length);
     check('关键条目都在（导航 / 主题 / 登录）',

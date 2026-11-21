@@ -5,6 +5,15 @@
 // 只有设置页会用到。request() / authHeaders() 仍是 api.js 里的公共实现。
 // ================================================================
 
+/** 预置成员：只创建 Windows 账号（无密码），role 取 Admin / Editor / Viewer */
+function addMember(username, role) {
+    return request('/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username, role: role })
+    });
+}
+
 /** 成员列表：id / username / role / roleLabel / createdAt / lastLoginAt / isSelf */
 function fetchMembers() {
     return request('/users');

@@ -361,3 +361,16 @@ public class UpdateRoleRequest
 {
     public string Role { get; set; } = string.Empty;
 }
+
+/// <summary>
+/// 预置成员（管理员用）：只创建 Windows 账号，不设密码。
+/// 这类账号只能通过 Windows 集成认证进入，无法走密码登录。
+/// </summary>
+public class CreateMemberRequest
+{
+    /// <summary>Windows 身份，形如 DOMAIN\user 或 MACHINE\user（原样保存，登录时逐字比对）</summary>
+    public string Username { get; set; } = string.Empty;
+
+    /// <summary>角色名（Admin / Editor / Viewer）</summary>
+    public string Role { get; set; } = string.Empty;
+}

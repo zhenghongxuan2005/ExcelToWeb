@@ -103,4 +103,64 @@ public class UsersController : ControllerBase
 
         return Ok(ApiResponse.Ok($"已将 {user.Username} 设为{Rbac.Label(next)}"));
     }
+
+    /// <summary>
+    /// 预置授权账号：只建 Windows 账号（PasswordHash 留空 = 不能走密码登录），
+    /// 密码账号由使用者自己注册。名单之外的人无法通过 Windows 集成认证进入系统。
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] CreateMemberRequest request)
+    {
+        // demo 账号的密码公开在登录页，不允许它往授权名单里塞人
+        if (DemoWriteGuard.IsDemo(HttpContext))
+            return BadRequest(ApiResponse.Fail(DemoWriteGuard.ReadOnlyMessage));
+
+        var username = (request.Username ?? string.Empty).Trim();
+        if (username.Length == 0)
+            return BadRequest(ApiResponse.Fail("请填写 Windows 账号"));
+
+        if (username.Length > 128)
+            return BadRequest(ApiResponse.Fail("账号名过长（最多 128 个字符）"));
+
+        // Windows 身份形如 DOMAIN\user。不强制要求带反斜杠——单机部署、本地账号
+        // 场景下 Identity.Name 可能只有用户名。但要挡住明显录错的形式：
+        // 首尾反斜杠或连续反斜杠，那样的名字永远匹配不上任何身份。
+        if (username.StartsWith('\\') || username.EndsWith('\\') || username.Contains(@"\\"))
+            return BadRequest(ApiResponse.Fail(@"账号名格式不正确，应形如 DOMAIN\user"));
+
+        if (!Rbac.TryParse(request.Role, out var role))
+            return BadRequest(ApiResponse.Fail("角色不合法"));
+
+        // SQL Server 默认排序规则不区分大小写，这里同样按不敏感比对，
+        // 免得 DOMAIN\Zhang 和 DOMAIN\zhang 被当成两个账号分别授权
+        if (await _db.Users.AnyAsync(u => u.Username == username))
+            return BadRequest(ApiResponse.Fail($"账号「{username}」已存在"));
+
+        var user = new User
+        {
+            Username = username,
+            // 空哈希是「Windows 账号」的标记：密码校验对空哈希必然失败，
+            // 所以这类账号只能由 Negotiate 带入身份，无法走密码登录
+            PasswordHash = string.Empty,
+            Role = role,
+            CreatedAt = DateTime.UtcNow
+        };
+        await _db.Users.AddAsync(user);
+        await _db.SaveChangesAsync();
+
+        _logger.LogInformation("预置成员：{Username}（{Role}），操作人 {OperatorId}",
+            user.Username, Rbac.Label(role), _tokenService.GetUserId(User) ?? 0);
+
+        var dto = new MemberDto
+        {
+            Id = user.Id,
+            Username = user.Username,
+            Role = user.Role.ToString(),
+            RoleLabel = Rbac.Label(user.Role),
+            CreatedAt = user.CreatedAt,
+            LastLoginAt = null,
+            IsSelf = false
+        };
+        return Ok(ApiResponse<MemberDto>.Ok(dto, $"已添加「{user.Username}」"));
+    }
 }

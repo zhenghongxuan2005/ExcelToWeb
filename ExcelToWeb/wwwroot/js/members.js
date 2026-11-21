@@ -96,6 +96,28 @@ function onMemberRoleChange(userId, nextRole) {
         });
 }
 
+/** 添加成员：预置一个 Windows 账号。名单之外的人无法通过集成认证进入系统 */
+function onAddMember() {
+    const nameEl = document.getElementById('newMemberName');
+    const roleEl = document.getElementById('newMemberRole');
+    if (!nameEl || !roleEl) return;
+
+    const username = (nameEl.value || '').trim();
+    if (!username) {
+        showToast('❌ ' + tt('请填写 Windows 账号'), 'error');
+        nameEl.focus();
+        return;
+    }
+
+    addMember(username, roleEl.value)
+        .then(msg => {
+            showToast('✅ ' + tt((msg && msg.message) || '成员已添加'), 'success');
+            nameEl.value = '';
+            loadMembers();
+        })
+        .catch(err => showToast('❌ ' + err.message, 'error'));
+}
+
 // 切语言后角色名与「最后登录」都要重绘（这些是 JS 拼出来的，遍历翻不到）
 document.addEventListener('i18n:change', () => {
     if (memberCache.length > 0) renderMembers();

@@ -198,6 +198,18 @@
                         <span>把不需要写权限的账号降为「编辑」或「只读」，权限变更立即生效，对方无需重新登录。</span>
                     </p>
 
+                    <!-- 预置 Windows 账号：只有名单里的人才能通过集成认证免密进入 -->
+                    <div class="member-add">
+                        <input type="text" id="newMemberName" class="input" autocomplete="off"
+                               placeholder="Windows 账号，形如 CORP\zhangsan">
+                        <select class="table-select" id="newMemberRole" aria-label="新成员角色">
+                            <option value="Viewer">只读</option>
+                            <option value="Editor">编辑</option>
+                            <option value="Admin">管理员</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="onAddMember()">添加</button>
+                    </div>
+
                     <div class="member-list" id="memberList">
                         <p class="panel-hint">加载中…</p>
                     </div>

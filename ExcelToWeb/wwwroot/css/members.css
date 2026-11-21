@@ -91,3 +91,36 @@
         width: 100%;
     }
 }
+
+/* 面板顶部「预置 Windows 账号」：输入框 + 角色 + 添加按钮 */
+.member-add {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.member-add .input {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.member-add .table-select,
+.member-add .btn {
+    flex: none;
+}
+
+/* 窄屏：输入框独占一行，角色与按钮并排在第二行，避免三个控件挤成一团 */
+@media (max-width: 560px) {
+    .member-add {
+        flex-wrap: wrap;
+    }
+
+    .member-add .input {
+        flex: 1 1 100%;
+    }
+
+    .member-add .table-select {
+        flex: 1 1 auto;
+    }
+}
