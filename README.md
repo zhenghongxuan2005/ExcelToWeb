@@ -75,9 +75,15 @@
 
 ### 认证
 - **JWT 登录**：用户名 + 密码（仅字母数字，3–20 位），密码经 **PBKDF2-SHA256（10 万次迭代）** 加盐哈希存储，兼容旧版 SHA256 格式
-- **Windows 集成认证**：`GET /api/auth/windows` 走 NTLM/Kerberos 协商，浏览器带上当前 Windows 凭据免密登录，首次访问自动建档（密码哈希置空，不可走密码登录）
+- **Windows 集成认证**：`GET /api/auth/windows` 走 NTLM/Kerberos 协商，浏览器带上当前 Windows 凭据免密登录
+  - **白名单准入**：只有 `Users` 表里已存在的账号才能进，`Username` 存 Windows 返回的原样（`DOMAIN\user` 或 `MACHINE\user`）。**不做自动建档**——自动建档意味着域内任何账号首次访问即进入系统，等于把内部系统对整个域敞开。不在名单时返回 401，提示里点名是哪个账号
   - **只在「客户端与服务器同域」的内网部署下成立**：公网站点拿不到访客的域凭据，Linux 容器里也没有域控可验证，所以公网环境本就不该提供这个入口。`Auth:EnableWindows` 默认 `false`（`docker-compose.yml` 里固定为 false），此时端点不注册，登录页探测到 404 后会自动隐藏「使用 Windows 账号登录」按钮
   - 想在内网启用：**Windows 上运行即可**（Kestrel 或 IIS 都支持 Negotiate，实测 `dotnet run` 就能用，不必先上 IIS）+ `Auth:EnableWindows=true` + 站点处于 Intranet 安全区，三者齐备才会「打开即免密」
+  - 预置授权账号：管理员在成员管理里添加，或直接插一行（`Role`：1 只读 / 2 编辑 / 3 管理员）
+    ```sql
+    INSERT INTO Users (Username, PasswordHash, Role, CreatedAt)
+    VALUES ('CORP\zhangsan', '', 2, SYSUTCDATETIME());
+    ```
 - **刷新令牌 + 会话吊销**：Access Token 短效（默认 2 小时），刷新令牌 7 天有效、落库可吊销；刷新时旧令牌立即轮换签发新对，检测到已吊销令牌被重用则整族吊销（reuse detection）。前端遇 401 先静默刷新再重放原请求；设置页「会话管理」可查看活跃会话并逐个注销
 - **登录限流**：`/api/auth/*` 按来源 IP 固定窗口限流（默认 10 次 / 分钟，`RateLimit:AuthPermitLimit` 可调）
 - **数据隔离**：所有表格查询、保存、删除、导出均校验 `UserId` 归属

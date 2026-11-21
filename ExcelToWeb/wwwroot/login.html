@@ -243,6 +243,7 @@
             }
 
             let success = false;
+            let failMessage = '';
             try {
                 // X-Auth-Silent 让服务端在拿不到凭据时**不要**发 401 挑战，
                 // 而是回一个普通响应。挑战一旦发出，浏览器就弹系统凭据框。
@@ -273,6 +274,14 @@
                         success = true;
                         return;
                     }
+                    failMessage = result.message || '';
+                } else {
+                    // 401：Windows 身份已经认出来了，但这个账号不在授权名单里。
+                    // 服务端的 message 点名了是哪个账号，直接展示比笼统提示有用。
+                    try {
+                        const body = await res.json();
+                        failMessage = (body && body.message) || '';
+                    } catch (e) { /* 非 JSON 响应，保持空，走默认文案 */ }
                 }
             } catch (err) {
                 console.error('Windows 登录失败:', err);
@@ -281,7 +290,7 @@
             // 失败则回退到账号密码表单（静默探测时表单本来就没藏，这里是无害的兜底）
             statusEl.classList.add('hidden');
             formEl.classList.remove('hidden');
-            if (manual && !success) showToast(tr('Windows 登录不可用或已被拒绝，请使用账号密码登录'), 'error');
+            if (manual && !success) showToast(failMessage || tr('Windows 登录不可用或已被拒绝，请使用账号密码登录'), 'error');
         }
 
         document.addEventListener('keydown', e => {

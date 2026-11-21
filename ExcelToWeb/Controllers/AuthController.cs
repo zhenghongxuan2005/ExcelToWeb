@@ -162,20 +162,21 @@ public class AuthController : ControllerBase
         if (string.IsNullOrEmpty(windowsName))
             return Unauthorized(ApiResponse.Fail("无法获取 Windows 身份"));
 
-        // 首次访问自动建档（PasswordHash 置空，禁止走密码登录）
+        // 白名单准入：只有 Users 表里已存在、且用户名与 Windows 返回的身份完全一致才放行。
+        //
+        // 刻意不做自动建档。自动建档意味着域内任何人都能首次访问即进入系统——
+        // 包括外包、临时工、离职但账号未清理的人；早期版本甚至直接建成 Admin，
+        // 等于把内部系统对整个域敞开。授权名单必须由管理员预置。
+        //
+        // 用户名按 Windows 返回的原样存储（DOMAIN\user 或 MACHINE\user），
+        // 不做「去掉域名只比短名」的兜底：那样 MACHINE\Ben 会命中某个注册过的
+        // 普通账号 Ben，等于用 Windows 凭据接管别人的账号。
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Username == windowsName);
         if (user == null)
         {
-            user = new User
-            {
-                Username = windowsName,
-                PasswordHash = string.Empty,
-                CreatedAt = DateTime.UtcNow,
-                // 域账号首次登录自动建档，与注册同口径：默认管理员，由管理员按需降级
-                Role = UserRole.Admin
-            };
-            await _db.Users.AddAsync(user);
-            _logger.LogInformation("Windows 用户自动建档: {Username}", windowsName);
+            _logger.LogWarning("Windows 账号不在授权名单，拒绝登录: {Username}", windowsName);
+            return Unauthorized(ApiResponse.Fail(
+                $"该 Windows 账号（{windowsName}）未获授权，请联系管理员在成员管理中添加"));
         }
 
         user.LastLoginAt = DateTime.UtcNow;
