@@ -36,7 +36,7 @@ public class CsvSheetReader
 
         // 第 1 行是表头；限制检查与 Excel 路径一致（rowCount 含表头行）
         if (lines.Count - 1 > MaxRows)
-            throw new ExcelReadException($"数据行超过上限 {MaxRows} 行");
+            throw new ExcelReadException($"数据行超过上限 {MaxRows:N0} 行，当前 {lines.Count - 1:N0} 行，请拆分后再导入");
 
         var headers = ReadHeaders(SplitLine(lines[0], delimiter));
 

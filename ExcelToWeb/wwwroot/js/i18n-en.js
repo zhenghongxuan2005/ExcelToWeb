@@ -253,5 +253,7 @@ I18n.register({
     '服务器返回了无法解析的响应（HTTP {status}）': 'The server returned an unreadable response (HTTP {status})',
     '服务器暂时不可用（HTTP {status}），请稍后重试': 'The server is temporarily unavailable (HTTP {status}) — please try again',
     '登录已过期，请重新登录': 'Your session has expired — please sign in again',
+    '数据量超过服务端上限（30MB），请减少行数或拆分表格后重试':
+        'The payload exceeds the server limit (30 MB) — reduce the row count or split the table and try again',
     '请求失败': 'Request failed'
 });

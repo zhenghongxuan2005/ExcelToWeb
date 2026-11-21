@@ -152,6 +152,14 @@ async function request(url, options = {}) {
         throw new Error(apiText('登录已过期，请重新登录'));
     }
 
+    // 413：请求体超过服务端上限（Kestrel 默认 30MB）。整表保存时行数或单元格文本过大
+    // 才会走到这里 —— 后端已按行数提前拦截（TableImportService.MaxRowsPerTable），
+    // 这条是兜底：否则非 JSON 的 413 会被 readResponseBody 翻成「服务器暂时不可用」，
+    // 用户会以为是故障而不是自己的表太大。
+    if (res.status === 413) {
+        throw new Error(apiText('数据量超过服务端上限（30MB），请减少行数或拆分表格后重试'));
+    }
+
     const result = await readResponseBody(res);
     if (!result.success) {
         // message 是业务约定的字段；detail 兼容 RFC 7807 的 ProblemDetails

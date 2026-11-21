@@ -117,7 +117,7 @@ public class ExcelSheetReader
         // 资源上限：JSON-per-row 存储下读取路径都是整表加载，不设上限会被单个大文件拖垮
         // rowCount 含表头行，因此数据行是 rowCount - 1
         if (rowCount - 1 > MaxRows)
-            throw new ExcelReadException($"数据行超过上限 {MaxRows} 行");
+            throw new ExcelReadException($"数据行超过上限 {MaxRows:N0} 行，当前 {rowCount - 1:N0} 行，请拆分后再导入");
         if (colCount > MaxColumns)
             throw new ExcelReadException($"列数超过上限 {MaxColumns} 列");
 

@@ -12,6 +12,16 @@ namespace ExcelToWeb.Services;
 /// </summary>
 public class ExcelService : IExcelService
 {
+    /// <summary>
+    /// 保存时允许的最大行数，与 ExcelSheetReader / CsvSheetReader 的 MaxRows 保持一致。
+    ///
+    /// 导入路径已经被 Reader 卡在 5 万行，但保存是另一条路：前端可以手动加行，
+    /// 表也能通过带校验导入逐步变长。而保存是整表替换，客户端必须把所有行原样传回来，
+    /// 一旦超过 Kestrel 默认的 30MB 请求体上限就直接 413 —— 用户看到的只是「请求失败」。
+    /// 所以这里预先拦一道，把原因说清楚。
+    /// </summary>
+    private const int MaxRowsPerSave = 50_000;
+
     private readonly ILogger<ExcelService> _logger;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly TableImportService _imports;
@@ -129,6 +139,17 @@ public class ExcelService : IExcelService
                 return ApiResponse<SaveTableDataDto>.NotFound("表格不存在");
 
             var meta = ColumnMetaService.Parse(table.ColumnMetaJson);
+
+            // 规模守门：整表替换要把所有行原样传回来，行数过多会撞 Kestrel 的 30MB
+            // 请求体上限，接口层直接回 413，用户看到的是「请求失败」而不是原因。
+            // 这里提前拦住并说清楚，与导入时的同一道限制对齐。
+            if (rows.Count > MaxRowsPerSave)
+            {
+                _logger.LogWarning("拒绝保存表格 {TableId}（用户 {UserId}）：{Count} 行超过上限 {Limit}",
+                    tableId, userId, rows.Count, MaxRowsPerSave);
+                return ApiResponse<SaveTableDataDto>.Fail(
+                    $"单表最多 {MaxRowsPerSave:N0} 行，当前 {rows.Count:N0} 行，请先删减或拆分");
+            }
 
             // 整表替换前的入参守门：空行集会清空整表、未知列会变成永远显示不出来的
             // 幽灵数据，两者都返回 200「成功」，所以必须在这里拦。放在 Strip 之前：
