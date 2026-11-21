@@ -193,3 +193,24 @@ html[data-lang="en"] .auth-alt a {
     display: none !important;
 }
 
+/* Windows 集成认证不可用时的标记：按钮内的小徽章 + 按钮下方的常驻说明。
+   刻意不隐藏入口 —— 作品集里「让访客看见这个能力」比「界面干净」更重要。 */
+.win-badge {
+    margin-left: 6px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: rgba(128, 128, 128, 0.18);
+    color: var(--text-3);
+    font-size: 11px;
+    font-weight: 400;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.auth-hint {
+    margin: 6px 0 0;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-3);
+}
+

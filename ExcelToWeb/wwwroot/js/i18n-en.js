@@ -244,6 +244,9 @@ I18n.register({
     '确定使用当前 Windows 账号登录吗？': 'Sign in with your current Windows account?',
     'Windows 登录不可用或已被拒绝，请使用账号密码登录':
         'Windows sign-in is unavailable or was denied — use your username and password',
+    '需内网': 'Intranet only',
+    '该功能需部署在 Windows 域环境并置于 Intranet 安全区，公网无法使用。':
+        'Requires a Windows domain deployment with the site in the Intranet zone — not available on the public internet.',
 
     // 请求层（api.js）的错误文案：超时 / 非 JSON 响应 / 会话过期
     '服务器响应超时，请稍后重试': 'The server took too long to respond — please try again',

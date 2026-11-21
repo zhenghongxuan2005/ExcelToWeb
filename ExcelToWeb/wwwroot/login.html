@@ -52,8 +52,9 @@
                 <button class="btn btn-primary" style="width:100%; padding:12px; font-size:15px;" onclick="handleLogin()">登 录</button>
                 <div class="auth-divider">或</div>
                 <button class="btn btn-outline" id="windowsLoginBtn" style="width:100%; padding:11px;" onclick="tryWindowsLogin(true)">
-                    <svg class="icon"><use href="#i-windows"/></svg>使用 Windows 账号登录
+                    <svg class="icon"><use href="#i-windows"/></svg>使用 Windows 账号登录<span class="win-badge hidden" id="windowsBadge">需内网</span>
                 </button>
+                <p class="auth-hint hidden" id="windowsHint">该功能需部署在 Windows 域环境并置于 Intranet 安全区，公网无法使用。</p>
                 <button class="btn btn-outline" style="width:100%; padding:11px; margin-top:10px;" onclick="tryDemoLogin()">
                     <svg class="icon"><use href="#i-user"/></svg>一键体验演示账号（只读）
                 </button>
@@ -219,16 +220,30 @@
             }
         }
 
-        // 服务端没启用 Windows 集成认证时把入口藏起来，别留一个点了没反应的按钮
-        function hideWindowsEntry() {
+        // 服务端没启用 Windows 集成认证时，**不隐藏**入口，而是打标记 + 显示常驻说明。
+        // 理由：这是作品集，访客（面试官 / 老师）第一眼要能看到「支持 Windows 集成登录」；
+        // 藏起来等于把一个能加分的能力从视野里抹掉。产品里该收敛，作品里该暴露。
+        function markWindowsUnavailable() {
+            const badge = document.getElementById('windowsBadge');
+            const hint = document.getElementById('windowsHint');
             const btn = document.getElementById('windowsLoginBtn');
-            if (btn) btn.classList.add('hidden');
+            if (badge) badge.classList.remove('hidden');
+            if (hint) hint.classList.remove('hidden');
+            if (btn) btn.dataset.unavailable = '1';
         }
 
         // 尝试 Windows 集成身份验证（浏览器自动协商，无需输入账号密码）
         // manual=true 来自按钮点击：用户明确要求免密登录，可以让浏览器弹凭据框；
         // manual=false 来自页面加载：**绝不能**触发浏览器凭据框，否则表单会被盖住。
         async function tryWindowsLogin(manual) {
+            // 已知服务端没开这个功能：不必再打一次必然 404 的请求，直接讲清原因。
+            // 判断要放在 confirm 之前 —— 否则用户先确认、再被拒，白点两次。
+            const winBtn = document.getElementById('windowsLoginBtn');
+            if (manual && winBtn && winBtn.dataset.unavailable === '1') {
+                showToast('❌ ' + tr('该功能需部署在 Windows 域环境并置于 Intranet 安全区，公网无法使用。'), 'error');
+                return;
+            }
+
             // 手动点击按钮时先征求用户同意，不悄悄登录
             if (manual && !confirm(tr('确定使用当前 Windows 账号登录吗？'))) return;
 
@@ -256,9 +271,11 @@
                 // 点下去只得到 404，界面毫无反馈，用户会以为「登录坏了」。
                 // 这里顺手把它藏掉，页面加载时那次静默探测就已经能得出结论。
                 if (res.status === 404) {
-                    hideWindowsEntry();
+                    markWindowsUnavailable();
                     statusEl.classList.add('hidden');
                     formEl.classList.remove('hidden');
+                    // 用户主动点的那次（探测还没跑完就点了）：直接把原因说清楚
+                    if (manual) showToast('❌ ' + tr('该功能需部署在 Windows 域环境并置于 Intranet 安全区，公网无法使用。'), 'error');
                     return;
                 }
                 if (res.ok) {
