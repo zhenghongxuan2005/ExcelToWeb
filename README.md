@@ -121,7 +121,7 @@ flowchart TB
     UI["浏览器<br/>8 个页面 · 零构建原生 JS"]
     MW["中间件管道<br/>异常 → 请求日志 → 认证 → 授权 → 限流"]
     CTRL["5 个 Controller<br/>Auth / Excel / Trash / Users / Exports"]
-    SVC["ExcelService 门面<br/>477 行，只编排不实现"]
+    SVC["ExcelService 门面<br/>500 行，只编排不实现"]
     C1["导入导出<br/>TableImport · ExcelExport"]
     C2["数据访问<br/>TableRepository"]
     C3["列与计算<br/>ColumnStructure · ColumnMeta · ComputedColumn"]
@@ -151,7 +151,7 @@ flowchart TB
 
 几处刻意为之的设计：
 
-- **前端零构建**：8 个 HTML 页面 + 54 个原生 JS 模块，由后端 `UseStaticFiles` 托管。代价是脚本加载顺序要手工维护（`index.html` 里的 `<script>` 顺序就是依赖图），收益是没有构建链、改完刷新就生效
+- **前端零构建**：8 个 HTML 页面 + 55 个原生 JS 模块，由后端 `UseStaticFiles` 托管。代价是脚本加载顺序要手工维护（`index.html` 里的 `<script>` 顺序就是依赖图），收益是没有构建链、改完刷新就生效
 - **门面只编排**：`ExcelService` 没有任何 `if` 业务分支，它只负责「先守门 → 再算 → 再落库 → 再记审计」的顺序。顺序本身就是业务（例如 `Validate → Strip → Restore → RemoveRowId` 不能颠倒）
 - **横切能力不进业务代码**：权限、限流、日志、后台任务全部在管道或特性上，协作者感知不到它们的存在
 
@@ -163,7 +163,7 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    A["① 约束守门<br/>静态规则 · 秒级<br/>不过则后面全跳过"] --> B["② xUnit<br/>8 个测试类<br/>纯逻辑 · 零 mock"]
+    A["① 约束守门<br/>静态规则 · 秒级<br/>不过则后面全跳过"] --> B["② xUnit<br/>9 个测试类<br/>纯逻辑 · 零 mock"]
     B --> C["③ 黑盒回归<br/>42 个用例<br/>起真实服务跑 HTTP"]
     C --> D["GitHub Actions<br/>push / PR 自动执行"]
 ```
