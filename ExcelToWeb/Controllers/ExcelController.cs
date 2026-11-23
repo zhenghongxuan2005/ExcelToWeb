@@ -3,6 +3,7 @@ using ExcelToWeb.DTOs;
 using ExcelToWeb.Models;
 using ExcelToWeb.Services;
 using ExcelToWeb.Services.Excel;
+using ExcelToWeb.Services.Query;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -292,13 +293,19 @@ public class ExcelController : ControllerBase
     }
 
     [HttpGet("tables")]
-    public async Task<IActionResult> GetTables()
+    public async Task<IActionResult> GetTables(int? page, int? pageSize)
     {
         var userId = GetUserId();
         if (userId == 0) return Unauthorized(ApiResponse.Fail("未登录"));
 
-        var tables = await _service.GetTablesAsync(userId);
-        return Ok(ApiResponse<List<TableInfoDto>>.Ok(tables));
+        // 不传分页参数 = 返回全部：表格选择器要能选到任意一张表。
+        // 传了才分页（表格管理页用，表多时不必一次拉全部）。
+        QuerySpec? spec = (page.HasValue || pageSize.HasValue)
+            ? QuerySpec.Clamp(page ?? 1, pageSize ?? QuerySpec.DefaultPageSize)
+            : null;
+
+        var tables = await _service.GetTablesAsync(userId, spec);
+        return Ok(ApiResponse<PagedResult<TableInfoDto>>.Ok(tables));
     }
 
     // ================================================================

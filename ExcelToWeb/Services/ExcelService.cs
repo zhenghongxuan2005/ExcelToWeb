@@ -1,6 +1,7 @@
 using ExcelToWeb.DTOs;
 using ExcelToWeb.Models;
 using ExcelToWeb.Services.Excel;
+using ExcelToWeb.Services.Query;
 using Microsoft.AspNetCore.Http;
 
 namespace ExcelToWeb.Services;
@@ -395,7 +396,8 @@ public class ExcelService : IExcelService
     }
 
     // ---- 获取表格列表 ----
-    public Task<List<TableInfoDto>> GetTablesAsync(int userId) => _repository.GetTableInfosAsync(userId);
+    public Task<PagedResult<TableInfoDto>> GetTablesAsync(int userId, QuerySpec? spec = null)
+        => _repository.GetTableInfosAsync(userId, spec);
 
     /// <summary>
     /// 开启 / 关闭某张表的每日自动导出（Hangfire 的 daily-export 任务据此挑表）。

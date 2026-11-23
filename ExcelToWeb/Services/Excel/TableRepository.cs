@@ -4,6 +4,7 @@ using ExcelToWeb.Caching;
 using ExcelToWeb.Data;
 using ExcelToWeb.DTOs;
 using ExcelToWeb.Models;
+using ExcelToWeb.Services.Query;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
@@ -107,9 +108,16 @@ public class TableRepository
             .Select(r => r.Id)
             .ToListAsync();
 
-    /// <summary>返回当前用户的全部表格（含暂无数据行的空表；不含回收站里的表）</summary>
-    public Task<List<TableInfoDto>> GetTableInfosAsync(int userId) =>
-        _db.DynamicTables
+    /// <summary>
+    /// 当前用户的表格列表（含暂无数据行的空表；不含回收站里的表）。
+    ///
+    /// spec 为 null 时返回**全部**：表格选择器要能选到任意一张表，只给它第一页
+    /// 会让第 51 张之后的表在界面上「消失」。只有管理页才传 spec。
+    /// </summary>
+    public async Task<PagedResult<TableInfoDto>> GetTableInfosAsync(int userId, QuerySpec? spec)
+    {
+        var query = _db.DynamicTables
+            .AsNoTracking()
             // 不过滤空表：用户可能把表清空后还没保存，或删光了行——
             // 若此时列表把表藏起来，用户就再也找不到它、也无法删除，成为幽灵数据。
             .Where(t => t.UserId == userId && t.DeletedAt == null)
@@ -122,8 +130,23 @@ public class TableRepository
                 CreatedAt = t.CreatedAt,
                 UpdatedAt = t.UpdatedAt,
                 AutoExportEnabled = t.AutoExportEnabled
-            })
-            .ToListAsync();
+            });
+
+        if (spec == null)
+        {
+            var all = await query.ToListAsync();
+            // 包装成同一形状：不传分页时 PageSize 取实际条数，前端拿到的仍是完整列表
+            return new PagedResult<TableInfoDto>
+            {
+                Items = all,
+                Total = all.Count,
+                Page = 1,
+                PageSize = all.Count
+            };
+        }
+
+        return await query.ToPagedAsync(spec.Value);
+    }
 
     /// <summary>开启/关闭某表的每日自动导出（归属校验在调用方按 FindTableAsync 做完）</summary>
     public async Task SetAutoExportAsync(DynamicTable table, bool enabled)

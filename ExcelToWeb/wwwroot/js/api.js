@@ -310,8 +310,18 @@ function duplicateTable(tableId) {
     });
 }
 
+/**
+ * 表格列表（全量）：表格选择器用 —— 它要能选到任意一张表，不能只给第一页。
+ * 服务端在不传分页参数时返回全部、并包装成同一形状，这里只取 items，
+ * 所以上层拿到的仍是数组，与改造前完全一致。
+ */
 function fetchTableList() {
-    return request('/excel/tables');
+    return request('/excel/tables').then(d => (d && d.items) || []);
+}
+
+/** 表格列表（分页）：管理页用，返回 { items, total, page, pageSize } 原样 */
+function fetchTableListPaged(page, pageSize) {
+    return request('/excel/tables?page=' + page + '&pageSize=' + pageSize);
 }
 
 /** 列结构维护（增 / 删 / 改 / 移）：headers 为最终列名，renames 为 [{oldName, newName}] */

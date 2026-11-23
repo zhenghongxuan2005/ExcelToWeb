@@ -68,5 +68,14 @@ I18n.register({
         'A snapshot of every table with daily auto export is generated at 2:00 AM each day',
     '{n} 行': '{n} rows',
     '已开启每日自动导出': 'Daily auto export turned on',
-    '已关闭每日自动导出': 'Daily auto export turned off'
+    '已关闭每日自动导出': 'Daily auto export turned off',
+
+    // ===== 列表分页 =====
+    // 文案与审计中心保持一致（同一句中文不该有两种英文），样式也复用 .pager
+    // 英文值必须唯一：「{n} 个表格」已占用 {n} tables，这里换个说法，
+    // 否则切回中文时两句会还原成同一句
+    '共 {n} 张表格': '{n} tables total',
+    '上一页': 'Previous',
+    '下一页': 'Next',
+    '第 {page} / {total} 页': 'Page {page} of {total}'
 });

@@ -5,7 +5,10 @@
 //       是查不到的（「创建 Oct 13」这种带时间戳的串永远命中不了静态条目）。
 // ================================================================
 
+const TABLE_PAGE_SIZE = 24;   // 卡片是三列网格，24 张正好 8 行
 let manageTables = [];
+let managePage = 1;
+let manageTotal = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!Shell.requireLogin()) return;
@@ -22,10 +25,12 @@ document.addEventListener('i18n:change', () => {
     renderExportList();
 });
 
-/** 拉取全部表格并渲染 */
-function loadManageList() {
+/** 拉取一页表格并渲染。page 省略时沿用当前页（删除后刷新走这条路） */
+function loadManageList(page) {
     const host = document.getElementById('tableGrid');
     if (!host) return;
+
+    if (typeof page === 'number' && page > 0) managePage = page;
 
     // 骨架卡片占位：避免「白屏 → 卡片突然出现」的跳动（样式见 table.css 骨架屏段）
     let sk = '';
@@ -39,9 +44,18 @@ function loadManageList() {
     }
     host.innerHTML = sk;
 
-    fetchTableList()
-        .then(tables => {
-            manageTables = tables || [];
+    fetchTableListPaged(managePage, TABLE_PAGE_SIZE)
+        .then(data => {
+            manageTables = (data && data.items) || [];
+            manageTotal = (data && data.total) || 0;
+
+            // 删掉当前页最后几张后，页码可能已经越过末页 —— 回退一页重取。
+            // 否则会停在「空列表 + 第 3 / 2 页」这种自相矛盾的状态。
+            if (manageTables.length === 0 && manageTotal > 0 && managePage > 1) {
+                managePage -= 1;
+                loadManageList();
+                return;
+            }
             renderManageList();
         })
         .catch(err => {
@@ -59,9 +73,10 @@ function renderManageList() {
 
     const countEl = document.getElementById('tableCount');
     if (countEl) {
-        countEl.textContent = manageTables.length === 0
+        // 显示总张数而不是当前页张数：分页之后，「共 120 个」比「24 个」更有意义
+        countEl.textContent = manageTotal === 0
             ? ''
-            : tt('{n} 个表格', { n: manageTables.length });
+            : tt('{n} 个表格', { n: manageTotal });
     }
 
     if (manageTables.length === 0) {
@@ -127,6 +142,38 @@ function renderManageList() {
     host.innerHTML = html;
     // 没有写权限的账号只保留「打开 / 导出」，不显示改与删
     if (typeof Authz !== "undefined") Authz.apply(host);
+    renderManagePager();
+}
+
+/** 分页条：只有超过一页时才出现（一页装得下就别占地方） */
+function renderManagePager() {
+    const el = document.getElementById('tablePager');
+    if (!el) return;
+
+    const totalPages = Math.max(1, Math.ceil(manageTotal / TABLE_PAGE_SIZE));
+    if (manageTotal <= TABLE_PAGE_SIZE) {
+        el.hidden = true;
+        el.innerHTML = '';
+        return;
+    }
+
+    el.hidden = false;
+    let html = `<span class="pager-info">${tt('共 {n} 张表格', { n: manageTotal })}</span>`;
+    html += `<button class="pager-btn" onclick="onManagePageChange(-1)"`
+        + (managePage <= 1 ? ' disabled' : '') + `>${tt('上一页')}</button>`;
+    html += `<span class="pager-current">${tt('第 {page} / {total} 页', { page: managePage, total: totalPages })}</span>`;
+    html += `<button class="pager-btn" onclick="onManagePageChange(1)"`
+        + (managePage >= totalPages ? ' disabled' : '') + `>${tt('下一页')}</button>`;
+    el.innerHTML = html;
+}
+
+function onManagePageChange(delta) {
+    const totalPages = Math.max(1, Math.ceil(manageTotal / TABLE_PAGE_SIZE));
+    const next = managePage + delta;
+    if (next < 1 || next > totalPages) return;
+    managePage = next;
+    loadManageList();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 /** 按 id 取表格（找不到返回 null） */
@@ -174,7 +221,8 @@ function doDuplicate(tableId) {
         .then(copy => {
             const name = copy && copy.tableName ? copy.tableName : tt('副本');
             showToast('✅ ' + tt('已复制为「{name}」', { name: name }), 'success');
-            loadManageList();                       // 列表需要重新拉取（多了一张表）
+            // 复制出来的表 UpdatedAt 最新、排在最前，跳回第 1 页才看得到
+            loadManageList(1);                       // 列表需要重新拉取（多了一张表）
         })
         .catch(err => showToast('❌ ' + tt('复制失败：{msg}', { msg: err.message }), 'error'));
 }

@@ -90,6 +90,9 @@
                 <div class="empty-state"><p>加载中...</p></div>
             </div>
 
+            <!-- 分页条：表格超过一页时才显示（样式复用 stats.css 的 .pager） -->
+            <div class="pager" id="tablePager" hidden></div>
+
             <!-- ===== 定时导出报表（后台 Hangfire 每天生成，见 Jobs/DailyExportJob.cs） ===== -->
             <section class="exports-panel" id="exportsPanel" hidden>
                 <div class="exports-head">

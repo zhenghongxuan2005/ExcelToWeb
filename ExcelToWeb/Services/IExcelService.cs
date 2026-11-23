@@ -1,5 +1,6 @@
 using ExcelToWeb.DTOs;
 using ExcelToWeb.Models;
+using ExcelToWeb.Services.Query;
 using Microsoft.AspNetCore.Http;
 
 namespace ExcelToWeb.Services;
@@ -23,7 +24,11 @@ public interface IExcelService
     Task<byte[]?> ExportExcelAsync(int tableId, int userId);
     Task<byte[]?> ExportCsvAsync(int tableId, int userId);
     Task<byte[]?> DownloadTemplateAsync(int tableId, int userId);
-    Task<List<TableInfoDto>> GetTablesAsync(int userId);
+    /// <summary>
+    /// 表格列表。spec 为 null 返回全部（表格选择器要能选到任意一张表）；
+    /// 有值则分页（管理页用，表多时不必一次拉全部）。
+    /// </summary>
+    Task<PagedResult<TableInfoDto>> GetTablesAsync(int userId, QuerySpec? spec = null);
 
     /// <summary>开关某张表的每日自动导出（后台 Hangfire 任务据此挑选要导出的表）</summary>
     Task<ApiResponse> SetAutoExportAsync(int tableId, int userId, bool enabled);
