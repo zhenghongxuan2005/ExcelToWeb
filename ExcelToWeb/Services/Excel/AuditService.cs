@@ -1,6 +1,7 @@
 using ExcelToWeb.Data;
 using ExcelToWeb.DTOs;
 using ExcelToWeb.Models;
+using ExcelToWeb.Services.Query;
 using Microsoft.EntityFrameworkCore;
 
 namespace ExcelToWeb.Services.Excel;
@@ -116,9 +117,9 @@ public class AuditService
         int userId, int? tableId, string? actionType, DateTime? from, DateTime? to,
         int page, int pageSize)
     {
-        if (page < 1) page = 1;
-        if (pageSize < 1) pageSize = 50;
-        if (pageSize > 100) pageSize = 100;
+        // 边界收敛统一走 QuerySpec：这三行原本手写在这里，加第二个分页接口时最容易漏抄，
+        // 而一旦漏了，pageSize=0 会让 Take(0) 返回空列表，接口看起来像「没有数据」
+        var spec = QuerySpec.Clamp(page, pageSize);
 
         var query = from log in _db.AuditLogs
                     join table in _db.DynamicTables on log.TableId equals table.Id
@@ -134,11 +135,8 @@ public class AuditService
         if (to.HasValue)
             query = query.Where(x => x.log.CreatedAt < to.Value.AddDays(1));
 
-        var total = await query.CountAsync();
-        var logs = await query
+        var paged = await query
             .OrderByDescending(x => x.log.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
             .Select(x => new AuditLogItemDto
             {
                 Id = x.log.Id,
@@ -152,9 +150,9 @@ public class AuditService
                 UserName = x.log.UserName,
                 CreatedAt = x.log.CreatedAt
             })
-            .ToListAsync();
+            .ToPagedAsync(spec);
 
-        return (logs, total);
+        return (paged.Items, paged.Total);
     }
 
     /// <summary>取单元格文本。值经 System.Text.Json 反序列化后是 JsonElement，ToString 即原始文本</summary>
