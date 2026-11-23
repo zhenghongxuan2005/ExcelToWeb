@@ -129,21 +129,19 @@ function renderAuditTimeline(logs) {
 
 /** 分页条：共 N 条 / 上一页 / 第 x 页 / 下一页 */
 function renderAuditPager() {
-    const pagerEl = document.getElementById('auditPager');
-    const totalPages = Math.max(1, Math.ceil(auditTotal / AUDIT_PAGE_SIZE));
-    let html = `<span class="pager-info">${tt('共 {n} 条记录', { n: auditTotal })}</span>`;
-    html += `<button class="pager-btn" onclick="onAuditPageChange(-1)" ${auditPage <= 1 ? 'disabled' : ''}>${tt('上一页')}</button>`;
-    html += `<span class="pager-current">${tt('第 {page} / {total} 页', { page: auditPage, total: totalPages })}</span>`;
-    html += `<button class="pager-btn" onclick="onAuditPageChange(1)" ${auditPage >= totalPages ? 'disabled' : ''}>${tt('下一页')}</button>`;
-    pagerEl.innerHTML = html;
-}
-
-function onAuditPageChange(delta) {
-    const totalPages = Math.max(1, Math.ceil(auditTotal / AUDIT_PAGE_SIZE));
-    const next = auditPage + delta;
-    if (next < 1 || next > totalPages) return;
-    auditPage = next;
-    loadAuditCenter();
+    // 有记录时即使只有 1 页也保留「共 N 条」：这一页信息密度低，留着反而让人心里有底。
+    // 空状态走不到这里 —— renderAuditTimeline 在 0 条时直接渲染空占位并提前返回。
+    renderPager('auditPager', {
+        total: auditTotal,
+        page: auditPage,
+        pageSize: AUDIT_PAGE_SIZE,
+        infoText: tt('共 {n} 条记录', { n: auditTotal }),
+        hideWhenSingle: false,
+        onChange: (next) => {
+            auditPage = next;
+            loadAuditCenter();
+        }
+    });
 }
 
 /** 查询：任何条件变化都从第 1 页重新开始 */

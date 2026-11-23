@@ -147,33 +147,17 @@ function renderManageList() {
 
 /** 分页条：只有超过一页时才出现（一页装得下就别占地方） */
 function renderManagePager() {
-    const el = document.getElementById('tablePager');
-    if (!el) return;
-
-    const totalPages = Math.max(1, Math.ceil(manageTotal / TABLE_PAGE_SIZE));
-    if (manageTotal <= TABLE_PAGE_SIZE) {
-        el.hidden = true;
-        el.innerHTML = '';
-        return;
-    }
-
-    el.hidden = false;
-    let html = `<span class="pager-info">${tt('共 {n} 张表格', { n: manageTotal })}</span>`;
-    html += `<button class="pager-btn" onclick="onManagePageChange(-1)"`
-        + (managePage <= 1 ? ' disabled' : '') + `>${tt('上一页')}</button>`;
-    html += `<span class="pager-current">${tt('第 {page} / {total} 页', { page: managePage, total: totalPages })}</span>`;
-    html += `<button class="pager-btn" onclick="onManagePageChange(1)"`
-        + (managePage >= totalPages ? ' disabled' : '') + `>${tt('下一页')}</button>`;
-    el.innerHTML = html;
-}
-
-function onManagePageChange(delta) {
-    const totalPages = Math.max(1, Math.ceil(manageTotal / TABLE_PAGE_SIZE));
-    const next = managePage + delta;
-    if (next < 1 || next > totalPages) return;
-    managePage = next;
-    loadManageList();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    renderPager('tablePager', {
+        total: manageTotal,
+        page: managePage,
+        pageSize: TABLE_PAGE_SIZE,
+        infoText: tt('共 {n} 张表格', { n: manageTotal }),
+        onChange: (next) => {
+            managePage = next;
+            loadManageList();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
 }
 
 /** 按 id 取表格（找不到返回 null） */
