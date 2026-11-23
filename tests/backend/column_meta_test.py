@@ -271,7 +271,10 @@ print("\n[4] 保存 meta 不改动表格的 UpdatedAt")
 # ============================================================
 def updated_at(tid):
     st, r = call("GET", "/excel/tables", token=token)
-    for t in (r.get("data") or []):
+    # 接口现在返回 { items, total, ... }，早期是数组 —— 两种都认
+    data = r.get("data")
+    rows = data.get("items", []) if isinstance(data, dict) else (data or [])
+    for t in rows:
         if t.get("id") == tid:
             return t.get("updatedAt")
     return None

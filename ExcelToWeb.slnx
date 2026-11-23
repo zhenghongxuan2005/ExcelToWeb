@@ -1,3 +1,9 @@
 <Solution>
   <Project Path="ExcelToWeb/ExcelToWeb.csproj" />
+  <!-- 测试项目必须在这里：CI 的顺序是「先 dotnet build 解决方案，
+       再 dotnet test ExcelToWeb.Tests（带 no-build 参数）」，靠的就是上一步的产物。
+       之前只列了主项目，CI 上（全新 checkout、没有旧 bin）会找不到 Tests.dll
+       而整条流水线失败；本地因为 bin 里留着上次编译的 dll，一直没暴露。 -->
+  <Project Path="ExcelToWeb.Tests/ExcelToWeb.Tests.csproj" />
 </Solution>
+

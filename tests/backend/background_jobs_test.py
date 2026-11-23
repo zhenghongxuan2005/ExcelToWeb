@@ -22,6 +22,16 @@ passed = 0
 failed = 0
 
 
+def table_rows(resp):
+    """表格列表的行数组。
+
+    接口现在返回 { items, total, page, pageSize }，早期版本直接返回数组。
+    这里兼容两种形状 —— 否则响应外层一换，遍历就会拿到 "items" 这种字符串 key。
+    """
+    data = resp.get("data")
+    return data.get("items", []) if isinstance(data, dict) else (data or [])
+
+
 def check(name, ok, detail=""):
     global passed, failed
     if ok:
@@ -77,14 +87,14 @@ check("立即执行匿名 401", call("POST", "/exports/run-now")[0] == 401)
 
 # ===== 3. 自动导出开关 =====
 st, r = call("GET", "/excel/tables", token=tok)
-row = next((t for t in (r.get("data") or []) if t.get("id") == table_id), None)
+row = next((t for t in table_rows(r) if t.get("id") == table_id), None)
 check("新表默认不开启自动导出", st == 200 and row is not None and row.get("autoExportEnabled") is False, row)
 
 st, r = call("PUT", "/excel/tables/%d/auto-export" % table_id, {"enabled": True}, token=tok)
 check("开启自动导出", st == 200 and r.get("success") is True, r)
 
 st, r = call("GET", "/excel/tables", token=tok)
-row = next((t for t in (r.get("data") or []) if t.get("id") == table_id), None)
+row = next((t for t in table_rows(r) if t.get("id") == table_id), None)
 check("列表回读为已开启", row is not None and row.get("autoExportEnabled") is True, row)
 
 # 重复设置同一状态：幂等返回，不算失败

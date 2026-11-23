@@ -260,7 +260,10 @@ for tid in created:
     if tid:
         call("DELETE", "/excel/delete?tableId=%d" % tid, token=token)
 st, r = call("GET", "/excel/tables", token=token)
-remaining = [t["id"] for t in (r.get("data") or []) if t["id"] in created]
+# 接口现在返回 { items, total, ... }，早期是数组 —— 两种都认
+_data = r.get("data")
+_rows = _data.get("items", []) if isinstance(_data, dict) else (_data or [])
+remaining = [t["id"] for t in _rows if t["id"] in created]
 check("测试表格已清理", remaining == [], remaining)
 
 print("\n================ 结果：%d 通过 / %d 失败 ================" % (passed, failed))
