@@ -38,17 +38,23 @@ jobs:
       Jwt__Key: "ci-only-throwaway-key-0123456789abcdef0123456789abcdef"
 
     steps:
-      - uses: actions/checkout@v4
+      # 版本号按各 action 的最新主版本（2026-11 逐个查证）：
+      # checkout v7 / setup-dotnet v6 / setup-python v7 / setup-node v7。
+      # 原来的 v4/v5 目标是 Node 20 运行时，已被 GitHub 标记弃用（强制跑在 Node 24 上），
+      # 不升的话某天会直接失效。
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: "10.0.x"
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.x"
 
-      - uses: actions/setup-node@v4
+      # 这里保持 20：项目只要求 Node 20+，跑前端用例用不到更新的特性。
+      # （这个 20 是「测试用的 Node 版本」，与上面 action 自身的运行时是两件事。）
+      - uses: actions/setup-node@v7
         with:
           node-version: "20"
 
