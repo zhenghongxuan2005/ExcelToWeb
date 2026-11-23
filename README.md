@@ -225,6 +225,7 @@ flowchart LR
 | [docs/API.md](docs/API.md) | 全部接口：路径、方法、权限、请求与响应形状 |
 | [docs/STRUCTURE.md](docs/STRUCTURE.md) | 目录分工与三类核心表的关系 |
 | [docs/CONFIG.md](docs/CONFIG.md) | 所有可配项的默认值、改法与常见问题 |
+| [docs/QUERYSPEC.md](docs/QUERYSPEC.md) | 列表查询契约的设计稿：现状盘点、非目标、分期与升级路径 |
 | [QA_FINDINGS.md](QA_FINDINGS.md) | 27 条自测记录：发现的问题、根因、修法与教训 |
 
 ## 许可
