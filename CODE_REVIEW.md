@@ -213,7 +213,7 @@ await _db.ValidationRules.Where(r => r.TableId == tableId).ExecuteDeleteAsync();
 2. **EF Core 与数据库：N+1 未发现**（表格列表用单条 `EXISTS` 相关子查询完成，非逐表回查）；索引设计合理（`UserId`、`Username` 唯一、`(UserId, ColumnName)`、`(TableId, CreatedAt)` 都打在主查询路径上）；`DynamicRow` 级联删除正确；`ReplaceRowsAsync` / `UpdateHeadersAsync` 的显式事务边界清晰。唯一结构性风险是 **`EnsureCreated()` + 手写幂等 DDL**：没有迁移历史，模型与 DDL 可能漂移（例如 EF 8+ 对 `List<string> Headers` 的 JSON 列映射一旦调整，旧库不会跟随）。公开展示前建议切换到 EF Migrations：`dotnet ef migrations add Initial && dotnet ef database update`，把手写 DDL 全部收编进迁移，这本身也是面试加分项。
 3. **JSON-per-row 存储是这个需求的合理取舍**（动态列、免迁移），但它的代价是 SQL 层不可查询、全表加载。已通过 P1-1 的行数上限把天花板钉死，建议在 README 用一句话说清「为什么选 JSON 存储、容量边界在哪」—— 主动讲 trade-off 比被问出来强得多。
 4. **安全模型整体扎实**：14 处数据访问全部经 `FindTableAsync(tableId, userId)` 归属校验（已逐一 grep 核实），规则写入强制覆盖 `UserId`/`TableId` 防 IDOR，密码 PBKDF2-10 万次 + 常量时间比较，生产环境异常不泄露明细、CORS 白名单制。剩余短板集中在「密钥管理」（P0-2）与「限流」（P2-1）。
-5. **EPPlus 许可证**：当前 `SetNonCommercialPersonal` 符合作品集/毕设场景；若将来任何商业用途必须购买 Polyform 商业授权或迁移到 ClosedXML —— 建议在 README 注明，体现合规意识。
+5. **EPPlus 许可证**：当前 `SetNonCommercialPersonal` 符合作品集场景；若将来任何商业用途必须购买 Polyform 商业授权或迁移到 ClosedXML —— 建议在 README 注明，体现合规意识。
 6. **前端架构红线执行良好**：`currentRows` 单一数据源、视图裁剪管线 `getFilteredRows → buildDisplayRows → getPagedRows` 不改写源数据、搜索/排序/分页纯显示层，均已抽查核实。CSS 无测试覆盖是已知风险，大改前排期人工走查即可。
 
 ## 五、修复优先级清单

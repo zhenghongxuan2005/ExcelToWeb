@@ -31,7 +31,7 @@ using StackExchange.Redis;
 
 // EPPlus 许可证（非商业用途）。
 // EPPlus 7+ 移除了 ExcelPackage.LicenseContext，改为在 ExcelPackage.License 上显式声明；
-// 本项为本科毕业设计，属非商业个人使用，与 LICENSE 中的 MIT + Polyform Noncommercial 说明一致。
+// 本项目为个人学习与技术验证用途，非商业使用，与 LICENSE 中的 MIT + Polyform Noncommercial 说明一致。
 ExcelPackage.License.SetNonCommercialPersonal("郑鸿煊");
 
 var builder = WebApplication.CreateBuilder(args);
